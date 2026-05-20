@@ -1,7 +1,46 @@
+<script lang="ts">
+  function autosize(node: HTMLTextAreaElement) {
+    const resize = () => {
+      node.style.height = 'auto';
+      node.style.height = node.scrollHeight + 'px';
+    };
+    node.addEventListener('input', resize);
+    resize();
+    return { destroy: () => node.removeEventListener('input', resize) };
+  }
+</script>
+
 <div class="layout h-dvh w-dvw">
-	<aside class="sidebar sidebar-left bg-blue-100"></aside>
-	<main class="content bg-amber-100"></main>
-	<aside class="sidebar sidebar-right bg-blue-100"></aside>
+  <aside class="sidebar sidebar-left bg-[#f9f9f9]"></aside>
+  <main class="content border border-gray-100">
+    <div class="flex h-full w-full flex-col items-center justify-center gap-0.5">
+      <textarea
+        id="original"
+        name="original"
+        rows="1"
+        use:autosize
+        class="w-full resize-none overflow-hidden bg-transparent text-center font-wenkai text-3xl font-light opacity-30 outline-none"
+        placeholder="空"
+      ></textarea>
+      <textarea
+        id="translation"
+        name="translation"
+        rows="1"
+        use:autosize
+        class="w-full resize-none overflow-hidden bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
+        placeholder="Use this box to enter your translated text."
+      ></textarea>
+      <textarea
+        id="source"
+        name="source"
+        rows="1"
+        use:autosize
+        class="w-full resize-none overflow-hidden bg-transparent text-center font-ss4 text-sm font-[350] opacity-30 outline-none"
+        placeholder="Source"
+      ></textarea>
+    </div>
+  </main>
+  <aside class="sidebar sidebar-right bg-[#f9f9f9]"></aside>
 </div>
 
 <style>
@@ -19,6 +58,7 @@
 	}
 
 	.sidebar {
+		border-radius: 20px;
 		display: none;
 	}
 
