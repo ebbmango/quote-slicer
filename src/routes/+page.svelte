@@ -12,14 +12,14 @@
 
 <div class="layout h-dvh w-dvw">
   <aside class="sidebar sidebar-left bg-[#f9f9f9]"></aside>
-  <main class="content border border-gray-100">
+  <main class="content">
     <div class="flex h-full w-full flex-col items-center justify-center gap-0.5">
       <textarea
         id="original"
         name="original"
         rows="1"
         use:autosize
-        class="w-full resize-none overflow-hidden bg-transparent text-center font-wenkai text-3xl font-light opacity-30 outline-none"
+        class="w-full resize-none overflow-y-auto bg-transparent text-center font-wenkai text-3xl font-light opacity-30 outline-none max-h-[40vh]"
         placeholder="空"
       ></textarea>
       <textarea
@@ -27,7 +27,7 @@
         name="translation"
         rows="1"
         use:autosize
-        class="w-full resize-none overflow-hidden bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
+        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-base font-[350] italic outline-none max-h-[25vh]"
         placeholder="Use this box to enter your translated text."
       ></textarea>
       <textarea
@@ -35,7 +35,7 @@
         name="source"
         rows="1"
         use:autosize
-        class="w-full resize-none overflow-hidden bg-transparent text-center font-ss4 text-sm font-[350] opacity-30 outline-none"
+        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-30 outline-none max-h-[10vh]"
         placeholder="Source"
       ></textarea>
     </div>
