@@ -19,7 +19,7 @@
         name="original"
         rows="1"
         use:autosize
-        class="w-full resize-none overflow-y-auto bg-transparent text-center font-wenkai text-3xl font-light opacity-30 outline-none max-h-[40vh]"
+        class="w-full resize-none overflow-y-auto bg-transparent opacity-30 text-center font-wenkai text-3xl font-light outline-none max-h-[40vh]"
         placeholder="空"
       ></textarea>
       <textarea
@@ -35,7 +35,7 @@
         name="source"
         rows="1"
         use:autosize
-        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-30 outline-none max-h-[10vh]"
+        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none max-h-[10vh]"
         placeholder="Source"
       ></textarea>
     </div>
