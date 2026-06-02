@@ -1,5 +1,7 @@
 node_modules
 
+icons.json
+
 # Output
 .output
 .vercel
@@ -21,5 +23,6 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
 # Playwright
 test-results

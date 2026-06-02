@@ -44,3 +44,17 @@
 	--font-ss4: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-wenkai: Wenkai, ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 }
+
+@custom-variant hocus (&:is(:hover, :focus-visible));
+
+@custom-variant touch {
+	@media (hover: none) and (pointer: coarse) {
+		@slot;
+	}
+}
+
+@custom-variant mouse {
+	@media (hover: hover) and (pointer: fine) {
+		@slot;
+	}
+}

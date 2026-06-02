@@ -1,89 +1,153 @@
 <script lang="ts">
-  function autosize(node: HTMLTextAreaElement) {
-    const resize = () => {
-      node.style.height = 'auto';
-      node.style.height = node.scrollHeight + 'px';
-    };
-    node.addEventListener('input', resize);
-    resize();
-    return { destroy: () => node.removeEventListener('input', resize) };
-  }
+	import icons from '$lib/assets/icons.json';
+	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
+
+	function autosize(node: HTMLTextAreaElement) {
+		const resize = () => {
+			node.style.height = 'auto';
+			node.style.height = node.scrollHeight + 'px';
+		};
+		node.addEventListener('input', resize);
+		resize(); // maybe I have to also do this on window resize?
+		return { destroy: () => node.removeEventListener('input', resize) };
+	}
+
+	type Mode = 'text' | 'link' | 'line' | 'view';
+
+	let mode = $state<Mode>('text');
+
+	let sourceText: string = $state('');
+	let targetText: string = $state('');
+	let authorship: string = $state('');
+
+	// const iconSun = icons['sun-bright'];
+	const iconArrow = icons['arrow-down'];
 </script>
 
-<div class="layout h-dvh w-dvw">
-  <aside class="sidebar sidebar-left bg-[#f9f9f9]"></aside>
-  <main class="content">
-    <div class="flex h-full w-full flex-col items-center justify-center gap-0.5">
-      <textarea
-        id="original"
-        name="original"
-        rows="1"
-        use:autosize
-        class="w-full resize-none overflow-y-auto bg-transparent opacity-30 text-center font-wenkai text-3xl font-light outline-none max-h-[40vh]"
-        placeholder="空"
-      ></textarea>
-      <textarea
-        id="translation"
-        name="translation"
-        rows="1"
-        use:autosize
-        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-base font-[350] italic outline-none max-h-[25vh]"
-        placeholder="Use this box to enter your translated text."
-      ></textarea>
-      <textarea
-        id="source"
-        name="source"
-        rows="1"
-        use:autosize
-        class="w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none max-h-[10vh]"
-        placeholder="Source"
-      ></textarea>
-    </div>
-  </main>
-  <aside class="sidebar sidebar-right bg-[#f9f9f9]"></aside>
+<div class="layout h-dvh w-dvw" class:panels-open={mode !== 'text'}>
+	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={mode === 'text'}></aside>
+	<main class="content flex flex-col">
+		<!-- Placeholder for the Light Switch Area -->
+		<div class="flex h-10 w-full justify-center">
+			<!-- <button aria-label="theme-toggle" class="size-6">
+				<svg viewBox={iconSun.viewBox}>
+					<path d={iconSun.paths['sharp-light']} />
+				</svg>
+			</button> -->
+		</div>
+		<!-- Quote Workbench Area -->
+		<div class="flex h-full w-full flex-col items-center justify-center gap-3">
+			<QuoteWorkbench {sourceText} {targetText} {authorship} {autosize} />
+		</div>
+		<!-- Tools Area -->
+		<div class="flex h-20 w-full flex-col items-center justify-center">
+			<button
+				aria-label="next"
+				class="size-5 -rotate-90 opacity-20 outline-0 duration-250 hocus:rotate-0 hocus:opacity-40"
+				onclick={() => {
+					mode = mode === 'text' ? 'line' : 'text';
+				}}
+			>
+				<svg viewBox={iconArrow.viewBox}>
+					<path d={iconArrow.sharp.regular} />
+				</svg>
+			</button>
+		</div>
+	</main>
+	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={mode === 'text'}></aside>
 </div>
 
 <style>
 	.layout {
-		--spacing: clamp(24px, 3vw, 36px);
+		--layout-spacing: clamp(24px, 3vw, 36px);
 
-		padding: var(--spacing) var(--spacing);
+		padding: var(--layout-spacing) var(--layout-spacing);
 		display: grid;
-		grid-column-gap: var(--spacing);
-		grid-row-gap: var(--spacing);
+		grid-column-gap: 0;
+		grid-row-gap: 0;
+		overflow: hidden;
+		transition:
+			grid-template-columns 350ms ease,
+			grid-template-rows 350ms ease,
+			grid-column-gap 350ms ease,
+			grid-row-gap 350ms ease;
 
 		/* default: main only */
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr;
+		grid-template-areas: 'content';
 	}
 
 	.sidebar {
 		border-radius: 20px;
 		display: none;
+		min-height: 0;
+		min-width: 0;
+		opacity: 0;
+		overflow: hidden;
+		pointer-events: none;
+		transition:
+			opacity 250ms ease,
+			transform 350ms ease;
+	}
+
+	.sidebar-left {
+		grid-area: left;
+		transform: translateX(calc(-100% - var(--layout-spacing)));
+	}
+
+	.content {
+		grid-area: content;
+		min-height: 0;
+		min-width: 0;
+	}
+
+	.sidebar-right {
+		grid-area: right;
+		transform: translateX(calc(100% + var(--layout-spacing)));
+	}
+
+	.layout.panels-open {
+		grid-column-gap: var(--layout-spacing);
+		grid-row-gap: var(--layout-spacing);
+	}
+
+	.layout.panels-open .sidebar {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translate(0);
 	}
 
 	/* tall portrait: main + one sidebar stacked */
 	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
 		.layout {
 			grid-template-columns: 1fr;
-			grid-template-rows: 2fr 1fr;
+			grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
+			grid-template-areas:
+				'content'
+				'left';
+		}
+
+		.layout.panels-open {
+			grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
 		}
 
 		.sidebar-left {
 			display: block;
-			order: 2;
-		}
-
-		.content {
-			order: 1;
+			transform: translateY(calc(100% + var(--layout-spacing)));
 		}
 	}
 
 	/* medium: one sidebar + main */
 	@media (min-width: 900px) {
 		.layout {
-			grid-template-columns: 1fr 2fr;
+			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
 			grid-template-rows: 1fr;
+			grid-template-areas: 'left content';
+		}
+
+		.layout.panels-open {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 		}
 
 		.sidebar-left {
@@ -94,11 +158,23 @@
 	/* desktop: sidebar + main + sidebar */
 	@media (min-width: 1200px) {
 		.layout {
-			grid-template-columns: 1fr 2fr 1fr;
+			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 0fr);
+			grid-template-areas: 'left content right';
+		}
+
+		.layout.panels-open {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
 		}
 
 		.sidebar-right {
 			display: block;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.layout,
+		.sidebar {
+			transition: none;
 		}
 	}
 </style>
