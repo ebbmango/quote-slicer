@@ -8,8 +8,14 @@
 			node.style.height = node.scrollHeight + 'px';
 		};
 		node.addEventListener('input', resize);
-		resize(); // maybe I have to also do this on window resize?
-		return { destroy: () => node.removeEventListener('input', resize) };
+		window.addEventListener('resize', resize);
+		resize();
+		return {
+			destroy: () => {
+				node.removeEventListener('input', resize);
+				window.removeEventListener('resize', resize);
+			}
+		};
 	}
 
 	type Mode = 'text' | 'link' | 'line' | 'view';
