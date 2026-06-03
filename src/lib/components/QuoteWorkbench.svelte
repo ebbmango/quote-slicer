@@ -75,6 +75,7 @@
 	id="authorship"
 	name="authorship"
 	bind:value={authorship}
+	disabled={mode.current !== "text"}
 	rows="1"
 	use:autosize
 	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
