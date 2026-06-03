@@ -20,7 +20,7 @@
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
-	const hangex = /^[\p{Script=Han}　-〿＀-￯]+$/u;
+	const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
 
 	// const iconSun = icons['sun-bright'];
 	const iconArrow = icons['arrow-down'];
@@ -65,6 +65,7 @@
 <style>
 	.layout {
 		--layout-spacing: clamp(24px, 3vw, 36px);
+		--slide: 500ms;
 
 		padding: var(--layout-spacing) var(--layout-spacing);
 		display: grid;
@@ -72,10 +73,10 @@
 		grid-row-gap: 0;
 		overflow: hidden;
 		transition:
-			grid-template-columns 350ms ease,
-			grid-template-rows 350ms ease,
-			grid-column-gap 350ms ease,
-			grid-row-gap 350ms ease;
+			grid-template-columns var(--slide) ease,
+			grid-template-rows var(--slide) ease,
+			grid-column-gap var(--slide) ease,
+			grid-row-gap var(--slide) ease;
 
 		/* default: main only */
 		grid-template-columns: 1fr;
@@ -88,12 +89,11 @@
 		display: none;
 		min-height: 0;
 		min-width: 0;
-		opacity: 0;
 		overflow: hidden;
 		pointer-events: none;
 		transition:
 			opacity 250ms ease,
-			transform 350ms ease;
+			transform var(--slide) ease;
 	}
 
 	.sidebar-left {
