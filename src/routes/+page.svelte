@@ -1,6 +1,7 @@
 <script lang="ts">
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
+	import { setModeContext } from '$lib/context/mode.svelte';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -18,9 +19,7 @@
 		};
 	}
 
-	type Mode = 'text' | 'link' | 'line' | 'view';
-
-	let mode = $state<Mode>('text');
+	const modeCtx = setModeContext();
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
@@ -32,8 +31,8 @@
 	const iconArrow = icons['arrow-down'];
 </script>
 
-<div class="layout h-dvh w-dvw" class:panels-open={mode !== 'text'}>
-	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={mode === 'text'}></aside>
+<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
+	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
 		<div class="flex h-10 w-full justify-center">
@@ -45,17 +44,17 @@
 		</div>
 		<!-- Quote Workbench Area -->
 		<div class="flex h-full w-full flex-col items-center justify-center gap-3">
-			<QuoteWorkbench {sourceText} {targetText} {authorship} {autosize} />
+			<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
 		</div>
 		<!-- Tools Area -->
 		<div class="flex h-20 w-full flex-col items-center justify-center">
-			{#if mode === 'text'}
+			{#if modeCtx.current === 'text'}
 				<button
 					// add animation later
 					aria-label="next"
 					class="group size-5 opacity-20 outline-0 duration-250 hocus:opacity-40"
 					onclick={() => {
-						mode = mode === 'text' ? 'line' : 'text';
+						modeCtx.current = modeCtx.current === 'text' ? 'line' : 'text';
 					}}
 				>
 					<svg viewBox={iconArrow.viewBox} class="-rotate-90 duration-250 group-hocus:rotate-0">
@@ -65,7 +64,7 @@
 			{/if}
 		</div>
 	</main>
-	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={mode === 'text'}></aside>
+	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
 </div>
 
 <style>

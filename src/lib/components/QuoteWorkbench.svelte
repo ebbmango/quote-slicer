@@ -1,6 +1,16 @@
 <script lang="ts">
-	let { sourceText, targetText, authorship, autosize } = $props();
+	import { getModeContext } from '$lib/context/mode.svelte';
+
+	let {
+		sourceText = $bindable(),
+		targetText = $bindable(),
+		authorship = $bindable(),
+		autosize
+	} = $props();
 	let composing = $state(false);
+
+	let mode = getModeContext();
+	let disabled = $derived(() => mode.current !== 'text');
 </script>
 
 <textarea
@@ -9,6 +19,7 @@
 	bind:value={sourceText}
 	rows="1"
 	use:autosize
+	{disabled}
 	oncompositionstart={() => (composing = true)}
 	oninput={(e) => {
 		if (e.isComposing) return;
@@ -36,10 +47,13 @@
 			el.setSelectionRange(start - removed, end - removed);
 		}
 	}}
-	class="max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing ? 'font-ss4' : 'font-wenkai'}"
+	class="max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing
+		? 'font-ss4'
+		: 'font-wenkai'}"
 	placeholder="空"
 ></textarea>
 <textarea
+	{disabled}
 	id="target-text"
 	name="target-text"
 	bind:value={targetText}
@@ -49,6 +63,7 @@
 	placeholder="Use this box to enter your translated text."
 ></textarea>
 <textarea
+	{disabled}
 	id="authorship"
 	name="authorship"
 	bind:value={authorship}
