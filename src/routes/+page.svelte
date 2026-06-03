@@ -55,6 +55,16 @@
 					class="group size-5 opacity-20 outline-0 duration-250 hocus:opacity-40"
 					onclick={() => {
 						modeCtx.current = modeCtx.current === 'text' ? 'line' : 'text';
+						const anyFilled = sourceText || targetText || authorship;
+						if (!anyFilled) {
+							sourceText = "知命者不怨天，知己者不怨人。";
+							targetText = "One who knows his fate does not resent Heaven; one who knows himself does not resent others.";
+							authorship = "A New Practical Primer of Literary Chinese (Paul F. Rouzer)";
+						} else {
+							if (!sourceText) sourceText = "空";
+							if (!targetText) targetText = "Use this box to enter your translated text.";
+							if (!authorship) authorship = "Source";
+						}
 					}}
 				>
 					<svg viewBox={iconArrow.viewBox} class="-rotate-90 duration-250 group-hocus:rotate-0">
