@@ -20,6 +20,8 @@
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
+	const hangex = /^[\p{Script=Han}　-〿＀-￯]+$/u;
+
 	// const iconSun = icons['sun-bright'];
 	const iconArrow = icons['arrow-down'];
 </script>
@@ -41,17 +43,20 @@
 		</div>
 		<!-- Tools Area -->
 		<div class="flex h-20 w-full flex-col items-center justify-center">
-			<button
-				aria-label="next"
-				class="size-5 -rotate-90 opacity-20 outline-0 duration-250 hocus:rotate-0 hocus:opacity-40"
-				onclick={() => {
-					mode = mode === 'text' ? 'line' : 'text';
-				}}
-			>
-				<svg viewBox={iconArrow.viewBox}>
-					<path d={iconArrow.sharp.regular} />
-				</svg>
-			</button>
+			{#if mode === 'text'}
+				<button
+					// add animation later
+					aria-label="next"
+					class="group size-5 opacity-20 outline-0 duration-250 hocus:opacity-40"
+					onclick={() => {
+						mode = mode === 'text' ? 'line' : 'text';
+					}}
+				>
+					<svg viewBox={iconArrow.viewBox} class="-rotate-90 duration-250 group-hocus:rotate-0">
+						<path d={iconArrow.sharp.regular} />
+					</svg>
+				</button>
+			{/if}
 		</div>
 	</main>
 	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={mode === 'text'}></aside>
