@@ -1,5 +1,6 @@
 <script lang="ts">
 	let { sourceText, targetText, authorship, autosize } = $props();
+	let composing = $state(false);
 </script>
 
 <textarea
@@ -8,7 +9,34 @@
 	bind:value={sourceText}
 	rows="1"
 	use:autosize
-	class="max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent text-center font-wenkai text-3xl font-light opacity-30 outline-none"
+	oncompositionstart={() => (composing = true)}
+	oninput={(e) => {
+		if (e.isComposing) return;
+		const el = e.currentTarget;
+		const start = el.selectionStart ?? 0;
+		const end = el.selectionEnd ?? 0;
+		const filtered = el.value.replace(/[^\p{Script=Han}　-〿＀-￯]/gu, '');
+		const removed = el.value.length - filtered.length;
+		if (removed > 0) {
+			el.value = filtered;
+			sourceText = filtered;
+			el.setSelectionRange(start - removed, end - removed);
+		}
+	}}
+	oncompositionend={(e) => {
+		composing = false;
+		const el = e.currentTarget;
+		const start = el.selectionStart ?? 0;
+		const end = el.selectionEnd ?? 0;
+		const filtered = el.value.replace(/[^\p{Script=Han}　-〿＀-￯]/gu, '');
+		const removed = el.value.length - filtered.length;
+		if (removed > 0) {
+			el.value = filtered;
+			sourceText = filtered;
+			el.setSelectionRange(start - removed, end - removed);
+		}
+	}}
+	class="max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing ? 'font-ss4' : 'font-wenkai'}"
 	placeholder="空"
 ></textarea>
 <textarea
