@@ -32,7 +32,7 @@
 	const iconArrow = icons['arrow-down'];
 </script>
 
-<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current === 'text'}>
+<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
