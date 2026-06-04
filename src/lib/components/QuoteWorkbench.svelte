@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getModeContext } from '$lib/context/mode.svelte';
+	import { setLinkContext } from '$lib/context/link.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate } from '$lib/tokenize';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
@@ -14,6 +15,7 @@
 
 	let mode = getModeContext();
 	let editing = $derived(mode.current === 'text');
+	setLinkContext();
 
 	let sourceTokens = $derived(tokenizeSource(sourceText));
 	let targetTokens = $derived(tokenizeTargetSeparate(targetText));
