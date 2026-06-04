@@ -1,6 +1,6 @@
 import { getContext, setContext } from 'svelte';
 
-export type Mode = 'text' | 'link' | 'line' | 'view';
+export type Mode = 'text' | 'link' | 'part' | 'join' | 'view';
 
 const MODE_KEY = Symbol('mode');
 

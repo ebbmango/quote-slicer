@@ -20,18 +20,19 @@
 	}
 
 	const modeCtx = setModeContext();
+	const inLineMode = $derived(modeCtx.current === 'join' || modeCtx.current === 'part');
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
-	const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
+	// const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
 
 	// const iconSun = icons['sun-bright'];
 	const iconArrow = icons['arrow-down'];
 </script>
 
-<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
+<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current === 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
@@ -50,34 +51,116 @@
 		<div class="flex h-20 w-full flex-col items-center justify-center">
 			{#if modeCtx.current === 'text'}
 				<button
-					// add animation later
 					aria-label="next"
 					class="group size-5 opacity-20 outline-0 duration-250 hocus:opacity-40"
 					onclick={() => {
-						modeCtx.current = modeCtx.current === 'text' ? 'line' : 'text';
 						const anyFilled = sourceText || targetText || authorship;
 						if (!anyFilled) {
-							sourceText = "知命者不怨天，知己者不怨人。";
-							targetText = "One who knows his fate does not resent Heaven; one who knows himself does not resent others.";
-							authorship = "A New Practical Primer of Literary Chinese (Paul F. Rouzer)";
+							sourceText = '知命者不怨天，知己者不怨人。';
+							targetText =
+								'One who knows his fate does not resent Heaven; one who knows himself does not resent others.';
+							authorship = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
 						} else {
-							if (!sourceText) sourceText = "空";
-							if (!targetText) targetText = "Use this box to enter your translated text.";
-							if (!authorship) authorship = "Source";
+							if (!sourceText) sourceText = '空';
+							if (!targetText) targetText = 'Use this box to enter your translated text.';
+							if (!authorship) authorship = 'Source';
 						}
+						modeCtx.current = 'link';
 					}}
 				>
-					<svg viewBox={iconArrow.viewBox} class="-rotate-90 duration-250 group-hocus:rotate-0">
+					<svg viewBox={iconArrow.viewBox} class="duration-250 group-hocus:translate-y-0.5">
 						<path d={iconArrow.sharp.regular} />
 					</svg>
 				</button>
+			{:else}
+				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-1">
+					<div
+						class="flex gap-2 transition-opacity duration-300"
+						class:opacity-0={!inLineMode}
+						class:pointer-events-none={!inLineMode}
+					>
+						<button
+							aria-label="part"
+							tabindex={inLineMode ? 2 : -1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={modeCtx.current !== 'part'}
+							onclick={() => (modeCtx.current = 'part')}
+						>
+							<svg class="rotate-90" viewBox={icons['arrows-from-dotted-line'].viewBox}>
+								<path d={icons['arrows-from-dotted-line'].classic.regular} />
+							</svg>
+						</button>
+						<button
+							aria-label="join"
+							tabindex={inLineMode ? 3 : -1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={modeCtx.current !== 'join'}
+							onclick={() => (modeCtx.current = 'join')}
+						>
+							<svg class="rotate-90" viewBox={icons['arrows-to-line'].viewBox}>
+								<path d={icons['arrows-to-line'].classic.regular} />
+							</svg>
+						</button>
+					</div>
+					<div class="flex gap-1.5">
+						<button
+							aria-label="link"
+							tabindex={1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={modeCtx.current !== 'link'}
+							onclick={() => (modeCtx.current = 'link')}
+						>
+							<svg viewBox={icons.language.viewBox}>
+								<path d={icons.language.sharp.regular} />
+							</svg>
+						</button>
+						<button
+							aria-label="line"
+							tabindex={inLineMode ? -1 : 2}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={modeCtx.current !== 'join' && modeCtx.current !== 'part'}
+							onclick={() => {
+								if (modeCtx.current !== 'join' && modeCtx.current !== 'part') {
+									modeCtx.current = 'part';
+								}
+							}}
+						>
+							<svg viewBox={icons.paragraph.viewBox}>
+								<path d={icons.paragraph.sharp.regular} />
+							</svg>
+						</button>
+						<button
+							aria-label="view"
+							tabindex={inLineMode ? 4 : 3}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={modeCtx.current !== 'view'}
+							onclick={() => (modeCtx.current = 'view')}
+						>
+							<svg viewBox={icons.eye.viewBox}>
+								<path d={icons.eye.classic.regular} />
+							</svg>
+						</button>
+					</div>
+				</div>
 			{/if}
 		</div>
 	</main>
-	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
+	<aside
+		class="sidebar sidebar-right bg-[#f9f9f9]"
+		aria-hidden={modeCtx.current === 'text'}
+	></aside>
 </div>
 
-<style>
+<style lang="postcss">
+	#tools button {
+		@apply duration-300;
+	}
+
+	#tools button.opacity-20:hover,
+	#tools button.opacity-20:focus-visible {
+		@apply opacity-60;
+	}
+
 	.layout {
 		--layout-spacing: clamp(24px, 3vw, 36px);
 		--slide: 500ms;
