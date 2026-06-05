@@ -1,5 +1,5 @@
 import { getContext, setContext } from 'svelte';
-import { MAPPING_COLORS } from '$lib/constants/colors';
+import { MAPPING_COLORS, type MappingColor } from '$lib/constants/colors';
 
 export type MappingId = string;
 
@@ -33,7 +33,7 @@ class LinkContext {
 		return this.mappings.find((m) => m.id === this.activeMappingId);
 	}
 
-	private colorFor(colorIndex: number): string {
+	private colorFor(colorIndex: number): MappingColor {
 		return MAPPING_COLORS[colorIndex % MAPPING_COLORS.length];
 	}
 
@@ -54,11 +54,11 @@ class LinkContext {
 		}
 	}
 
-	clickSource(i: number): void {
+	clickSource(i: number, shift = false): void {
 		const claimed = this.sourceMappingIndex.get(i);
 		if (claimed !== undefined) {
 			if (claimed === this.activeMappingId) {
-				// remove from active mapping
+				// remove from active mapping (shift irrelevant here)
 				const m = this.activeMapping!;
 				m.sourceIndices = m.sourceIndices.filter((x) => x !== i);
 				this.pruneActive();
@@ -67,8 +67,17 @@ class LinkContext {
 				this.activeMappingId = claimed;
 			}
 		} else if (this.activeMappingId !== null) {
-			// add to active mapping
-			this.activeMapping!.sourceIndices = [...this.activeMapping!.sourceIndices, i];
+			const m = this.activeMapping!;
+			if (shift || m.sourceIndices.length === 0) {
+				// shift = force-add; no sources yet = first source slot, add freely
+				m.sourceIndices = [...m.sourceIndices, i];
+			} else {
+				// mapping already has a source — create new mapping for this token
+				const newM = this.createMapping();
+				newM.sourceIndices = [i];
+				this.mappings = [...this.mappings, newM];
+				this.activeMappingId = newM.id;
+			}
 		} else {
 			// create new mapping
 			const m = this.createMapping();
@@ -116,7 +125,7 @@ class LinkContext {
 		const claimed = this.sourceMappingIndex.get(i);
 		if (claimed === undefined) return { kind: 'unmapped' };
 		const m = this.mappings.find((x) => x.id === claimed)!;
-		const color = this.colorFor(m.colorIndex);
+		const color = this.colorFor(m.colorIndex).source;
 		if (claimed === this.activeMappingId) return { kind: 'active', color };
 		return { kind: 'idle', color };
 	}
@@ -125,7 +134,7 @@ class LinkContext {
 		const claimed = this.targetMappingIndex.get(i);
 		if (claimed === undefined) return { kind: 'unmapped' };
 		const m = this.mappings.find((x) => x.id === claimed)!;
-		const color = this.colorFor(m.colorIndex);
+		const color = this.colorFor(m.colorIndex).target;
 		if (claimed === this.activeMappingId) return { kind: 'active', color };
 		return { kind: 'idle', color };
 	}
