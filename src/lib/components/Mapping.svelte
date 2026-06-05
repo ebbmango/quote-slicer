@@ -50,11 +50,9 @@
 	role="option"
 	aria-selected={isActive}
 	tabindex="0"
-	class="flex w-full shrink-0 cursor-pointer select-none flex-col overflow-hidden rounded-md shadow-sm"
+	class="flex w-full shrink-0 cursor-pointer flex-col overflow-hidden rounded-md shadow-sm select-none"
 	onclick={() =>
-		link.activeMappingId === mapping.id
-			? link.deselect()
-			: (link.activeMappingId = mapping.id)}
+		link.activeMappingId === mapping.id ? link.deselect() : (link.activeMappingId = mapping.id)}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
@@ -69,25 +67,23 @@
 	<!-- Top section: hanzi | pinyin | badge -->
 	<div
 		class="relative grid w-full transition-colors duration-200"
-		style="grid-template-columns: 1fr 1fr 1fr; background: {isActive ? color.source : 'white'};"
+		style="grid-template-columns: 1fr 1fr 1fr; background: {isActive ? color.base : 'white'};"
 	>
 		{#if mapping.sourceIndices.length === 0}
 			<div class="flex h-17 items-center justify-center opacity-30">
-				<span class="font-noto text-[28px] font-[320]" style="color: {isActive ? 'white' : '#555'}"
-					>—</span
+				<span
+					class="font-noto text-[28px] font-[320]"
+					style="color: {isActive ? color.text : '#555'}">—</span
 				>
 			</div>
 			<div class="flex h-17 items-center justify-center"></div>
 		{:else}
 			{#each mapping.sourceIndices as srcIdx, i (srcIdx)}
-				<!-- Full-width separator: absolute so it spans all 3 cols incl. badge col.
-				     Badge cell has z-index:1 + solid bg to paint over this line. -->
+				<!-- Full-width separator spanning all 3 cols. Badge cell (z-index:1) paints above it. -->
 				{#if i > 0}
 					<div
-						class="pointer-events-none absolute left-0 right-0"
-						style="top: {i * ROW_H}px; height: 1px; background: {isActive
-							? color.target + '66'
-							: '#ebebeb'}; z-index: 0;"
+						class="pointer-events-none absolute right-0 left-0"
+						style="top: {i * ROW_H}px; height: 1px; background: white; z-index: 0;"
 					></div>
 				{/if}
 
@@ -95,7 +91,7 @@
 				<div class="flex h-17 items-center justify-center">
 					<span
 						class="font-noto text-[28px] font-[320] transition-colors duration-200"
-						style="color: {isActive ? 'white' : '#555'}; opacity: {isActive ? 0.9 : 0.65};"
+						style="color: {isActive ? color.text : '#555'}; opacity: {isActive ? 1 : 0.65};"
 						>{link.sourceTokens[srcIdx]?.text ?? '?'}</span
 					>
 				</div>
@@ -103,8 +99,8 @@
 				<!-- Pinyin cell -->
 				<div class="flex h-17 items-center justify-center">
 					<input
-						class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base outline-none transition-colors duration-200 placeholder:opacity-40"
-						style="color: {isActive ? 'white' : '#666'}; opacity: {isActive ? 0.85 : 0.6};"
+						class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
+						style="color: {isActive ? color.text : '#666'}; opacity: {isActive ? 0.85 : 0.6};"
 						placeholder="Empty"
 						value={mapping.pinyin[i] ?? ''}
 						oninput={(e) => {
@@ -114,8 +110,7 @@
 					/>
 				</div>
 
-				<!-- Badge + delete button — col 3, spanning all source rows.
-				     position:relative + z-index:1 + solid bg covers the separator lines. -->
+				<!-- Badge + delete button — col 3, spanning all source rows. -->
 				{#if i === 0}
 					<div
 						class="relative flex items-center justify-center gap-1.5 px-3 transition-colors duration-200"
@@ -123,15 +118,15 @@
 					>
 						<span
 							class="rounded px-2 py-0.5 font-ss4 text-sm"
-							style="background: {isActive ? color.target : color.base}; color: {isActive
-								? 'white'
-								: `color-mix(in srgb, ${color.source}, black 30%)`};"
+							style="background: {isActive
+								? color.tagBgActive
+								: color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
 							>{label}</span
 						>
 						{#if isActive}
 							<button
-								class="flex size-5 items-center justify-center opacity-70 transition-opacity hover:opacity-100"
-								style="color: white;"
+								class="flex size-5 items-center justify-center opacity-80 transition-opacity hover:opacity-100"
+								style="color: {color.tagBgActive};"
 								aria-label="Delete mapping"
 								onclick={(e) => {
 									e.stopPropagation();
@@ -157,20 +152,18 @@
 	<!-- Bottom bar: translation -->
 	<div
 		class="flex h-6 w-full items-center justify-center overflow-hidden transition-colors duration-200"
-		style="background: {isActive ? color.base : color.base + '55'};"
+		style="background: {isActive ? color.botActive : color.botInactive};"
 	>
 		{#if computed_targetText}
 			<span
 				class="truncate px-3 font-ss4 text-xs font-[380]"
-				style="color: color-mix(in srgb, {color.source}, black 25%); opacity: {isActive
-					? 0.85
-					: 0.6};"
+				style="color: {isActive ? color.botTextActive : color.botTextInactive};"
 				>&ldquo;{computed_targetText}&rdquo;</span
 			>
 		{:else}
 			<span
 				class="font-ss4 text-xs font-[350] italic"
-				style="color: color-mix(in srgb, {color.source}, black 15%); opacity: 0.4;"
+				style="color: {isActive ? color.botTextActive : color.botTextInactive}; opacity: 0.55;"
 				>no translation</span
 			>
 		{/if}
