@@ -8,6 +8,7 @@
 	let mode = getModeContext();
 	let link = getLinkContext();
 	let isLinkMode = $derived(mode.current === 'link');
+	let focusedIndex: number | null = $state(null);
 
 	function handleClick(i: number) {
 		if (!isLinkMode) return;
@@ -32,16 +33,20 @@
 
 	function tokenStyle(i: number): string {
 		if (!isLinkMode) return '';
+		const transition = 'transition: color 280ms ease, font-weight 280ms ease;';
 		const s = link.getTargetTokenState(i);
-		if (s.kind === 'active') return `color: ${s.color};`;
-		if (s.kind === 'idle') return `color: ${s.color}; opacity: 0.5;`;
-		return '';
+		const focused = focusedIndex === i;
+		if (s.kind === 'active') return `${transition} color: ${s.color}; font-weight: 600;`;
+		if (s.kind === 'idle' && focused) return `${transition} color: ${s.color}; font-weight: 350;`;
+		return `${transition} font-weight: 350;`;
 	}
 
 	function tokenOpacity(i: number): string {
 		if (!isLinkMode) return '';
 		const s = link.getTargetTokenState(i);
-		if (s.kind === 'unmapped') return 'opacity-30';
+		const focused = focusedIndex === i;
+		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
+		if (s.kind === 'idle') return 'opacity-70';
 		return '';
 	}
 </script>
@@ -51,6 +56,7 @@
 	aria-multiselectable="true"
 	aria-label="Target tokens"
 	class="flex max-h-[25vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent font-ss4 text-base font-[350] italic"
+	class:select-none={isLinkMode}
 	onkeydown={handleContainerKeydown}
 	onclick={handleContainerClick}
 >
@@ -60,10 +66,12 @@
 			role={isLinkMode && token.type !== 'whitespace' ? 'option' : undefined}
 			aria-selected={isLinkMode && token.type !== 'whitespace' ? link.getTargetTokenState(i).kind === 'active' : undefined}
 			tabindex={isLinkMode && token.type !== 'whitespace' ? 0 : undefined}
-			class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (isLinkMode ? ' cursor-pointer' : ''))}
+			class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (isLinkMode ? ' cursor-pointer outline-none' : ''))}
 			style={tokenStyle(i)}
 			onclick={() => handleClick(i)}
 			onkeydown={(e) => handleKeydown(e, i)}
+			onfocus={(e) => { if (isLinkMode && token.type !== 'whitespace' && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
+			onblur={() => { focusedIndex = null; }}
 		>{token.text}</span>
 	{/each}
 </div>
