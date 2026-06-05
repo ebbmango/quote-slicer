@@ -5,6 +5,7 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-05 | [Mapping Panel: Sidebar List and Card Component](./26-06-05-mapping-panel.md) | `dca306b`, `f36868a`, `addb47d` | Context hoist to share LinkContext with sidebar, token sync via $effect, text-order color model, pinyin slots, Mapping card with three-column grid and absolute-positioned separator trick |
 | 2026-06-05 | [Link Mode: Interaction Polish — Colors, Multi-Input, and Focus](./26-06-05-link-mode-interaction-polish.md) | `b53d0d0`, `e2c5402`, `fbf12b4` | Per-role color shades, one-source-default selection model with cmd/long-press/alt multi-add, punctuation exclusion, keyboard focus styles via :focus-visible, 280ms target token transitions |
 | 2026-06-05 | [Link Mode: Token Mapping State Machine](./26-06-05-link-mode-token-mapping.md) | `037243b`, `fcf271b` | LinkContext state machine with ARIA listbox/option wiring, many-to-many mapping data model, 9-color cycle, auto-delete on empty |
 | 2026-06-04 | [Mode Toolbar and Join/Part Sub-Modes](./26-06-04-mode-toolbar.md) | `e52a1be`, `47b13d1` | Flat join/part mode split, toolbar wired to ModeContext, sub-row layout reservation, dynamic tab order, panels-open fix |
