@@ -17,6 +17,14 @@
 }
 
 @font-face {
+	font-family: 'Noto Sans TC';
+	src: url('../lib/fonts/noto-sans-tc.ttf') format('truetype');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
 	font-family: Wenkai;
 	src: url('../lib/fonts/wenkai-light.ttf') format('truetype');
 	font-weight: 300;
@@ -43,6 +51,7 @@
 @theme {
 	--font-ss4: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-wenkai: Wenkai, ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+	--font-noto: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
 }
 
 @custom-variant hocus (&:is(:hover, :focus-visible));
