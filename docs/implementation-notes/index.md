@@ -5,6 +5,8 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-05 | [Link Mode: Interaction Polish — Colors, Multi-Input, and Focus](./26-06-05-link-mode-interaction-polish.md) | `b53d0d0`, `e2c5402`, `fbf12b4` | Per-role color shades, one-source-default selection model with cmd/long-press/alt multi-add, punctuation exclusion, keyboard focus styles via :focus-visible, 280ms target token transitions |
+| 2026-06-05 | [Link Mode: Token Mapping State Machine](./26-06-05-link-mode-token-mapping.md) | `037243b`, `fcf271b` | LinkContext state machine with ARIA listbox/option wiring, many-to-many mapping data model, 9-color cycle, auto-delete on empty |
 | 2026-06-04 | [Mode Toolbar and Join/Part Sub-Modes](./26-06-04-mode-toolbar.md) | `e52a1be`, `47b13d1` | Flat join/part mode split, toolbar wired to ModeContext, sub-row layout reservation, dynamic tab order, panels-open fix |
 | 2026-06-03 | [Tokenization Pipeline and Interactive Token Views](./26-06-03-interactive-token-views.md) | `934af68`, `48143e8`, `5e2c182`, `fc034a8` | Tokenizer module, span-based interactive views replacing textareas on mode advance, and Wenkai font glyph overflow scroll fix |
 | 2026-06-03 | [Mode Context and Workbench State Wiring](./26-06-03-mode-context-and-state-wiring.md) | `57c681f`, `67ce723`, `1d0cdac` | Mode moved to Svelte context, bindable props fix for two-way text sync, example fallback content on mode advance |
