@@ -1,7 +1,9 @@
 <script lang="ts">
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
+	import Mapping from '$lib/components/Mapping.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
+	import { setLinkContext } from '$lib/context/link.svelte';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -20,6 +22,7 @@
 	}
 
 	const modeCtx = setModeContext();
+	const link = setLinkContext();
 	const inLineMode = $derived(modeCtx.current === 'join' || modeCtx.current === 'part');
 
 	let sourceText: string = $state('');
@@ -33,7 +36,13 @@
 </script>
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
-	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}></aside>
+	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
+		<ol role="listbox" aria-label="Mappings" class="flex h-full w-full flex-col gap-3 overflow-y-auto p-6">
+			{#each link.sortedMappings as mapping, i (mapping.id)}
+				<Mapping {mapping} index={i} />
+			{/each}
+		</ol>
+	</aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
 		<div class="flex h-10 w-full justify-center">

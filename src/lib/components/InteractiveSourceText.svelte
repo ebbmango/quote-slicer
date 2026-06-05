@@ -13,6 +13,7 @@
 	let focusedIndex: number | null = $state(null);
 
 	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens; // re-run when tokens change
 		if (!container) return;
 		const fit = () => {

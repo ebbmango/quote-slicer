@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getModeContext } from '$lib/context/mode.svelte';
-	import { setLinkContext } from '$lib/context/link.svelte';
+	import { getLinkContext } from '$lib/context/link.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate } from '$lib/tokenize';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
@@ -15,10 +15,15 @@
 
 	let mode = getModeContext();
 	let editing = $derived(mode.current === 'text');
-	setLinkContext();
+	const link = getLinkContext();
 
 	let sourceTokens = $derived(tokenizeSource(sourceText));
 	let targetTokens = $derived(tokenizeTargetSeparate(targetText));
+
+	$effect(() => {
+		link.sourceTokens = sourceTokens;
+		link.targetTokens = targetTokens;
+	});
 </script>
 
 {#if editing}
@@ -30,11 +35,11 @@
 		use:autosize
 		oncompositionstart={() => (composing = true)}
 		oninput={(e) => {
-			if (e.isComposing) return;
+			if ((e as InputEvent).isComposing) return;
 			const el = e.currentTarget;
 			const start = el.selectionStart ?? 0;
 			const end = el.selectionEnd ?? 0;
-			const filtered = el.value.replace(/[^\p{Script=Han}　-〿＀-￯]/gu, '');
+			const filtered = el.value.replace(/[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]/gu, '');
 			const removed = el.value.length - filtered.length;
 			if (removed > 0) {
 				el.value = filtered;
@@ -47,7 +52,7 @@
 			const el = e.currentTarget;
 			const start = el.selectionStart ?? 0;
 			const end = el.selectionEnd ?? 0;
-			const filtered = el.value.replace(/[^\p{Script=Han}　-〿＀-￯]/gu, '');
+			const filtered = el.value.replace(/[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]/gu, '');
 			const removed = el.value.length - filtered.length;
 			if (removed > 0) {
 				el.value = filtered;
