@@ -80,6 +80,8 @@
 		{:else}
 			{#each mapping.sourceIndices as srcIdx, i (srcIdx)}
 				{#if i > 0}
+					{@const numSeps = mapping.sourceIndices.length - 1}
+					{@const isMidSep = numSeps % 2 === 1 && i === Math.ceil(numSeps / 2)}
 					<!-- Segment 1: col 1 + col 2 + left half of col 3 -->
 					<div
 						class="pointer-events-none absolute left-0 opacity-30 duration-200"
@@ -88,9 +90,8 @@
 					></div>
 					<!-- Segment 2: right half of col 3 -->
 					<div
-						class="pointer-events-none absolute right-0 opacity-30 duration-200"
-						class:opacity-0={isActive}
-						style="top: {i * ROW_H}px; height: 1px; background: {color.tagBgInactive}; z-index: 0; left: calc(100% * 5 / 6);"
+						class="pointer-events-none absolute right-0 duration-200"
+						style="opacity: {isActive ? (isMidSep ? 0 : 0.3) : 0.3}; top: {i * ROW_H}px; height: 1px; background: {isActive? color.text : color.tagBgInactive}; z-index: 0; left: calc(100% * 5 / 6);"
 					></div>
 				{/if}
 
