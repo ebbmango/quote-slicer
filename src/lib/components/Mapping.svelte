@@ -79,11 +79,18 @@
 			<div class="flex h-17 items-center justify-center"></div>
 		{:else}
 			{#each mapping.sourceIndices as srcIdx, i (srcIdx)}
-				<!-- Full-width separator spanning all 3 cols. Badge cell (z-index:1) paints above it. -->
 				{#if i > 0}
+					<!-- Segment 1: col 1 + col 2 + left half of col 3 -->
 					<div
-						class="pointer-events-none absolute right-0 left-0"
-						style="top: {i * ROW_H}px; height: 1px; background: white; z-index: 0;"
+						class="pointer-events-none absolute left-0 opacity-30 duration-200"
+						class:opacity-15={isActive}
+						style="top: {i * ROW_H}px; height: 1px; background: {isActive? color.text : color.tagBgInactive}; z-index: 0; right: calc(100% / 6);"
+					></div>
+					<!-- Segment 2: right half of col 3 -->
+					<div
+						class="pointer-events-none absolute right-0 opacity-30 duration-200"
+						class:opacity-0={isActive}
+						style="top: {i * ROW_H}px; height: 1px; background: {color.tagBgInactive}; z-index: 0; left: calc(100% * 5 / 6);"
 					></div>
 				{/if}
 
@@ -91,7 +98,7 @@
 				<div class="flex h-17 items-center justify-center">
 					<span
 						class="font-noto text-[28px] font-[320] transition-colors duration-200"
-						style="color: {isActive ? color.text : '#555'}; opacity: {isActive ? 1 : 0.65};"
+						style="color: {isActive ? 'white' : "#555"}; opacity: {isActive ? 1 : 0.65};"
 						>{link.sourceTokens[srcIdx]?.text ?? '?'}</span
 					>
 				</div>
