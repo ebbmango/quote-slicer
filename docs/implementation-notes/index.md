@@ -5,6 +5,9 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-07 | [Token Keyboard Navigation: Alt+Arrow and Cross-Zone Jumping](./26-06-07-token-keyboard-navigation.md) | `a17f988`, `8b4a0bb` | Tokens removed from Tab order; geometry-based visual neighbor finding for Alt+Arrow; Alt+Enter cross-zone toggle with remembered position per zone |
+| 2026-06-07 | [Mapping Card: Keyboard Access, Focus States, and Scoped Delete](./26-06-07-mapping-card-keyboard-access.md) | `e3717c3`, `91e87e8`, `09688ad`, `b8b025d` | Per-card isFocused tracking, color-mix focus outline, pinyin gated to active card, Tab scroll-anchoring in sidebar, deleteById decoupled from selection, focus-scoped Backspace/Delete |
+| 2026-06-05 | [Mapping Card: Named Semantic Color Palette](./26-06-05-mapping-card-color-palette.md) | `df3e1f9` | Nine named fields on MappingColor replace inline color-mix() calls in Mapping.svelte; single source of truth for all card shades |
 | 2026-06-05 | [Mapping Panel: Sidebar List and Card Component](./26-06-05-mapping-panel.md) | `dca306b`, `f36868a`, `addb47d` | Context hoist to share LinkContext with sidebar, token sync via $effect, text-order color model, pinyin slots, Mapping card with three-column grid and absolute-positioned separator trick |
 | 2026-06-05 | [Link Mode: Interaction Polish — Colors, Multi-Input, and Focus](./26-06-05-link-mode-interaction-polish.md) | `b53d0d0`, `e2c5402`, `fbf12b4` | Per-role color shades, one-source-default selection model with cmd/long-press/alt multi-add, punctuation exclusion, keyboard focus styles via :focus-visible, 280ms target token transitions |
 | 2026-06-05 | [Link Mode: Token Mapping State Machine](./26-06-05-link-mode-token-mapping.md) | `037243b`, `fcf271b` | LinkContext state machine with ARIA listbox/option wiring, many-to-many mapping data model, 9-color cycle, auto-delete on empty |

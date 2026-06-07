@@ -9,8 +9,8 @@
 	const color = $derived(MAPPING_COLORS[index % MAPPING_COLORS.length]);
 	const isActive = $derived(link.activeMappingId === mapping.id);
 	let isFocused = $state(false);
-	let isMappingHovered = $state(false);
 	let isButtonHovered = $state(false);
+	const isEmpty = $derived(mapping.sourceIndices.length === 0);
 	const rowCount = $derived(Math.max(mapping.sourceIndices.length, 1));
 	const label = $derived(String(index + 1).padStart(2, '0'));
 
@@ -63,8 +63,6 @@
 	onfocusout={(e) => {
 		if (!e.currentTarget.contains(e.relatedTarget as Node)) isFocused = false;
 	}}
-	onmouseenter={() => (isMappingHovered = true)}
-	onmouseleave={() => (isMappingHovered = false)}
 	onclick={() =>
 		link.activeMappingId === mapping.id ? link.deselect() : (link.activeMappingId = mapping.id)}
 	onkeydown={(e) => {
@@ -83,99 +81,99 @@
 		class="relative grid w-full rounded-t-md transition-colors duration-200"
 		style="grid-template-columns: 1fr 1fr 1fr; background: {isActive ? color.base : 'white'};"
 	>
-		{#if mapping.sourceIndices.length === 0}
-			<div class="flex h-17 items-center justify-center opacity-30">
+		{#each isEmpty ? [null] : mapping.sourceIndices as srcIdx, i (srcIdx ?? 'empty')}
+			{#if i > 0}
+				<div
+					class="pointer-events-none absolute left-0 w-full duration-200"
+					style="top: {i * ROW_H}px; height: 1px; background: {isActive
+						? color.tagBgActive
+						: color.botInactive}; z-index: 0;"
+				></div>
+			{/if}
+
+			<!-- Hanzi cell -->
+			<div class="flex h-17 items-center justify-center">
 				<span
-					class="font-noto text-[28px] font-[320]"
-					style="color: {isActive ? color.text : '#555'}">—</span
+					class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
+					style="color: {isActive ? color.text : '#555'}; opacity: {isEmpty
+						? 0.3
+						: isActive
+							? 1
+							: 0.65};"
+					>{isEmpty ? '未定' : (link.sourceTokens[srcIdx as number]?.text ?? '?')}</span
 				>
 			</div>
-			<div class="flex h-17 items-center justify-center"></div>
-		{:else}
-			{#each mapping.sourceIndices as srcIdx, i (srcIdx)}
-				{#if i > 0}
-					<!-- Segment 1: col 1 + col 2 + left half of col 3 -->
-					<div
-						class="pointer-events-none absolute left-0 w-full duration-200"
-						style="top: {i * ROW_H}px; height: 1px; background: {isActive
-							? color.tagBgActive
-							: color.botInactive}; z-index: 0;"
-					></div>
-				{/if}
 
-				<!-- Hanzi cell -->
-				<div class="flex h-17 items-center justify-center">
-					<span
-						class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
-						style="color: {isActive ? color.text : '#555'}; opacity: {isActive ? 1 : 0.65};"
-						>{link.sourceTokens[srcIdx]?.text ?? '?'}</span
-					>
-				</div>
+			<!-- Pinyin cell -->
+			<div class="flex h-17 items-center justify-center">
+				<input
+					disabled={isEmpty}
+					tabindex={isActive && !isEmpty ? 0 : -1}
+					class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
+					style="color: {isActive ? color.text : '#666'}; opacity: {isEmpty
+						? 0.3
+						: isActive
+							? 0.85
+							: 0.6};"
+					placeholder="Empty"
+					value={isEmpty ? '- - - -' : (mapping.pinyin[i] ?? '')}
+					oninput={isEmpty
+						? undefined
+						: (e) => {
+								mapping.pinyin[i] = e.currentTarget.value;
+							}}
+					onclick={isEmpty ? undefined : (e) => e.stopPropagation()}
+				/>
+			</div>
 
-				<!-- Pinyin cell -->
-				<div class="flex h-17 items-center justify-center">
-					<input
-						tabindex={isActive ? 0 : -1}
-						class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
-						style="color: {isActive ? color.text : '#666'}; opacity: {isActive ? 0.85 : 0.6};"
-						placeholder="Empty"
-						value={mapping.pinyin[i] ?? ''}
-						oninput={(e) => {
-							mapping.pinyin[i] = e.currentTarget.value;
-						}}
-						onclick={(e) => e.stopPropagation()}
-					/>
-				</div>
-
-				<!-- Badge + delete button — col 3, spanning all source rows. -->
-				{#if i === 0}
-					<div
-						class="relative flex items-center justify-center px-3 transition-colors duration-200"
-						style="grid-column: 3; grid-row: 1 / span {rowCount}; z-index: 1;"
-					>
+			<!-- Badge + delete button — col 3, spanning all source rows. -->
+			{#if i === 0}
+				<div
+					class="relative flex items-center justify-center px-3 transition-colors duration-200"
+					style="grid-column: 3; grid-row: 1 / span {rowCount}; z-index: 1;"
+				>
+					{#if !isEmpty}
 						<span
 							class="rounded px-2 py-0.5 font-ss4 text-sm"
-							style="background: {isActive
-								? color.tagBgActive
-								: color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
+							style="background: {isActive ? color.tagBgActive : color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
 							>{label}</span
 						>
-						<button
-							onmouseover={() => (isButtonHovered = true)}
-							onmouseleave={() => (isButtonHovered = false)}
-							tabindex={-1}
-							class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100"
-							class:opacity-100={isFocused || isButtonHovered}
-							style="color: {isActive ? color.tagBgActive : color.tagBgInactive};"
-							aria-label="Delete mapping"
-							onclick={(e) => {
-								e.stopPropagation();
-								link.deleteById(mapping.id);
-							}}
-						>
-							<svg viewBox={icons['delete-left'].viewBox} class="size-7">
-								<path
-									class="duration-100"
-									d={icons['delete-left'].classic.solid[0]}
-									fill={isActive
-										? isButtonHovered
-											? color.tagBgActive
-											: color.botActive
-										: isButtonHovered
-											? color.tagBgInactive
-											: color.botInactive}
-								/>
-								<path
-									class="duration-100"
-									d={icons['delete-left'].classic.solid[1]}
-									fill={isActive ? (isButtonHovered ? 'white' : color.tagBgActive) : 'white'}
-								/>
-							</svg>
-						</button>
-					</div>
-				{/if}
-			{/each}
-		{/if}
+					{/if}
+					<button
+						onmouseover={() => (isButtonHovered = true)}
+						onmouseleave={() => (isButtonHovered = false)}
+						tabindex={-1}
+						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100"
+						class:opacity-100={isFocused || isButtonHovered}
+						style="color: {isActive ? color.tagBgActive : color.tagBgInactive};"
+						aria-label="Delete mapping"
+						onclick={(e) => {
+							e.stopPropagation();
+							link.deleteById(mapping.id);
+						}}
+					>
+						<svg viewBox={icons['delete-left'].viewBox} class="size-7">
+							<path
+								class="duration-100"
+								d={icons['delete-left'].classic.solid[0]}
+								fill={isActive
+									? isButtonHovered
+										? color.tagBgActive
+										: color.botActive
+									: isButtonHovered
+										? color.tagBgInactive
+										: color.botInactive}
+							/>
+							<path
+								class="duration-100"
+								d={icons['delete-left'].classic.solid[1]}
+								fill={isActive ? (isButtonHovered ? 'white' : color.tagBgActive) : 'white'}
+							/>
+						</svg>
+					</button>
+				</div>
+			{/if}
+		{/each}
 	</div>
 
 	<!-- Bottom bar: translation -->
