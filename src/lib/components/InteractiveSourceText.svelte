@@ -32,10 +32,9 @@
 
 	function handleKeydown(e: KeyboardEvent, i: number) {
 		if (!isLinkMode) return;
-		if (e.key === ' ' || e.key === 'Enter') {
-			e.preventDefault();
-			link.clickSource(i, e.altKey);
-		}
+		if (!e.altKey || e.key !== ' ') return;
+		e.preventDefault();
+		link.clickSource(i, e.shiftKey);
 	}
 
 	function handleContainerKeydown(e: KeyboardEvent) {
@@ -72,7 +71,7 @@
 
 <div
 	bind:this={container}
-	class="max-h-[40vh] w-full overflow-y-auto"
+	class="max-h-[40vh] w-full overflow-y-auto px-2"
 >
 	<div
 		role="listbox"
@@ -89,7 +88,7 @@
 				data-type={token.type}
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
-				tabindex={interactive ? 0 : undefined}
+				tabindex={interactive ? -1 : undefined}
 				class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : ''))}
 				style={tokenStyle(i)}
 				onclick={(e) => interactive && handleClick(e, i)}

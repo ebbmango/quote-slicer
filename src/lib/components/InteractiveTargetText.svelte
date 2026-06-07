@@ -17,10 +17,9 @@
 
 	function handleKeydown(e: KeyboardEvent, i: number) {
 		if (!isLinkMode) return;
-		if (e.key === ' ' || e.key === 'Enter') {
-			e.preventDefault();
-			link.clickTarget(i);
-		}
+		if (!e.altKey || e.key !== ' ') return;
+		e.preventDefault();
+		link.clickTarget(i);
 	}
 
 	function handleContainerKeydown(e: KeyboardEvent) {
@@ -56,7 +55,7 @@
 	role="listbox"
 	aria-multiselectable="true"
 	aria-label="Target tokens"
-	class="flex max-h-[25vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent font-ss4 text-base font-[350] italic"
+	class="flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto px-2 bg-transparent font-ss4 text-base font-[350] italic"
 	class:select-none={isLinkMode}
 	onkeydown={handleContainerKeydown}
 	onclick={handleContainerClick}
@@ -66,7 +65,7 @@
 			data-type={token.type}
 			role={isLinkMode && token.type !== 'whitespace' ? 'option' : undefined}
 			aria-selected={isLinkMode && token.type !== 'whitespace' ? link.getTargetTokenState(i).kind === 'active' : undefined}
-			tabindex={isLinkMode && token.type !== 'whitespace' ? 0 : undefined}
+			tabindex={isLinkMode && token.type !== 'whitespace' ? -1 : undefined}
 			class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (isLinkMode ? ' cursor-pointer outline-none' : ''))}
 			style={tokenStyle(i)}
 			onclick={() => handleClick(i)}

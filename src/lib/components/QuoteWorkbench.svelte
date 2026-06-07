@@ -24,6 +24,73 @@
 		link.sourceTokens = sourceTokens;
 		link.targetTokens = targetTokens;
 	});
+
+	let tokenContainer: HTMLDivElement;
+
+	function findVisualNeighbor(
+		currentEl: HTMLElement,
+		all: HTMLElement[],
+		dir: 'up' | 'down'
+	): HTMLElement | null {
+		const r = currentEl.getBoundingClientRect();
+		const cx = r.left + r.width / 2;
+
+		const candidates = all.filter((el) => {
+			const er = el.getBoundingClientRect();
+			return dir === 'down' ? er.top > r.bottom - 4 : er.bottom < r.top + 4;
+		});
+
+		if (!candidates.length) return null;
+
+		const rowEdge =
+			dir === 'down'
+				? Math.min(...candidates.map((el) => el.getBoundingClientRect().top))
+				: Math.max(...candidates.map((el) => el.getBoundingClientRect().bottom));
+
+		const rowCandidates = candidates.filter((el) => {
+			const t = el.getBoundingClientRect();
+			return dir === 'down' ? Math.abs(t.top - rowEdge) < 4 : Math.abs(t.bottom - rowEdge) < 4;
+		});
+
+		return rowCandidates.reduce((best, el) => {
+			const bx = el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2;
+			const bestx = best.getBoundingClientRect().left + best.getBoundingClientRect().width / 2;
+			return Math.abs(bx - cx) < Math.abs(bestx - cx) ? el : best;
+		});
+	}
+
+	function handleArrowNav(e: KeyboardEvent) {
+		if (!e.altKey) return;
+		if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+		const target = e.target as HTMLElement;
+
+		const all = Array.from(tokenContainer.querySelectorAll('[role="option"]')) as HTMLElement[];
+
+		// Container itself is focused — enter token area
+		if (target === tokenContainer) {
+			if (!all.length) return;
+			e.preventDefault();
+			const entry = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? all[all.length - 1] : all[0];
+			entry?.focus();
+			return;
+		}
+
+		if (target.getAttribute('role') !== 'option') return;
+		e.preventDefault();
+
+		const currentIndex = all.indexOf(target);
+		let neighbor: HTMLElement | null = null;
+
+		if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+			neighbor = findVisualNeighbor(target, all, e.key === 'ArrowDown' ? 'down' : 'up');
+		} else if (e.key === 'ArrowLeft') {
+			neighbor = currentIndex > 0 ? all[currentIndex - 1] : null;
+		} else if (e.key === 'ArrowRight') {
+			neighbor = currentIndex < all.length - 1 ? all[currentIndex + 1] : null;
+		}
+
+		neighbor?.focus();
+	}
 </script>
 
 {#if editing}
@@ -75,16 +142,23 @@
 		placeholder="Use this box to enter your translated text."
 	></textarea>
 {:else}
-	<InteractiveSourceText tokens={sourceTokens} />
-	<InteractiveTargetText tokens={targetTokens} />
+	<div
+		bind:this={tokenContainer}
+		class="flex flex-col gap-3 py-4 px-1 rounded-xl focus:bg-blue-50 duration-200 outline-0"
+		tabindex="0"
+		onkeydown={handleArrowNav}
+	>
+		<InteractiveSourceText tokens={sourceTokens} />
+		<InteractiveTargetText tokens={targetTokens} />
+		<textarea
+			id="authorship"
+			name="authorship"
+			bind:value={authorship}
+			disabled={mode.current !== 'text'} // maybe always enabled?
+			rows="1"
+			use:autosize
+			class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
+			placeholder="Source"
+		></textarea>
+	</div>
 {/if}
-<textarea
-	id="authorship"
-	name="authorship"
-	bind:value={authorship}
-	disabled={mode.current !== "text"}
-	rows="1"
-	use:autosize
-	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
-	placeholder="Source"
-></textarea>
