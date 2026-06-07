@@ -6,7 +6,7 @@
 	let { mapping, index }: { mapping: Mapping; index: number } = $props();
 
 	const link = getLinkContext();
-	const color = $derived(MAPPING_COLORS[index % MAPPING_COLORS.length]);
+	const color = $derived(MAPPING_COLORS[mapping.colorIndex % MAPPING_COLORS.length]);
 	const isActive = $derived(link.activeMappingId === mapping.id);
 	let isFocused = $state(false);
 	let isButtonHovered = $state(false);
@@ -89,8 +89,10 @@
 	>
 		{#each isEmpty ? [null] : mapping.sourceIndices as srcIdx, i (srcIdx ?? 'empty')}
 			{#if i > 0}
+				<!-- divisory line -->
 				<div
-					class="pointer-events-none absolute left-0 w-full duration-200"
+					class="pointer-events-none absolute left-0 w-full transition-[background-color,opacity] duration-200"
+					class:opacity-40={isActive}
 					style="top: {i * ROW_H}px; height: 1px; background: {isActive
 						? color.tagBgActive
 						: color.botInactive}; z-index: 0;"
@@ -140,8 +142,10 @@
 				>
 					{#if !isEmpty}
 						<span
-							class="rounded px-2 py-0.5 font-ss4 text-sm"
-							style="background: {isActive ? color.tagBgActive : color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
+							class="rounded px-2 py-0.5 font-ss4 text-sm duration-200"
+							style="background: {isActive
+								? color.tagBgActive
+								: color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
 							>{label}</span
 						>
 					{/if}

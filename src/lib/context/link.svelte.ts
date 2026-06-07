@@ -13,6 +13,7 @@ export type MappingId = string;
 
 export type Mapping = {
 	id: MappingId;
+	colorIndex: number;
 	sourceIndices: number[];
 	targetIndices: number[];
 	pinyin: string[]; // parallel to sourceIndices
@@ -28,6 +29,7 @@ const LINK_KEY = Symbol('link');
 class LinkContext {
 	mappings: Mapping[] = $state([]);
 	activeMappingId: MappingId | null = $state(null);
+	private nextColorIndex: number = $state(0);
 	sourceTokens: RawSourceToken[] = $state([]);
 	targetTokens: RawTargetToken[] = $state([]);
 
@@ -53,13 +55,13 @@ class LinkContext {
 	}
 
 	private colorFor(m: Mapping): MappingColor {
-		const idx = this.sortedMappings.indexOf(m);
-		return MAPPING_COLORS[(idx >= 0 ? idx : 0) % MAPPING_COLORS.length];
+		return MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length];
 	}
 
 	private createMapping(): Mapping {
 		return {
 			id: crypto.randomUUID(),
+			colorIndex: this.nextColorIndex++,
 			sourceIndices: [],
 			targetIndices: [],
 			pinyin: [],
