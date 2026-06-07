@@ -58,6 +58,23 @@
 	});
 
 	let listEl: HTMLOListElement;
+	const SCROLL_PADDING = 20;
+
+	function scrollCardIntoView(card: Element) {
+		const cardRect = card.getBoundingClientRect();
+		const containerRect = listEl.getBoundingClientRect();
+		if (cardRect.bottom > containerRect.bottom - SCROLL_PADDING) {
+			listEl.scrollTo({
+				top: listEl.scrollTop + cardRect.bottom - containerRect.bottom + SCROLL_PADDING,
+				behavior: 'smooth'
+			});
+		} else if (cardRect.top < containerRect.top + SCROLL_PADDING) {
+			listEl.scrollTo({
+				top: listEl.scrollTop + cardRect.top - containerRect.top - SCROLL_PADDING,
+				behavior: 'smooth'
+			});
+		}
+	}
 
 	function handleListTab(e: KeyboardEvent) {
 		if (e.key !== 'Tab') return;
@@ -73,22 +90,15 @@
 		if (!next) return;
 		e.preventDefault();
 		next.focus({ preventScroll: true });
-		const PADDING = 20;
-		const scrollTarget = next.closest('li') ?? next;
-		const nextRect = scrollTarget.getBoundingClientRect();
-		const containerRect = listEl.getBoundingClientRect();
-		if (nextRect.bottom > containerRect.bottom - PADDING) {
-			listEl.scrollTo({
-				top: listEl.scrollTop + nextRect.bottom - containerRect.bottom + PADDING,
-				behavior: 'smooth'
-			});
-		} else if (nextRect.top < containerRect.top + PADDING) {
-			listEl.scrollTo({
-				top: listEl.scrollTop + nextRect.top - containerRect.top - PADDING,
-				behavior: 'smooth'
-			});
-		}
+		scrollCardIntoView(next.closest('li') ?? next);
 	}
+
+	$effect(() => {
+		const id = link.activeMappingId;
+		if (!id || !listEl) return;
+		const card = listEl.querySelector(`li[data-mapping-id="${id}"]`);
+		if (card) scrollCardIntoView(card);
+	});
 
 	// const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
 
