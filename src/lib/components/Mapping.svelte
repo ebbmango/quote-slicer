@@ -151,6 +151,7 @@
 						tabindex={-1}
 						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100"
 						class:opacity-100={isFocused || isButtonHovered}
+						class:pointer-events-none={!isFocused && !isButtonHovered}
 						style="color: {isActive ? color.tagBgActive : color.tagBgInactive};"
 						aria-label="Delete mapping"
 						onclick={(e) => {
@@ -173,7 +174,7 @@
 							<path
 								class="duration-100"
 								d={icons['delete-left'].classic.solid[1]}
-								fill={isActive ? (isButtonHovered ? 'white' : color.tagBgActive) : 'white'}
+								fill={isButtonHovered ? 'white' : color.tagBgActive}
 							/>
 						</svg>
 					</button>
