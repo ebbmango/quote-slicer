@@ -151,7 +151,7 @@
 							aria-label="Delete mapping"
 							onclick={(e) => {
 								e.stopPropagation();
-								link.deleteActive();
+								link.deleteById(mapping.id);
 							}}
 						>
 							<svg viewBox="0 0 16 16" fill="none" class="size-3.5">

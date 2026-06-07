@@ -12,6 +12,7 @@ export type MappingColor = {
 	botTextInactive: string; // bottom bar text, inactive
 	botActive: string; // bottom bar background, active
 	botTextActive: string; // bottom bar text, active
+	bgFocusInactive: string; // card backdrop, focused but not active
 };
 
 export const MAPPING_COLORS: MappingColor[] = [
@@ -27,7 +28,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#edf1dc',
 		botTextInactive: '#8ea04d',
 		botActive: '#eaf1cf',
-		botTextActive: '#818c57'
+		botTextActive: '#818c57',
+		bgFocusInactive: '#F9FCF2' // unused
 	},
 	{
 		// lush
@@ -41,7 +43,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#dfeee5',
 		botTextInactive: '#5a9174',
 		botActive: '#caedda',
-		botTextActive: '#579072'
+		botTextActive: '#579072',
+		bgFocusInactive: '#F5FDF9' // unused
 	},
 	{
 		// seabreeze
@@ -55,7 +58,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#dfeef2',
 		botTextInactive: '#568a95',
 		botActive: '#cceaed',
-		botTextActive: '#578892'
+		botTextActive: '#578892',
+		bgFocusInactive: '#F2FBFC' // unused
 	},
 	{
 		// azure
@@ -69,7 +73,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#e1e5f7',
 		botTextInactive: '#6573b5',
 		botActive: '#d2d6eb',
-		botTextActive: '#566094'
+		botTextActive: '#566094',
+		bgFocusInactive: '#F7F8FD' // unused
 	},
 	{
 		// compostella
@@ -83,7 +88,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#eee5f7',
 		botTextInactive: '#9960c4',
 		botActive: '#e0d4f0',
-		botTextActive: '#705293'
+		botTextActive: '#705293',
+		bgFocusInactive: '#FBF9FD' // unused
 	},
 	{
 		// sugar
@@ -97,7 +103,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#f6e6f5',
 		botTextInactive: '#b462b7',
 		botActive: '#ecd2ed',
-		botTextActive: '#835785'
+		botTextActive: '#835785',
+		bgFocusInactive: '#FDF8FD' // unused
 	},
 	{
 		// strawberry
@@ -111,7 +118,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#f5e4e7',
 		botTextInactive: '#a55f6e',
 		botActive: '#eecfd5',
-		botTextActive: '#804f59'
+		botTextActive: '#804f59',
+		bgFocusInactive: '#FDF5F6' // unused
 	},
 	{
 		// maple
@@ -125,7 +133,8 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#f8e8df',
 		botTextInactive: '#a9714c',
 		botActive: '#f1dbcc',
-		botTextActive: '#82604a'
+		botTextActive: '#82604a',
+		bgFocusInactive: '#FDF8F5' // unused
 	},
 	{
 		// beeswax
@@ -139,6 +148,7 @@ export const MAPPING_COLORS: MappingColor[] = [
 		botInactive: '#f3efdb',
 		botTextInactive: '#998943',
 		botActive: '#f5eccb',
-		botTextActive: '#7f754a'
+		botTextActive: '#7f754a',
+		bgFocusInactive: '#FDFBF6' // unused
 	}
 ];

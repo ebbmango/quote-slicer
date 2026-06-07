@@ -139,6 +139,11 @@ class LinkContext {
 		this.activeMappingId = null;
 	}
 
+	deleteById(id: MappingId): void {
+		this.mappings = this.mappings.filter((m) => m.id !== id);
+		if (this.activeMappingId === id) this.activeMappingId = null;
+	}
+
 	getSourceTokenState(i: number): TokenState {
 		const claimed = this.sourceMappingIndex.get(i);
 		if (claimed === undefined) return { kind: 'unmapped' };

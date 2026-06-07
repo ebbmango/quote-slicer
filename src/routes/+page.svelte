@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import Mapping from '$lib/components/Mapping.svelte';
@@ -28,6 +29,19 @@
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
+
+	onMount(() => {
+		function handleDeleteKey(e: KeyboardEvent) {
+			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+			if (link.activeMappingId === null) return;
+			const active = document.activeElement;
+			if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+			e.preventDefault();
+			link.deleteActive();
+		}
+		document.addEventListener('keydown', handleDeleteKey);
+		return () => document.removeEventListener('keydown', handleDeleteKey);
+	});
 
 	let listEl: HTMLOListElement;
 
