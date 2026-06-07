@@ -52,6 +52,7 @@
 		if (token.type === 'punctuation') return '';
 		const s = link.getSourceTokenState(i);
 		const focused = focusedIndex === i;
+		if (s.kind === 'active' && focused) return `color: ${s.color}; filter: brightness(0.75);`;
 		if (s.kind === 'active') return `color: ${s.color};`;
 		if (s.kind === 'idle' && focused) return `color: ${s.color};`;
 		return '';

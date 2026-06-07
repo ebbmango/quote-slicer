@@ -36,6 +36,7 @@
 		const transition = 'transition: color 280ms ease, font-weight 280ms ease;';
 		const s = link.getTargetTokenState(i);
 		const focused = focusedIndex === i;
+		if (s.kind === 'active' && focused) return `${transition} color: ${s.color}; font-weight: 600; filter: brightness(0.75);`;
 		if (s.kind === 'active') return `${transition} color: ${s.color}; font-weight: 600;`;
 		if (s.kind === 'idle' && focused) return `${transition} color: ${s.color}; font-weight: 350;`;
 		return `${transition} font-weight: 350;`;
