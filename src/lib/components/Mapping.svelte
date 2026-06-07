@@ -7,6 +7,7 @@
 	const link = getLinkContext();
 	const color = $derived(MAPPING_COLORS[index % MAPPING_COLORS.length]);
 	const isActive = $derived(link.activeMappingId === mapping.id);
+	let isFocused = $state(false);
 	const rowCount = $derived(Math.max(mapping.sourceIndices.length, 1));
 	const label = $derived(String(index + 1).padStart(2, '0'));
 
@@ -50,7 +51,14 @@
 	role="option"
 	aria-selected={isActive}
 	tabindex="0"
-	class="flex w-full shrink-0 cursor-pointer flex-col overflow-hidden rounded-md shadow-sm select-none"
+	class="group flex w-full shrink-0 flex-col overflow-hidden rounded-md duration-200 select-none focus:outline-2 focus:outline-solid"
+	style="outline-color: color-mix(in srgb, {isActive
+		? color.tagBgActive
+		: color.tagBgInactive} {isActive? "50%": "75%"}, transparent);"
+	onfocusin={() => (isFocused = true)}
+	onfocusout={(e) => {
+		if (!e.currentTarget.contains(e.relatedTarget as Node)) isFocused = false;
+	}}
 	onclick={() =>
 		link.activeMappingId === mapping.id ? link.deselect() : (link.activeMappingId = mapping.id)}
 	onkeydown={(e) => {
@@ -84,22 +92,26 @@
 					{@const isMidSep = numSeps % 2 === 1 && i === Math.ceil(numSeps / 2)}
 					<!-- Segment 1: col 1 + col 2 + left half of col 3 -->
 					<div
-						class="pointer-events-none absolute left-0 opacity-30 duration-200"
-						class:opacity-15={isActive}
-						style="top: {i * ROW_H}px; height: 1px; background: {isActive? color.text : color.tagBgInactive}; z-index: 0; right: calc(100% / 6);"
+						class="pointer-events-none absolute left-0"
+						style="top: {i * ROW_H}px; height: 1px; background: {isActive
+							? color.tagBgActive
+							: color.botInactive}; z-index: 0; right: calc(100% / 6);"
 					></div>
 					<!-- Segment 2: right half of col 3 -->
 					<div
-						class="pointer-events-none absolute right-0 duration-200"
-						style="opacity: {isActive ? (isMidSep ? 0 : 0.3) : 0.3}; top: {i * ROW_H}px; height: 1px; background: {isActive? color.text : color.tagBgInactive}; z-index: 0; left: calc(100% * 5 / 6);"
+						class="pointer-events-none absolute right-0"
+						class:opacity-0={isMidSep && isActive}
+						style="top: {i * ROW_H}px; height: 1px; background: {isActive
+							? color.tagBgActive
+							: color.botInactive}; z-index: 0; left: calc(100% * 5 / 6);"
 					></div>
 				{/if}
 
 				<!-- Hanzi cell -->
 				<div class="flex h-17 items-center justify-center">
 					<span
-						class="font-noto text-[28px] font-[320] transition-colors duration-200"
-						style="color: {isActive ? 'white' : "#555"}; opacity: {isActive ? 1 : 0.65};"
+						class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
+						style="color: {isActive ? color.text : '#555'}; opacity: {isActive ? 1 : 0.65};"
 						>{link.sourceTokens[srcIdx]?.text ?? '?'}</span
 					>
 				</div>
@@ -107,6 +119,7 @@
 				<!-- Pinyin cell -->
 				<div class="flex h-17 items-center justify-center">
 					<input
+						tabindex={isActive ? 0 : -1}
 						class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
 						style="color: {isActive ? color.text : '#666'}; opacity: {isActive ? 0.85 : 0.6};"
 						placeholder="Empty"
@@ -121,7 +134,7 @@
 				<!-- Badge + delete button — col 3, spanning all source rows. -->
 				{#if i === 0}
 					<div
-						class="relative flex items-center justify-center gap-1.5 px-3 transition-colors duration-200"
+						class="relative flex items-center justify-center px-3 transition-colors duration-200"
 						style="grid-column: 3; grid-row: 1 / span {rowCount}; z-index: 1;"
 					>
 						<span
@@ -131,26 +144,25 @@
 								: color.tagBgInactive}; color: {isActive ? 'white' : color.tagNoInactive};"
 							>{label}</span
 						>
-						{#if isActive}
-							<button
-								class="flex size-5 items-center justify-center opacity-80 transition-opacity hover:opacity-100"
-								style="color: {color.tagBgActive};"
-								aria-label="Delete mapping"
-								onclick={(e) => {
-									e.stopPropagation();
-									link.deleteActive();
-								}}
-							>
-								<svg viewBox="0 0 16 16" fill="none" class="size-3.5">
-									<path
-										d="M3 3L13 13M13 3L3 13"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-								</svg>
-							</button>
-						{/if}
+						<button
+							tabindex={-1}
+							class="absolute right-1.5 flex size-5 cursor-pointer items-center justify-center opacity-0 outline-0 transition-opacity group-hover:opacity-60 hocus:opacity-100"
+							style="color: {color.tagBgActive};"
+							aria-label="Delete mapping"
+							onclick={(e) => {
+								e.stopPropagation();
+								link.deleteActive();
+							}}
+						>
+							<svg viewBox="0 0 16 16" fill="none" class="size-3.5">
+								<path
+									d="M3 3L13 13M13 3L3 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
 					</div>
 				{/if}
 			{/each}

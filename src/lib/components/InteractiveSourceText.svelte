@@ -89,7 +89,7 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
 				tabindex={interactive ? 0 : undefined}
-				class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : ''))}
+				class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : ''))}
 				style={tokenStyle(i)}
 				onclick={(e) => interactive && handleClick(e, i)}
 				onkeydown={(e) => interactive && handleKeydown(e, i)}

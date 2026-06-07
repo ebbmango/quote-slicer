@@ -29,6 +29,39 @@
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
+	let listEl: HTMLOListElement;
+
+	function handleListTab(e: KeyboardEvent) {
+		if (e.key !== 'Tab') return;
+		const focusable = [
+			...listEl.querySelectorAll<HTMLElement>(
+				'li[tabindex="0"], input[tabindex="0"]'
+			)
+		];
+		const currentIdx = focusable.indexOf(document.activeElement as HTMLElement);
+		if (currentIdx === -1) return;
+		const nextIdx = e.shiftKey ? currentIdx - 1 : currentIdx + 1;
+		const next = focusable[nextIdx];
+		if (!next) return;
+		e.preventDefault();
+		next.focus({ preventScroll: true });
+		const PADDING = 20;
+		const scrollTarget = next.closest('li') ?? next;
+		const nextRect = scrollTarget.getBoundingClientRect();
+		const containerRect = listEl.getBoundingClientRect();
+		if (nextRect.bottom > containerRect.bottom - PADDING) {
+			listEl.scrollTo({
+				top: listEl.scrollTop + nextRect.bottom - containerRect.bottom + PADDING,
+				behavior: 'smooth'
+			});
+		} else if (nextRect.top < containerRect.top + PADDING) {
+			listEl.scrollTo({
+				top: listEl.scrollTop + nextRect.top - containerRect.top - PADDING,
+				behavior: 'smooth'
+			});
+		}
+	}
+
 	// const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
 
 	// const iconSun = icons['sun-bright'];
@@ -37,12 +70,12 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<ol role="listbox" aria-label="Mappings" class="flex h-full w-full flex-col gap-3 overflow-y-auto p-6">
+		<ol role="listbox" aria-label="Mappings" class="flex h-full w-full flex-col gap-3 overflow-y-auto scroll-smooth p-6" bind:this={listEl} onkeydown={handleListTab}>
 			{#each link.sortedMappings as mapping, i (mapping.id)}
 				<Mapping {mapping} index={i} />
 			{/each}
 		</ol>
-	</aside>
+</aside>			
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
 		<div class="flex h-10 w-full justify-center">
