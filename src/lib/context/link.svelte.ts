@@ -1,6 +1,13 @@
 import { getContext, setContext } from 'svelte';
+import { pinyin } from 'pinyin-pro';
 import { MAPPING_COLORS, type MappingColor } from '$lib/constants/colors';
 import type { RawSourceToken, RawTargetToken } from '$lib/tokenize';
+
+function tokenPinyin(token: RawSourceToken | undefined): string {
+	if (!token || token.type !== 'character') return '';
+	const { text } = token;
+	return pinyin(text, { toneType: 'symbol', separator: ' ' });
+}
 
 export type MappingId = string;
 
@@ -86,12 +93,12 @@ class LinkContext {
 			if (shift || m.sourceIndices.length === 0) {
 				// shift = force-add; no sources yet = first source slot, add freely
 				m.sourceIndices = [...m.sourceIndices, i];
-				m.pinyin = [...m.pinyin, ''];
+				m.pinyin = [...m.pinyin, tokenPinyin(this.sourceTokens[i])];
 			} else {
 				// mapping already has a source — create new mapping for this token
 				const newM = this.createMapping();
 				newM.sourceIndices = [i];
-				newM.pinyin = [''];
+				newM.pinyin = [tokenPinyin(this.sourceTokens[i])];
 				this.mappings = [...this.mappings, newM];
 				this.activeMappingId = newM.id;
 			}
@@ -99,7 +106,7 @@ class LinkContext {
 			// create new mapping
 			const m = this.createMapping();
 			m.sourceIndices = [i];
-			m.pinyin = [''];
+			m.pinyin = [tokenPinyin(this.sourceTokens[i])];
 			this.mappings = [...this.mappings, m];
 			this.activeMappingId = m.id;
 		}
