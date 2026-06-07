@@ -40,8 +40,21 @@
 			e.preventDefault();
 			link.deleteById(focusedId);
 		}
+
+		function handleDocumentClick(e: MouseEvent) {
+			const target = e.target as HTMLElement;
+			if (target.closest('[data-mapping-id]')) return;
+			if (target.closest('[aria-label="Source tokens"]')) return;
+			if (target.closest('[aria-label="Target tokens"]')) return;
+			link.deselect();
+		}
+
 		document.addEventListener('keydown', handleDeleteKey);
-		return () => document.removeEventListener('keydown', handleDeleteKey);
+		document.addEventListener('click', handleDocumentClick);
+		return () => {
+			document.removeEventListener('keydown', handleDeleteKey);
+			document.removeEventListener('click', handleDocumentClick);
+		};
 	});
 
 	let listEl: HTMLOListElement;
