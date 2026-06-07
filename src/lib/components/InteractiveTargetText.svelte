@@ -63,6 +63,7 @@
 	{#each tokens as token, i (token)}
 		<span
 			data-type={token.type}
+			data-token-index={isLinkMode && token.type !== 'whitespace' ? i : undefined}
 			role={isLinkMode && token.type !== 'whitespace' ? 'option' : undefined}
 			aria-selected={isLinkMode && token.type !== 'whitespace' ? link.getTargetTokenState(i).kind === 'active' : undefined}
 			tabindex={isLinkMode && token.type !== 'whitespace' ? -1 : undefined}

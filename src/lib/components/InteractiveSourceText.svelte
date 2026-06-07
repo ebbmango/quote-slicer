@@ -86,6 +86,7 @@
 			{@const interactive = isLinkMode && token.type !== 'whitespace' && token.type !== 'punctuation'}
 			<span
 				data-type={token.type}
+				data-token-index={interactive ? i : undefined}
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}

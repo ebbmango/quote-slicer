@@ -26,6 +26,46 @@
 	});
 
 	let tokenContainer: HTMLDivElement;
+	let lastSourceEl: HTMLElement | null = $state(null);
+	let lastTargetEl: HTMLElement | null = $state(null);
+
+	function handleFocusIn(e: FocusEvent) {
+		const el = e.target as HTMLElement;
+		if (el.getAttribute('role') !== 'option') return;
+		if (el.closest('[aria-label="Source tokens"]')) lastSourceEl = el;
+		else if (el.closest('[aria-label="Target tokens"]')) lastTargetEl = el;
+	}
+
+	function getZone(el: HTMLElement): 'source' | 'target' | null {
+		if (el.closest('[aria-label="Source tokens"]')) return 'source';
+		if (el.closest('[aria-label="Target tokens"]')) return 'target';
+		return null;
+	}
+
+	function findDefaultToken(zone: 'source' | 'target'): HTMLElement | null {
+		const tokens = zone === 'source' ? link.sourceTokens : link.targetTokens;
+		const getState = zone === 'source'
+			? (i: number) => link.getSourceTokenState(i)
+			: (i: number) => link.getTargetTokenState(i);
+		const label = zone === 'source' ? 'Source tokens' : 'Target tokens';
+		const isWord = (t: { type: string }) => t.type !== 'whitespace' && t.type !== 'punctuation';
+
+		let idx = tokens.findIndex((t, i) => isWord(t) && getState(i).kind === 'unmapped');
+		if (idx === -1) idx = tokens.findIndex(isWord);
+		if (idx === -1) return null;
+
+		return tokenContainer.querySelector(
+			`[aria-label="${label}"] [data-token-index="${idx}"]`
+		) as HTMLElement | null;
+	}
+
+	function jumpTo(zone: 'source' | 'target'): void {
+		const remembered = zone === 'source' ? lastSourceEl : lastTargetEl;
+		const el = (remembered && tokenContainer.contains(remembered))
+			? remembered
+			: findDefaultToken(zone);
+		el?.focus();
+	}
 
 	function findVisualNeighbor(
 		currentEl: HTMLElement,
@@ -59,10 +99,30 @@
 		});
 	}
 
+	// ─── Link mode keyboard scheme ───────────────────────────────────────────
+	// Alt+↑ / Alt+↓        Navigate focus to token on visual row above/below.
+	//                       At source bottom → jumps to target (remembered pos).
+	//                       At target top    → jumps to source (remembered pos).
+	// Alt+← / Alt+→        Move focus to prev/next token in DOM order.
+	// Alt+Enter            Toggle focus between source and target (remembered
+	//                       position, or first unmapped word, or first word).
+	// Alt+Space            Select token / create new mapping.
+	// Alt+Shift+Space      Force-add source token to current mapping.
+	// Escape               Deselect active mapping.
+	// Tab / Shift+Tab      Move focus between larger UI elements (skips tokens).
+	// ─────────────────────────────────────────────────────────────────────────
 	function handleArrowNav(e: KeyboardEvent) {
 		if (!e.altKey) return;
-		if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+		if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) return;
 		const target = e.target as HTMLElement;
+
+		// Alt+Enter: toggle between source and target (remembered position)
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			const zone = getZone(target);
+			jumpTo(zone === 'source' ? 'target' : 'source');
+			return;
+		}
 
 		const all = Array.from(tokenContainer.querySelectorAll('[role="option"]')) as HTMLElement[];
 
@@ -83,6 +143,12 @@
 
 		if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
 			neighbor = findVisualNeighbor(target, all, e.key === 'ArrowDown' ? 'down' : 'up');
+			if (!neighbor) {
+				const zone = getZone(target);
+				if (e.key === 'ArrowDown' && zone === 'source') jumpTo('target');
+				else if (e.key === 'ArrowUp' && zone === 'target') jumpTo('source');
+				return;
+			}
 		} else if (e.key === 'ArrowLeft') {
 			neighbor = currentIndex > 0 ? all[currentIndex - 1] : null;
 		} else if (e.key === 'ArrowRight') {
@@ -147,6 +213,7 @@
 		class="flex flex-col gap-3 py-4 px-1 rounded-xl focus:bg-blue-50 duration-200 outline-0"
 		tabindex="0"
 		onkeydown={handleArrowNav}
+		onfocusin={handleFocusIn}
 	>
 		<InteractiveSourceText tokens={sourceTokens} />
 		<InteractiveTargetText tokens={targetTokens} />
