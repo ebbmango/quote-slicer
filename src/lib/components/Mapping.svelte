@@ -66,6 +66,12 @@
 	onclick={() =>
 		link.activeMappingId === mapping.id ? link.deselect() : (link.activeMappingId = mapping.id)}
 	onkeydown={(e) => {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			link.deselect();
+			(e.currentTarget as HTMLElement).blur();
+			return;
+		}
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			if (link.activeMappingId === mapping.id) {
