@@ -33,11 +33,12 @@
 	onMount(() => {
 		function handleDeleteKey(e: KeyboardEvent) {
 			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-			if (link.activeMappingId === null) return;
 			const active = document.activeElement;
 			if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+			const focusedId = (active?.closest('li[data-mapping-id]') as HTMLElement)?.dataset.mappingId;
+			if (!focusedId) return;
 			e.preventDefault();
-			link.deleteActive();
+			link.deleteById(focusedId);
 		}
 		document.addEventListener('keydown', handleDeleteKey);
 		return () => document.removeEventListener('keydown', handleDeleteKey);

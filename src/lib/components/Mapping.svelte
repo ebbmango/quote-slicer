@@ -51,6 +51,7 @@
 	role="option"
 	aria-selected={isActive}
 	tabindex="0"
+	data-mapping-id={mapping.id}
 	class="group flex w-full shrink-0 flex-col overflow-hidden rounded-md duration-200 select-none focus:outline-2 focus:outline-solid"
 	style="outline-color: color-mix(in srgb, {isActive
 		? color.tagBgActive
@@ -146,11 +147,11 @@
 						>
 						<button
 							tabindex={-1}
-							class="absolute right-1.5 flex size-5 cursor-pointer items-center justify-center opacity-0 outline-0 transition-opacity group-hover:opacity-60 hocus:opacity-100"
+							class="absolute right-1.5 flex size-5 cursor-pointer items-center justify-center opacity-0 outline-0 transition-opacity group-hocus:opacity-60 hocus:opacity-100"
 							style="color: {color.tagBgActive};"
 							aria-label="Delete mapping"
 							onclick={(e) => {
-								e.stopPropagation();
+							e.stopPropagation();
 								link.deleteById(mapping.id);
 							}}
 						>
