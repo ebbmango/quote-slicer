@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getLinkContext, type Mapping } from '$lib/context/link.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
+	import icons from '$lib/assets/icons.json';
 
 	let { mapping, index }: { mapping: Mapping; index: number } = $props();
 
@@ -8,6 +9,8 @@
 	const color = $derived(MAPPING_COLORS[index % MAPPING_COLORS.length]);
 	const isActive = $derived(link.activeMappingId === mapping.id);
 	let isFocused = $state(false);
+	let isMappingHovered = $state(false);
+	let isButtonHovered = $state(false);
 	const rowCount = $derived(Math.max(mapping.sourceIndices.length, 1));
 	const label = $derived(String(index + 1).padStart(2, '0'));
 
@@ -52,14 +55,16 @@
 	aria-selected={isActive}
 	tabindex="0"
 	data-mapping-id={mapping.id}
-	class="group flex w-full shrink-0 flex-col overflow-hidden rounded-md duration-200 select-none focus:outline-2 focus:outline-solid"
+	class="group flex w-full shrink-0 flex-col rounded-md outline-0 duration-200 select-none"
 	style="outline-color: color-mix(in srgb, {isActive
 		? color.tagBgActive
-		: color.tagBgInactive} {isActive? "50%": "75%"}, transparent);"
+		: color.tagBgInactive} {isActive ? '50%' : '75%'}, transparent);"
 	onfocusin={() => (isFocused = true)}
 	onfocusout={(e) => {
 		if (!e.currentTarget.contains(e.relatedTarget as Node)) isFocused = false;
 	}}
+	onmouseenter={() => (isMappingHovered = true)}
+	onmouseleave={() => (isMappingHovered = false)}
 	onclick={() =>
 		link.activeMappingId === mapping.id ? link.deselect() : (link.activeMappingId = mapping.id)}
 	onkeydown={(e) => {
@@ -75,7 +80,7 @@
 >
 	<!-- Top section: hanzi | pinyin | badge -->
 	<div
-		class="relative grid w-full transition-colors duration-200"
+		class="relative grid w-full rounded-t-md transition-colors duration-200"
 		style="grid-template-columns: 1fr 1fr 1fr; background: {isActive ? color.base : 'white'};"
 	>
 		{#if mapping.sourceIndices.length === 0}
@@ -136,21 +141,34 @@
 							>{label}</span
 						>
 						<button
+							onmouseover={() => (isButtonHovered = true)}
+							onmouseleave={() => (isButtonHovered = false)}
 							tabindex={-1}
-							class="absolute right-1.5 flex size-5 cursor-pointer items-center justify-center opacity-0 outline-0 transition-opacity group-hocus:opacity-60 hocus:opacity-100"
-							style="color: {color.tagBgActive};"
+							class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100"
+							class:opacity-100={isFocused || isButtonHovered}
+							style="color: {isActive ? color.tagBgActive : color.tagBgInactive};"
 							aria-label="Delete mapping"
 							onclick={(e) => {
-							e.stopPropagation();
+								e.stopPropagation();
 								link.deleteById(mapping.id);
 							}}
 						>
-							<svg viewBox="0 0 16 16" fill="none" class="size-3.5">
+							<svg viewBox={icons['delete-left'].viewBox} class="size-7">
 								<path
-									d="M3 3L13 13M13 3L3 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
+									class="duration-100"
+									d={icons['delete-left'].classic.solid[0]}
+									fill={isActive
+										? isButtonHovered
+											? color.tagBgActive
+											: color.botActive
+										: isButtonHovered
+											? color.tagBgInactive
+											: color.botInactive}
+								/>
+								<path
+									class="duration-100"
+									d={icons['delete-left'].classic.solid[1]}
+									fill={isActive ? (isButtonHovered ? 'white' : color.tagBgActive) : 'white'}
 								/>
 							</svg>
 						</button>
@@ -162,7 +180,7 @@
 
 	<!-- Bottom bar: translation -->
 	<div
-		class="flex h-6 w-full items-center justify-center overflow-hidden transition-colors duration-200"
+		class="flex h-6 w-full items-center justify-center overflow-hidden rounded-b-md transition-colors duration-200"
 		style="background: {isActive ? color.botActive : color.botInactive};"
 	>
 		{#if computed_targetText}
