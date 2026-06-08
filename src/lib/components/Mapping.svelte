@@ -97,12 +97,11 @@
 	data-mapping-id={mapping.id}
 	class="group flex w-full shrink-0 flex-col rounded-md outline-0 duration-200 select-none"
 	style="outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
-	onfocusin={() => (isFocused = true)}
-	onfocusout={(e) => {
-		if (!e.currentTarget.contains(e.relatedTarget as Node)) isFocused = false;
-	}}
+	onfocus={() => (isFocused = true)}
+	onblur={() => (isFocused = false)}
 	onclick={toggleActive}
 	onkeydown={(e) => {
+		if (e.target instanceof HTMLInputElement) return;
 		if (e.key === 'Escape') {
 			e.preventDefault();
 			link.deselect();
