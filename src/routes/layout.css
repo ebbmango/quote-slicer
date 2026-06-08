@@ -67,3 +67,9 @@
 		@slot;
 	}
 }
+
+@custom-variant tablet {
+	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
+		@slot;
+	}
+}

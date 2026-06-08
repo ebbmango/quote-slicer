@@ -111,7 +111,7 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<ol role="listbox" aria-label="Mappings" class="flex h-full w-full flex-col gap-3 overflow-y-auto scroll-smooth p-6" bind:this={listEl} onkeydown={handleListTab}>
+		<ol role="listbox" aria-label="Mappings" class="grid h-full w-full gap-3 overflow-y-auto scroll-smooth p-6 [grid-auto-rows:calc(4.25rem+1.5rem)] [grid-template-columns:1fr] tablet:[grid-template-columns:repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--spacing)*1.5)),100%),1fr))]" bind:this={listEl} onkeydown={handleListTab}>
 			{#each link.sortedMappings as mapping, i (mapping.id)}
 				<Mapping {mapping} index={i} />
 			{/each}
@@ -259,7 +259,7 @@
 			grid-column-gap var(--slide) ease,
 			grid-row-gap var(--slide) ease;
 
-		/* default: main only */
+		/* default (cellphone): main only */
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr;
 		grid-template-areas: 'content';
@@ -304,7 +304,7 @@
 		transform: translate(0);
 	}
 
-	/* tall portrait: main + one sidebar stacked */
+	/* tall portrait (tablet): main + one sidebar stacked */
 	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
 		.layout {
 			grid-template-columns: 1fr;

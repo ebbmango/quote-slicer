@@ -14,8 +14,7 @@
 	const rowCount = $derived(Math.max(mapping.sourceIndices.length, 1));
 	const label = $derived(String(index + 1).padStart(2, '0'));
 
-	// h-17 = 4.25rem. At 16px root this is 68px. Used for absolute separator placement.
-	const ROW_H = 68;
+	const r = $derived(Math.floor(rowCount / 2) + 1);
 	const EMPTY_ROW = [null];
 
 	// Collapses every active/inactive color pair into one lookup so the markup
@@ -95,8 +94,8 @@
 	aria-selected={isActive}
 	tabindex="0"
 	data-mapping-id={mapping.id}
-	class="group flex w-full shrink-0 flex-col rounded-md outline-0 duration-200 select-none"
-	style="outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
+	class="group flex flex-col rounded-md outline-0 duration-200 select-none"
+	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
 	onfocus={() => (isFocused = true)}
 	onblur={() => (isFocused = false)}
 	onclick={toggleActive}
@@ -116,20 +115,20 @@
 >
 	<!-- Top section: hanzi | pinyin | badge -->
 	<div
-		class="relative grid w-full rounded-t-md transition-colors duration-200"
-		style="grid-template-columns: 1fr 1fr 1fr; background: {theme.cardBg};"
+		class="relative grid flex-1 w-full rounded-t-md transition-colors duration-200"
+		style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat({rowCount}, 1fr); background: {theme.cardBg};"
 	>
 		{#each isEmpty ? EMPTY_ROW : mapping.sourceIndices as srcIdx, i (srcIdx ?? 'empty')}
 			{#if i > 0}
 				<!-- divisory line -->
 				<div
 					class="pointer-events-none absolute left-0 w-full transition-[background-color,opacity] duration-200"
-					style="top: {i * ROW_H}px; height: 1px; opacity: {theme.separatorOpacity}; background: {theme.separator}; z-index: 0;"
+					style="top: calc({(i / rowCount) * 100}%); height: 1px; opacity: {theme.separatorOpacity}; background: {theme.separator}; z-index: 0;"
 				></div>
 			{/if}
 
 			<!-- Hanzi cell -->
-			<div class="flex h-17 items-center justify-center">
+			<div class="flex items-center justify-center">
 				<span
 					class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
 					style="color: {theme.hanziText}; opacity: {hanziOpacity};"
@@ -138,7 +137,7 @@
 			</div>
 
 			<!-- Pinyin cell -->
-			<div class="flex h-17 items-center justify-center">
+			<div class="flex items-center justify-center">
 				<input
 					disabled={isEmpty}
 					tabindex={isActive && !isEmpty ? 0 : -1}
