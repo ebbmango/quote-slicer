@@ -52,6 +52,7 @@
 	--font-ss4: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-wenkai: Wenkai, ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-noto: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
+	--mapping-gap: calc(var(--spacing) * 3);
 }
 
 @custom-variant hocus (&:is(:hover, :focus-visible));

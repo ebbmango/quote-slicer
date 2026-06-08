@@ -111,7 +111,7 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<ol role="listbox" aria-label="Mappings" class="grid h-full w-full gap-3 overflow-y-auto scroll-smooth p-6 [grid-auto-rows:calc(4.25rem+1.5rem)] [grid-template-columns:1fr] tablet:[grid-template-columns:repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--spacing)*1.5)),100%),1fr))]" bind:this={listEl} onkeydown={handleListTab}>
+		<ol role="listbox" aria-label="Mappings" class="grid h-full w-full overflow-y-auto scroll-smooth p-6 [gap:var(--mapping-gap)] [grid-auto-rows:calc(4.25rem+1.5rem)] [grid-template-columns:1fr] tablet:[grid-template-columns:repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]" bind:this={listEl} onkeydown={handleListTab}>
 			{#each link.sortedMappings as mapping, i (mapping.id)}
 				<Mapping {mapping} index={i} />
 			{/each}
