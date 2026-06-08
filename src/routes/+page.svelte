@@ -36,9 +36,12 @@
 			const active = document.activeElement;
 			if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
 			const focusedId = (active?.closest('li[data-mapping-id]') as HTMLElement)?.dataset.mappingId;
-			if (!focusedId) return;
+			// Fresh/active mappings aren't focused yet — fall back to the active one so
+			// Backspace works right after creating a mapping, not just while tabbing the list.
+			const id = focusedId ?? link.activeMappingId;
+			if (!id) return;
 			e.preventDefault();
-			link.deleteById(focusedId);
+			link.deleteById(id);
 		}
 
 		function handleDocumentClick(e: MouseEvent) {
