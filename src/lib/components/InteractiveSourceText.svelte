@@ -1,17 +1,23 @@
 <script lang="ts">
+	import { tick, onMount } from 'svelte';
 	import type { RawSourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
 	import { groupByLine } from '$lib/line';
 	import { longpress } from '$lib/actions/longpress';
 
-	let { tokens, onSplit, onMerge }: {
+	let {
+		tokens,
+		onSplit,
+		onMerge
+	}: {
 		tokens: RawSourceToken[];
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
 	} = $props();
 
 	let container: HTMLDivElement;
+	let lineContainer: HTMLDivElement;
 	let mode = getModeContext();
 	let link = getLinkContext();
 	let isLinkMode = $derived(mode.current === 'link');
@@ -19,6 +25,29 @@
 	let focusedIndex: number | null = $state(null);
 
 	let lineGroups = $derived(groupByLine(tokens));
+
+	let Flip: typeof import('gsap/Flip')['Flip'] | null = $state(null);
+
+	onMount(async () => {
+		const { Flip: F } = await import('gsap/Flip');
+		Flip = F;
+	});
+
+	async function handleSplit(globalIndex: number) {
+		if (!Flip || !lineContainer) { onSplit(globalIndex); return; }
+		const state = Flip.getState(lineContainer.querySelectorAll('[data-flip-id]'));
+		onSplit(globalIndex);
+		await tick();
+		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true });
+	}
+
+	async function handleMerge(lineN: number) {
+		if (!Flip || !lineContainer) { onMerge(lineN); return; }
+		const state = Flip.getState(lineContainer.querySelectorAll('[data-flip-id]'));
+		onMerge(lineN);
+		await tick();
+		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true });
+	}
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -79,30 +108,33 @@
 
 <div bind:this={container} class="max-h-[40vh] w-full overflow-y-auto px-2">
 	{#if isLineMode}
-		<div class="flex w-full flex-col items-center bg-transparent font-wenkai text-3xl font-light">
-			{#each lineGroups as { lineNum, group }, lineIndex (lineNum)}
-				<div class="flex flex-wrap justify-center w-full">
-					{#each group as { token, globalIndex }, i (globalIndex)}
-						<span class="opacity-70" data-type={token.type}>{token.text}</span>
-						{#if i < group.length - 1}
-							<button
-								class="split-zone"
-								onclick={(e) => { e.stopPropagation(); onSplit(globalIndex); }}
-								aria-label="Split line here"
-							>
-								<span class="split-indicator"></span>
-							</button>
-						{/if}
-					{/each}
-				</div>
-				{#if lineIndex < lineGroups.length - 1}
-					<button
-						class="merge-zone"
-						onclick={(e) => { e.stopPropagation(); onMerge(lineNum); }}
-						aria-label="Merge with next line"
-					>
-						<span class="merge-indicator"></span>
-					</button>
+		<div bind:this={lineContainer} class="flex w-full flex-wrap justify-center bg-transparent font-wenkai text-3xl font-light">
+			{#each tokens as token, i (i)}
+				<span data-flip-id="src-{i}" class="opacity-70" data-type={token.type}>{token.text}</span>
+				{#if i < tokens.length - 1}
+					{#if tokens[i + 1].line !== token.line}
+						<button
+							class="merge-zone"
+							onclick={(e) => {
+								e.stopPropagation();
+								handleMerge(token.line);
+							}}
+							aria-label="Merge with next line"
+						>
+							<span class="merge-indicator"></span>
+						</button>
+					{:else}
+						<button
+							class="split-zone"
+							onclick={(e) => {
+								e.stopPropagation();
+								handleSplit(i);
+							}}
+							aria-label="Split line here"
+						>
+							<span class="split-indicator"></span>
+						</button>
+					{/if}
 				{/if}
 			{/each}
 		</div>
@@ -129,20 +161,23 @@
 						role="option"
 						aria-selected={link.getSourceTokenState(i).kind === 'active'}
 						tabindex="-1"
-						class={tokenOpacity(i) + ' cursor-pointer outline-none duration-180'}
+						class={tokenOpacity(i) + ' cursor-pointer duration-180 outline-none'}
 						style={tokenStyle(i)}
 						onclick={(e) => handleClick(e, i)}
 						onkeydown={(e) => handleKeydown(e, i)}
-						onfocus={(e) => { if (e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
-						onblur={() => { focusedIndex = null; }}
+						onfocus={(e) => {
+							if (e.currentTarget.matches(':focus-visible')) focusedIndex = i;
+						}}
+						onblur={() => {
+							focusedIndex = null;
+						}}
 						use:longpress={{ duration: 500, onlongpress: () => link.clickSource(i, true) }}
-					>{token.text}</span>
+						>{token.text}</span
+					>
 				{:else}
-					<span
-						data-type={token.type}
-						class={tokenOpacity(i)}
-						style={tokenStyle(i)}
-					>{token.text}</span>
+					<span data-type={token.type} class={tokenOpacity(i)} style={tokenStyle(i)}
+						>{token.text}</span
+					>
 				{/if}
 			{/each}
 		</div>
