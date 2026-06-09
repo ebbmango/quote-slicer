@@ -4,7 +4,7 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate, SOURCE_INPUT_RE } from '$lib/tokenize';
-	import type { RawSourceToken, RawTargetToken } from '$lib/tokenize';
+	import type { SourceToken, TargetToken } from '$lib/tokenize';
 	import { splitAfterToken, mergeLines } from '$lib/line';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
@@ -24,8 +24,8 @@
 	// Text-keyed caches: if text matches, use the cached (possibly split/merged) token array;
 	// otherwise fall through to fresh tokenization. This makes the final token arrays purely
 	// $derived while still allowing split/merge mutations to persist within an editing session.
-	let sourceTokensCache = $state<{ text: string; tokens: RawSourceToken[] } | null>(null);
-	let targetTokensCache = $state<{ text: string; tokens: RawTargetToken[] } | null>(null);
+	let sourceTokensCache = $state<{ text: string; tokens: SourceToken[] } | null>(null);
+	let targetTokensCache = $state<{ text: string; tokens: TargetToken[] } | null>(null);
 
 	let sourceTokens = $derived(
 		sourceTokensCache !== null && sourceTokensCache.text === sourceText

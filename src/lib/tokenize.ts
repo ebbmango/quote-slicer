@@ -6,13 +6,13 @@
 // Allowlist for source text input: Han characters, CJK punctuation blocks, and newlines.
 export const SOURCE_INPUT_RE = /[^\p{Script=Han}　-〿＀-￯\n]/gu;
 
-export type RawSourceToken = {
+export type SourceToken = {
 	text: string;
 	line: number;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
 };
 
-export type RawTargetToken = {
+export type TargetToken = {
 	text: string;
 	line: number;
 	type: 'text' | 'hanzi' | 'punctuation' | 'whitespace';
@@ -24,7 +24,7 @@ export type RawTargetToken = {
  * Tokenizes Chinese source text: every character is its own token.
  * Newlines delimit lines; they are not emitted as tokens.
  */
-export function tokenizeSource(text: string): RawSourceToken[] {
+export function tokenizeSource(text: string): SourceToken[] {
 	return text.split('\n').flatMap((lineText, line) =>
 		[...lineText].map((char) => {
 			if (/\p{Script=Han}/u.test(char)) return { text: char, line, type: 'character' as const };
@@ -51,10 +51,10 @@ const SEPARATE_RE = /\p{Script=Han}|[A-Za-z]+(?:'[A-Za-z]+)*|[^\S\n]+|[^\p{L}\p{
  * `There's nothing "simple" in programming.`
  * → [There's][ ][nothing][ ]["][simple]["][ ][in][ ][programming][.]
  */
-export function tokenizeTargetSeparate(text: string): RawTargetToken[] {
+export function tokenizeTargetSeparate(text: string): TargetToken[] {
 	const lines = text.split('\n');
 	return lines.flatMap((lineText, line) => {
-		const tokens: RawTargetToken[] = [];
+		const tokens: TargetToken[] = [];
 		for (const { 0: t } of lineText.matchAll(SEPARATE_RE)) {
 			if (/^\s+$/.test(t)) {
 				tokens.push({ text: t, line, type: 'whitespace' });
@@ -89,10 +89,10 @@ const COMBINED_RE =
  * `There's nothing "simple" in programming.`
  * → [There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]
  */
-export function tokenizeTargetCombined(text: string): RawTargetToken[] {
+export function tokenizeTargetCombined(text: string): TargetToken[] {
 	const lines = text.split('\n');
 	return lines.flatMap((lineText, line) => {
-		const tokens: RawTargetToken[] = [];
+		const tokens: TargetToken[] = [];
 		for (const { 0: t } of lineText.matchAll(COMBINED_RE)) {
 			if (/^\s+$/.test(t)) {
 				tokens.push({ text: t, line, type: 'whitespace' });

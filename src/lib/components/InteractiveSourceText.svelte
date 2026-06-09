@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick, onMount } from 'svelte';
-	import type { RawSourceToken } from '$lib/tokenize';
+	import type { SourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
 	import { groupByLine } from '$lib/line';
@@ -11,7 +11,7 @@
 		onSplit,
 		onMerge
 	}: {
-		tokens: RawSourceToken[];
+		tokens: SourceToken[];
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
 	} = $props();
