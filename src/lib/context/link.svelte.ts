@@ -34,11 +34,19 @@ class LinkContext {
 	private sourceTokens: SourceToken[] = $state([]);
 	private targetTokens: TargetToken[] = $state([]);
 
+	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
+	private sourceIdToIndex: Map<number, number> = $derived(
+		new Map(this.sourceTokens.map((t, i) => [t.id, i]))
+	);
+	private targetIdToIndex: Map<number, number> = $derived(
+		new Map(this.targetTokens.map((t, i) => [t.id, i]))
+	);
+
 	private sortedMappings: Mapping[] = $derived(
 		[...this.mappings].sort((a, b) => {
-			const aMin = a.sourceIndices.length ? Math.min(...a.sourceIndices) : Infinity;
-			const bMin = b.sourceIndices.length ? Math.min(...b.sourceIndices) : Infinity;
-			return aMin - bMin;
+			const pos = (ids: number[], map: Map<number, number>) =>
+				ids.length ? Math.min(...ids.map((id) => map.get(id) ?? Infinity)) : Infinity;
+			return pos(a.sourceTokenIds, this.sourceIdToIndex) - pos(b.sourceTokenIds, this.sourceIdToIndex);
 		})
 	);
 
@@ -47,11 +55,25 @@ class LinkContext {
 	);
 
 	private sourceMappingIndex: Map<number, MappingId> = $derived(
-		new Map(this.mappings.flatMap((m) => m.sourceIndices.map((i) => [i, m.id])))
+		new Map(
+			this.mappings.flatMap((m) =>
+				m.sourceTokenIds.flatMap((id) => {
+					const idx = this.sourceIdToIndex.get(id);
+					return idx !== undefined ? [[idx, m.id] as [number, MappingId]] : [];
+				})
+			)
+		)
 	);
 
 	private targetMappingIndex: Map<number, MappingId> = $derived(
-		new Map(this.mappings.flatMap((m) => m.targetIndices.map((i) => [i, m.id])))
+		new Map(
+			this.mappings.flatMap((m) =>
+				m.targetTokenIds.flatMap((id) => {
+					const idx = this.targetIdToIndex.get(id);
+					return idx !== undefined ? [[idx, m.id] as [number, MappingId]] : [];
+				})
+			)
+		)
 	);
 
 	private get activeMapping(): Mapping | undefined {
@@ -62,34 +84,36 @@ class LinkContext {
 		return {
 			id: crypto.randomUUID(),
 			colorIndex: this.nextColorIndex++,
-			sourceIndices: [],
-			targetIndices: [],
+			sourceTokenIds: [],
+			targetTokenIds: [],
 			pinyin: [],
 		};
 	}
 
 	private pruneActive(): void {
 		const m = this.activeMapping;
-		if (m && m.sourceIndices.length + m.targetIndices.length === 0) {
+		if (m && m.sourceTokenIds.length + m.targetTokenIds.length === 0) {
 			this.mappings = this.mappings.filter((x) => x.id !== m.id);
 			this.activeMappingId = null;
 		}
 	}
 
-	private buildTargetText(m: Mapping): string {
-		return buildTargetText(m.targetIndices, this.targetTokens);
-	}
-
 	private buildMappingView(m: Mapping): MappingView {
+		const resolvedTargetIndices = m.targetTokenIds
+			.map((id) => this.targetIdToIndex.get(id))
+			.filter((i): i is number => i !== undefined);
 		return {
 			id: m.id,
 			colorIndex: m.colorIndex,
-			sourceEntries: m.sourceIndices.map((idx, i) => ({
-				tokenIndex: idx,
-				text: this.sourceTokens[idx]?.text ?? '',
-				pinyin: m.pinyin[i] ?? '',
-			})),
-			targetText: this.buildTargetText(m),
+			sourceEntries: m.sourceTokenIds.map((tokenId, i) => {
+				const idx = this.sourceIdToIndex.get(tokenId) ?? -1;
+				return {
+					tokenIndex: idx,
+					text: this.sourceTokens[idx]?.text ?? '',
+					pinyin: m.pinyin[i] ?? '',
+				};
+			}),
+			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens),
 		};
 	}
 
@@ -132,9 +156,10 @@ class LinkContext {
 			if (claimed === this.activeMappingId) {
 				// remove from active mapping (shift irrelevant here)
 				const m = this.activeMapping!;
-				const pos = m.sourceIndices.indexOf(i);
+				const tokenId = this.sourceTokens[i].id;
+				const pos = m.sourceTokenIds.indexOf(tokenId);
 				m.pinyin = m.pinyin.filter((_, j) => j !== pos);
-				m.sourceIndices = m.sourceIndices.filter((x) => x !== i);
+				m.sourceTokenIds = m.sourceTokenIds.filter((id) => id !== tokenId);
 				this.pruneActive();
 			} else {
 				// switch to that mapping
@@ -142,14 +167,16 @@ class LinkContext {
 			}
 		} else if (this.activeMappingId !== null) {
 			const m = this.activeMapping!;
-			if (shift || m.sourceIndices.length === 0) {
+			if (shift || m.sourceTokenIds.length === 0) {
 				// shift = force-add; no sources yet = first source slot, add freely
-				m.sourceIndices = [...m.sourceIndices, i];
+				const tokenId = this.sourceTokens[i].id;
+				m.sourceTokenIds = [...m.sourceTokenIds, tokenId];
 				m.pinyin = [...m.pinyin, tokenPinyin(this.sourceTokens[i])];
 			} else {
 				// mapping already has a source — create new mapping for this token
 				const newM = this.createMapping();
-				newM.sourceIndices = [i];
+				const tokenId = this.sourceTokens[i].id;
+				newM.sourceTokenIds = [tokenId];
 				newM.pinyin = [tokenPinyin(this.sourceTokens[i])];
 				this.mappings = [...this.mappings, newM];
 				this.activeMappingId = newM.id;
@@ -157,7 +184,8 @@ class LinkContext {
 		} else {
 			// create new mapping
 			const m = this.createMapping();
-			m.sourceIndices = [i];
+			const tokenId = this.sourceTokens[i].id;
+			m.sourceTokenIds = [tokenId];
 			m.pinyin = [tokenPinyin(this.sourceTokens[i])];
 			this.mappings = [...this.mappings, m];
 			this.activeMappingId = m.id;
@@ -171,7 +199,8 @@ class LinkContext {
 			if (claimed === this.activeMappingId) {
 				// remove from active mapping
 				const m = this.activeMapping!;
-				m.targetIndices = m.targetIndices.filter((x) => x !== i);
+				const tokenId = this.targetTokens[i].id;
+				m.targetTokenIds = m.targetTokenIds.filter((id) => id !== tokenId);
 				this.pruneActive();
 			} else {
 				// switch to that mapping
@@ -179,11 +208,13 @@ class LinkContext {
 			}
 		} else if (this.activeMappingId !== null) {
 			// add to active mapping
-			this.activeMapping!.targetIndices = [...this.activeMapping!.targetIndices, i];
+			const tokenId = this.targetTokens[i].id;
+			this.activeMapping!.targetTokenIds = [...this.activeMapping!.targetTokenIds, tokenId];
 		} else {
 			// create new mapping
 			const m = this.createMapping();
-			m.targetIndices = [i];
+			const tokenId = this.targetTokens[i].id;
+			m.targetTokenIds = [tokenId];
 			this.mappings = [...this.mappings, m];
 			this.activeMappingId = m.id;
 		}

@@ -1,18 +1,15 @@
-/**
- * Raw tokenizer output types — lightweight intermediates before alignment
- * and transliteration are added to produce the full SourceToken/TargetToken.
- */
-
 // Allowlist for source text input: Han characters, CJK punctuation blocks, and newlines.
 export const SOURCE_INPUT_RE = /[^\p{Script=Han}　-〿＀-￯\n]/gu;
 
 export type SourceToken = {
+	id: number; // stable across split/merge; assigned once at tokenization as array position
 	text: string;
 	line: number;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
 };
 
 export type TargetToken = {
+	id: number; // stable across split/merge; assigned once at tokenization as array position
 	text: string;
 	line: number;
 	type: 'text' | 'hanzi' | 'punctuation' | 'whitespace';
@@ -32,7 +29,7 @@ export function tokenizeSource(text: string): SourceToken[] {
 			if (/[\p{P}\p{S}]/u.test(char)) return { text: char, line, type: 'punctuation' as const };
 			return { text: char, line, type: 'symbol' as const };
 		})
-	);
+	).map((t, id) => ({ ...t, id }));
 }
 
 // ── Target — V1: all punctuation separate ────────────────────────────────────
@@ -54,7 +51,7 @@ const SEPARATE_RE = /\p{Script=Han}|[A-Za-z]+(?:'[A-Za-z]+)*|[^\S\n]+|[^\p{L}\p{
 export function tokenizeTargetSeparate(text: string): TargetToken[] {
 	const lines = text.split('\n');
 	return lines.flatMap((lineText, line) => {
-		const tokens: TargetToken[] = [];
+		const tokens: Omit<TargetToken, 'id'>[] = [];
 		for (const { 0: t } of lineText.matchAll(SEPARATE_RE)) {
 			if (/^\s+$/.test(t)) {
 				tokens.push({ text: t, line, type: 'whitespace' });
@@ -69,7 +66,7 @@ export function tokenizeTargetSeparate(text: string): TargetToken[] {
 		// Boundary whitespace: acts as merge affordance in line mode.
 		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 		return tokens;
-	});
+	}).map((t, id) => ({ ...t, id }));
 }
 
 // ── Target — V2: punctuation attaches to adjacent words ──────────────────────
@@ -92,7 +89,7 @@ const COMBINED_RE =
 export function tokenizeTargetCombined(text: string): TargetToken[] {
 	const lines = text.split('\n');
 	return lines.flatMap((lineText, line) => {
-		const tokens: TargetToken[] = [];
+		const tokens: Omit<TargetToken, 'id'>[] = [];
 		for (const { 0: t } of lineText.matchAll(COMBINED_RE)) {
 			if (/^\s+$/.test(t)) {
 				tokens.push({ text: t, line, type: 'whitespace' });
@@ -107,5 +104,5 @@ export function tokenizeTargetCombined(text: string): TargetToken[] {
 		// Boundary whitespace: acts as merge affordance in line mode.
 		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 		return tokens;
-	});
+	}).map((t, id) => ({ ...t, id }));
 }

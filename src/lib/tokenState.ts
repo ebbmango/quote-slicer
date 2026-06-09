@@ -6,9 +6,9 @@ export type MappingId = string;
 export type Mapping = {
 	id: MappingId;
 	colorIndex: number;
-	sourceIndices: number[];
-	targetIndices: number[];
-	pinyin: string[]; // parallel to sourceIndices
+	sourceTokenIds: number[]; // token ids, stable across split/merge
+	targetTokenIds: number[]; // token ids, stable across split/merge
+	pinyin: string[]; // parallel to sourceTokenIds
 };
 
 export type TokenState =
