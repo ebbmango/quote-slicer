@@ -3,6 +3,9 @@
  * and transliteration are added to produce the full SourceToken/TargetToken.
  */
 
+// Allowlist for source text input: Han characters, CJK punctuation blocks, and newlines.
+export const SOURCE_INPUT_RE = /[^\p{Script=Han}　-〿＀-￯\n]/gu;
+
 export type RawSourceToken = {
 	text: string;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
