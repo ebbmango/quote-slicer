@@ -5,6 +5,7 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-09 | [Svelte 5 Diagnostic Session: Writable Derived State, Custom Action Events, and ARIA Roles](./26-06-09-svelte5-type-and-diagnostic-fixes.md) | `c24d212`, `29c60c1` | Text-keyed cache for writable derived tokens; longpress callback via action options (Svelte 5 custom event typing); role="grid" for 2D navigation container |
 | 2026-06-09 | [Line Editing Mode: Interactive Split and Merge](./26-06-09-line-editing-mode.md) | `abeb93e`, `22aa98b`, `d19b66e`, `314a8d0` | part/join collapsed into unified line mode; split/merge via zero-width buttons and whitespace tokens; boundary whitespace trick avoids token insertion |
 | 2026-06-09 | [Line-Break Tokenization and Rendering](./26-06-09-line-break-tokenization.md) | `9bd2677`, `845027a`, `35ba33c` | Tokenizers split on \n and stamp each token with a line index; interactive views insert flex-break divs at line boundaries; flat attribute over nested structure |
 | 2026-06-09 | [Whitespace Token Bridging in Link Mode](./26-06-09-whitespace-token-bridging.md) | `4b2d852` | Whitespace excluded from mapping; neighbor scan derives color state when flanked by same mapping on both sides |
