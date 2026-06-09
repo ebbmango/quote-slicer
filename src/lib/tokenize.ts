@@ -52,7 +52,8 @@ const SEPARATE_RE = /\p{Script=Han}|[A-Za-z]+(?:'[A-Za-z]+)*|[^\S\n]+|[^\p{L}\p{
  * → [There's][ ][nothing][ ]["][simple]["][ ][in][ ][programming][.]
  */
 export function tokenizeTargetSeparate(text: string): RawTargetToken[] {
-	return text.split('\n').flatMap((lineText, line) => {
+	const lines = text.split('\n');
+	return lines.flatMap((lineText, line) => {
 		const tokens: RawTargetToken[] = [];
 		for (const { 0: t } of lineText.matchAll(SEPARATE_RE)) {
 			if (/^\s+$/.test(t)) {
@@ -65,6 +66,8 @@ export function tokenizeTargetSeparate(text: string): RawTargetToken[] {
 				tokens.push({ text: t, line, type: 'punctuation' });
 			}
 		}
+		// Boundary whitespace: acts as merge affordance in line mode.
+		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 		return tokens;
 	});
 }
@@ -87,7 +90,8 @@ const COMBINED_RE =
  * → [There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]
  */
 export function tokenizeTargetCombined(text: string): RawTargetToken[] {
-	return text.split('\n').flatMap((lineText, line) => {
+	const lines = text.split('\n');
+	return lines.flatMap((lineText, line) => {
 		const tokens: RawTargetToken[] = [];
 		for (const { 0: t } of lineText.matchAll(COMBINED_RE)) {
 			if (/^\s+$/.test(t)) {
@@ -100,6 +104,8 @@ export function tokenizeTargetCombined(text: string): RawTargetToken[] {
 				tokens.push({ text: t, line, type: 'punctuation' });
 			}
 		}
+		// Boundary whitespace: acts as merge affordance in line mode.
+		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 		return tokens;
 	});
 }
