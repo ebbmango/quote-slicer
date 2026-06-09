@@ -5,6 +5,7 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-09 | [Line-Mode Split/Merge Animation](./26-06-09-line-mode-split-merge-animation.md) | `a3c0958`, `947dfe8`, `b357ba5` | GSAP Flip for per-component token shuffle; `withShiftAnimation` in QuoteWorkbench for sibling Y-shift; `lockEl` height-lock prevents Flip `absolute:true` from collapsing targetWrapper mid-animation |
 | 2026-06-09 | [Interactive Token Components: ARIA Semantics](./26-06-09-interactive-text-aria-semantics.md) | `dd461ab` | Keyed each blocks, listbox tabindex, and {#if interactive} split replacing ternary role/tabindex — static structure so Svelte analyser can prove semantic correctness |
 | 2026-06-09 | [LinkContext: MappingView and Interface Narrowing](./26-06-09-link-context-mapping-view.md) | `6203692` | Raw token arrays hidden behind LinkContext interface; MappingView pre-resolves display data so Mapping.svelte never touches sourceTokens or targetTokens |
 | 2026-06-09 | [Token State Derivation: Extracted Pure Module](./26-06-09-token-state-pure-module.md) | `820d3db` | Token state logic + whitespace bridging extracted from LinkContext into framework-free tokenState.ts; vitest-testable without Svelte runtime |
