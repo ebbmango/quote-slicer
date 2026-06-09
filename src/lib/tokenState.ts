@@ -1,5 +1,5 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
-import type { RawTargetToken } from '$lib/tokenize';
+import type { TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;
 
@@ -34,7 +34,7 @@ export function deriveSourceTokenState(
 // non-whitespace neighbors on both sides if they belong to the same mapping.
 function findBridgeMappingId(
 	i: number,
-	targetTokens: RawTargetToken[],
+	targetTokens: TargetToken[],
 	targetMappingIndex: Map<number, MappingId>
 ): MappingId | undefined {
 	let left: MappingId | undefined;
@@ -54,9 +54,34 @@ function findBridgeMappingId(
 	return left !== undefined && left === right ? left : undefined;
 }
 
+export function buildTargetText(targetIndices: number[], targetTokens: TargetToken[]): string {
+	if (!targetIndices.length || !targetTokens.length) return '';
+	const sorted = [...targetIndices].sort((a, b) => a - b);
+	const groups: number[][] = [[sorted[0]]];
+	for (let i = 1; i < sorted.length; i++) {
+		const group = groups[groups.length - 1];
+		const prev = group[group.length - 1];
+		const curr = sorted[i];
+		let bridgeable = curr - prev <= 5;
+		for (let k = prev + 1; bridgeable && k < curr; k++) {
+			const t = targetTokens[k];
+			bridgeable = t?.type === 'whitespace' || t?.type === 'punctuation';
+		}
+		if (bridgeable) group.push(curr);
+		else groups.push([curr]);
+	}
+	return groups
+		.map((group) => {
+			let text = '';
+			for (let i = group[0]; i <= group[group.length - 1]; i++) text += targetTokens[i]?.text ?? '';
+			return text;
+		})
+		.join(', ');
+}
+
 export function deriveTargetTokenState(
 	i: number,
-	targetTokens: RawTargetToken[],
+	targetTokens: TargetToken[],
 	targetMappingIndex: Map<number, MappingId>,
 	mappings: Mapping[],
 	activeMappingId: MappingId | null

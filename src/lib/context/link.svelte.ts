@@ -1,7 +1,8 @@
 import { getContext, setContext } from 'svelte';
 import { pinyin } from 'pinyin-pro';
-import type { RawSourceToken, RawTargetToken } from '$lib/tokenize';
+import type { SourceToken, TargetToken } from '$lib/tokenize';
 import {
+	buildTargetText,
 	deriveSourceTokenState,
 	deriveTargetTokenState,
 	type Mapping,
@@ -18,7 +19,7 @@ export type MappingView = {
 	targetText: string;
 };
 
-function tokenPinyin(token: RawSourceToken | undefined): string {
+function tokenPinyin(token: SourceToken | undefined): string {
 	if (!token || token.type !== 'character') return '';
 	const { text } = token;
 	return pinyin(text, { toneType: 'symbol', separator: ' ' });
@@ -30,8 +31,8 @@ class LinkContext {
 	activeMappingId: MappingId | null = $state(null);
 	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
-	private sourceTokens: RawSourceToken[] = $state([]);
-	private targetTokens: RawTargetToken[] = $state([]);
+	private sourceTokens: SourceToken[] = $state([]);
+	private targetTokens: TargetToken[] = $state([]);
 
 	private sortedMappings: Mapping[] = $derived(
 		[...this.mappings].sort((a, b) => {
@@ -76,30 +77,7 @@ class LinkContext {
 	}
 
 	private buildTargetText(m: Mapping): string {
-		const indices = m.targetIndices;
-		const tokens = this.targetTokens;
-		if (!indices.length || !tokens.length) return '';
-		const sorted = [...indices].sort((a, b) => a - b);
-		const groups: number[][] = [[sorted[0]]];
-		for (let i = 1; i < sorted.length; i++) {
-			const group = groups[groups.length - 1];
-			const prev = group[group.length - 1];
-			const curr = sorted[i];
-			let bridgeable = curr - prev <= 5;
-			for (let k = prev + 1; bridgeable && k < curr; k++) {
-				const t = tokens[k];
-				bridgeable = t?.type === 'whitespace' || t?.type === 'punctuation';
-			}
-			if (bridgeable) group.push(curr);
-			else groups.push([curr]);
-		}
-		return groups
-			.map((group) => {
-				let text = '';
-				for (let i = group[0]; i <= group[group.length - 1]; i++) text += tokens[i]?.text ?? '';
-				return text;
-			})
-			.join(', ');
+		return buildTargetText(m.targetIndices, this.targetTokens);
 	}
 
 	private buildMappingView(m: Mapping): MappingView {
@@ -119,11 +97,11 @@ class LinkContext {
 		return this.buildMappingView(this.mappings.find((x) => x.id === id)!);
 	}
 
-	setSourceTokens(tokens: RawSourceToken[]): void {
+	setSourceTokens(tokens: SourceToken[]): void {
 		this.sourceTokens = tokens;
 	}
 
-	setTargetTokens(tokens: RawTargetToken[]): void {
+	setTargetTokens(tokens: TargetToken[]): void {
 		this.targetTokens = tokens;
 	}
 
