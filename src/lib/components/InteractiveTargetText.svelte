@@ -61,6 +61,9 @@
 	onclick={handleContainerClick}
 >
 	{#each tokens as token, i (token)}
+		{#if i > 0 && token.line !== tokens[i - 1].line}
+			<div class="w-full"></div>
+		{/if}
 		<span
 			data-type={token.type}
 			data-token-index={isLinkMode && token.type !== 'whitespace' ? i : undefined}

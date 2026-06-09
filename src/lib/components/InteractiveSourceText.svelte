@@ -83,6 +83,9 @@
 		onclick={handleContainerClick}
 	>
 		{#each tokens as token, i (token)}
+			{#if i > 0 && token.line !== tokens[i - 1].line}
+				<div class="w-full"></div>
+			{/if}
 			{@const interactive = isLinkMode && token.type !== 'whitespace' && token.type !== 'punctuation'}
 			<span
 				data-type={token.type}
