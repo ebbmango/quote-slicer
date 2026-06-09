@@ -185,7 +185,7 @@
 			const el = e.currentTarget;
 			const start = el.selectionStart ?? 0;
 			const end = el.selectionEnd ?? 0;
-			const filtered = el.value.replace(/[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]/gu, '');
+			const filtered = el.value.replace(SOURCE_INPUT_RE, '');
 			const removed = el.value.length - filtered.length;
 			if (removed > 0) {
 				el.value = filtered;
@@ -217,15 +217,14 @@
 	>
 		<InteractiveSourceText tokens={sourceTokens} />
 		<InteractiveTargetText tokens={targetTokens} />
-		<textarea
-			id="authorship"
-			name="authorship"
-			bind:value={authorship}
-			disabled={mode.current !== 'text'} // maybe always enabled?
-			rows="1"
-			use:autosize
-			class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
-			placeholder="Source"
-		></textarea>
 	</div>
 {/if}
+<textarea
+	id="authorship"
+	name="authorship"
+	bind:value={authorship}
+	rows="1"
+	use:autosize
+	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
+	placeholder="Source"
+></textarea>
