@@ -79,14 +79,10 @@
 
 <div bind:this={container} class="max-h-[40vh] w-full overflow-y-auto px-2">
 	{#if isLineMode}
-		<div
-			class="flex w-full flex-col items-center bg-transparent font-wenkai text-3xl font-light"
-			onkeydown={handleContainerKeydown}
-			onclick={handleContainerClick}
-		>
-			{#each lineGroups as { lineNum, group }, lineIndex}
+		<div class="flex w-full flex-col items-center bg-transparent font-wenkai text-3xl font-light">
+			{#each lineGroups as { lineNum, group }, lineIndex (lineNum)}
 				<div class="flex flex-wrap justify-center w-full">
-					{#each group as { token, globalIndex }, i}
+					{#each group as { token, globalIndex }, i (globalIndex)}
 						<span class="opacity-70" data-type={token.type}>{token.text}</span>
 						{#if i < group.length - 1}
 							<button
@@ -113,6 +109,7 @@
 	{:else}
 		<div
 			role="listbox"
+			tabindex="-1"
 			aria-multiselectable="true"
 			aria-label="Source tokens"
 			class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
@@ -125,20 +122,28 @@
 					<div class="w-full"></div>
 				{/if}
 				{@const interactive = isLinkMode && token.type !== 'punctuation'}
-				<span
-					data-type={token.type}
-					data-token-index={interactive ? i : undefined}
-					role={interactive ? 'option' : undefined}
-					aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
-					tabindex={interactive ? -1 : undefined}
-					class={tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : '')}
-					style={tokenStyle(i)}
-					onclick={(e) => interactive && handleClick(e, i)}
-					onkeydown={(e) => interactive && handleKeydown(e, i)}
-					onfocus={(e) => { if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
-					onblur={() => { focusedIndex = null; }}
-					use:longpress={{ duration: 500, onlongpress: () => interactive && link.clickSource(i, true) }}
-				>{token.text}</span>
+				{#if interactive}
+					<span
+						data-type={token.type}
+						data-token-index={i}
+						role="option"
+						aria-selected={link.getSourceTokenState(i).kind === 'active'}
+						tabindex="-1"
+						class={tokenOpacity(i) + ' cursor-pointer outline-none duration-180'}
+						style={tokenStyle(i)}
+						onclick={(e) => handleClick(e, i)}
+						onkeydown={(e) => handleKeydown(e, i)}
+						onfocus={(e) => { if (e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
+						onblur={() => { focusedIndex = null; }}
+						use:longpress={{ duration: 500, onlongpress: () => link.clickSource(i, true) }}
+					>{token.text}</span>
+				{:else}
+					<span
+						data-type={token.type}
+						class={tokenOpacity(i)}
+						style={tokenStyle(i)}
+					>{token.text}</span>
+				{/if}
 			{/each}
 		</div>
 	{/if}

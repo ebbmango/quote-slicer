@@ -60,14 +60,10 @@
 </script>
 
 {#if isLineMode}
-	<div
-		class="flex w-full flex-col items-center bg-transparent font-ss4 text-base font-[350] italic"
-		onkeydown={handleContainerKeydown}
-		onclick={handleContainerClick}
-	>
-		{#each lineGroups as { lineNum, group }, lineIndex}
+	<div class="flex w-full flex-col items-center bg-transparent font-ss4 text-base font-[350] italic">
+		{#each lineGroups as { lineNum, group }, lineIndex (lineNum)}
 			<div class="flex flex-wrap justify-center w-full">
-				{#each group as { token, globalIndex }, i}
+				{#each group as { token, globalIndex }, i (globalIndex)}
 					{@const isBoundary = token.type === 'whitespace' && i === group.length - 1 && lineIndex < lineGroups.length - 1}
 					{#if isBoundary}
 						<button
@@ -100,6 +96,7 @@
 {:else}
 	<div
 		role="listbox"
+		tabindex="-1"
 		aria-multiselectable="true"
 		aria-label="Target tokens"
 		class="flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto px-2 bg-transparent font-ss4 text-base font-[350] italic"
@@ -111,19 +108,28 @@
 			{#if i > 0 && token.line !== tokens[i - 1].line}
 				<div class="w-full"></div>
 			{/if}
-			<span
-				data-type={token.type}
-				data-token-index={isLinkMode && token.type !== 'whitespace' ? i : undefined}
-				role={isLinkMode && token.type !== 'whitespace' ? 'option' : undefined}
-				aria-selected={isLinkMode && token.type !== 'whitespace' ? link.getTargetTokenState(i).kind === 'active' : undefined}
-				tabindex={isLinkMode && token.type !== 'whitespace' ? -1 : undefined}
-				class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (isLinkMode ? ' cursor-pointer outline-none' : ''))}
-				style={tokenStyle(i)}
-				onclick={() => handleClick(i)}
-				onkeydown={(e) => handleKeydown(e, i)}
-				onfocus={(e) => { if (isLinkMode && token.type !== 'whitespace' && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
-				onblur={() => { focusedIndex = null; }}
-			>{token.text}</span>
+			{@const interactive = isLinkMode && token.type !== 'whitespace'}
+			{#if interactive}
+				<span
+					data-type={token.type}
+					data-token-index={i}
+					role="option"
+					aria-selected={link.getTargetTokenState(i).kind === 'active'}
+					tabindex="-1"
+					class={tokenOpacity(i) + ' cursor-pointer outline-none'}
+					style={tokenStyle(i)}
+					onclick={() => handleClick(i)}
+					onkeydown={(e) => handleKeydown(e, i)}
+					onfocus={(e) => { if (e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
+					onblur={() => { focusedIndex = null; }}
+				>{token.text}</span>
+			{:else}
+				<span
+					data-type={token.type}
+					class={token.type === 'whitespace' ? 'whitespace-pre' : tokenOpacity(i)}
+					style={tokenStyle(i)}
+				>{token.text}</span>
+			{/if}
 		{/each}
 	</div>
 {/if}
