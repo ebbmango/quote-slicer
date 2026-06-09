@@ -24,7 +24,6 @@
 
 	const modeCtx = setModeContext();
 	const link = setLinkContext();
-	const inLineMode = $derived(modeCtx.current === 'join' || modeCtx.current === 'part');
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
@@ -156,74 +155,40 @@
 					</svg>
 				</button>
 			{:else}
-				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-1">
-					<div
-						class="flex gap-2 transition-opacity duration-300"
-						class:opacity-0={!inLineMode}
-						class:pointer-events-none={!inLineMode}
+				<div id="tools" class="flex h-full w-full items-center justify-center gap-1.5">
+					<button
+						aria-label="link"
+						tabindex={1}
+						class="size-6 outline-0 duration-150"
+						class:opacity-20={modeCtx.current !== 'link'}
+						onclick={() => (modeCtx.current = 'link')}
 					>
-						<button
-							aria-label="part"
-							tabindex={inLineMode ? 2 : -1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={modeCtx.current !== 'part'}
-							onclick={() => (modeCtx.current = 'part')}
-						>
-							<svg class="rotate-90" viewBox={icons['arrows-from-dotted-line'].viewBox}>
-								<path d={icons['arrows-from-dotted-line'].classic.regular} />
-							</svg>
-						</button>
-						<button
-							aria-label="join"
-							tabindex={inLineMode ? 3 : -1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={modeCtx.current !== 'join'}
-							onclick={() => (modeCtx.current = 'join')}
-						>
-							<svg class="rotate-90" viewBox={icons['arrows-to-line'].viewBox}>
-								<path d={icons['arrows-to-line'].classic.regular} />
-							</svg>
-						</button>
-					</div>
-					<div class="flex gap-1.5">
-						<button
-							aria-label="link"
-							tabindex={1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={modeCtx.current !== 'link'}
-							onclick={() => (modeCtx.current = 'link')}
-						>
-							<svg viewBox={icons.language.viewBox}>
-								<path d={icons.language.sharp.regular} />
-							</svg>
-						</button>
-						<button
-							aria-label="line"
-							tabindex={inLineMode ? -1 : 2}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={modeCtx.current !== 'join' && modeCtx.current !== 'part'}
-							onclick={() => {
-								if (modeCtx.current !== 'join' && modeCtx.current !== 'part') {
-									modeCtx.current = 'part';
-								}
-							}}
-						>
-							<svg viewBox={icons.paragraph.viewBox}>
-								<path d={icons.paragraph.sharp.regular} />
-							</svg>
-						</button>
-						<button
-							aria-label="view"
-							tabindex={inLineMode ? 4 : 3}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={modeCtx.current !== 'view'}
-							onclick={() => (modeCtx.current = 'view')}
-						>
-							<svg viewBox={icons.eye.viewBox}>
-								<path d={icons.eye.classic.regular} />
-							</svg>
-						</button>
-					</div>
+						<svg viewBox={icons.language.viewBox}>
+							<path d={icons.language.sharp.regular} />
+						</svg>
+					</button>
+					<button
+						aria-label="line"
+						tabindex={2}
+						class="size-6 outline-0 duration-150"
+						class:opacity-20={modeCtx.current !== 'line'}
+						onclick={() => (modeCtx.current = 'line')}
+					>
+						<svg viewBox={icons.paragraph.viewBox}>
+							<path d={icons.paragraph.sharp.regular} />
+						</svg>
+					</button>
+					<button
+						aria-label="view"
+						tabindex={3}
+						class="size-6 outline-0 duration-150"
+						class:opacity-20={modeCtx.current !== 'view'}
+						onclick={() => (modeCtx.current = 'view')}
+					>
+						<svg viewBox={icons.eye.viewBox}>
+							<path d={icons.eye.classic.regular} />
+						</svg>
+					</button>
 				</div>
 			{/if}
 		</div>
