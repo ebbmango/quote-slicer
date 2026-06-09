@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { getLinkContext, type Mapping } from '$lib/context/link.svelte';
+	import { getLinkContext, type MappingView } from '$lib/context/link.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
 	import icons from '$lib/assets/icons.json';
 
-	let { mapping, index }: { mapping: Mapping; index: number } = $props();
+	let { mappingView, index }: { mappingView: MappingView; index: number } = $props();
 
 	const link = getLinkContext();
-	const color = $derived(MAPPING_COLORS[mapping.colorIndex % MAPPING_COLORS.length]);
-	const isActive = $derived(link.activeMappingId === mapping.id);
+	const color = $derived(MAPPING_COLORS[mappingView.colorIndex % MAPPING_COLORS.length]);
+	const isActive = $derived(link.activeMappingId === mappingView.id);
 	let isFocused = $state(false);
 	let isButtonHovered = $state(false);
-	const isEmpty = $derived(mapping.sourceIndices.length === 0);
-	const rowCount = $derived(Math.max(mapping.sourceIndices.length, 1));
+	const isEmpty = $derived(mappingView.sourceEntries.length === 0);
+	const rowCount = $derived(Math.max(mappingView.sourceEntries.length, 1));
 	const label = $derived(String(index + 1).padStart(2, '0'));
 
 	const r = $derived(Math.floor(rowCount / 2) + 1);
@@ -54,46 +54,16 @@
 	const deleteGlyphFill = $derived(isButtonHovered ? theme.deleteHoverText : color.tagBgActive);
 
 	function toggleActive() {
-		if (link.activeMappingId === mapping.id) link.deselect();
-		else link.activeMappingId = mapping.id;
+		if (link.activeMappingId === mappingView.id) link.deselect();
+		else link.setActive(mappingView.id);
 	}
-
-	function buildTargetText(): string {
-		const indices = mapping.targetIndices;
-		const tokens = link.targetTokens;
-		if (!indices.length || !tokens.length) return '';
-		const sorted = [...indices].sort((a, b) => a - b);
-		const groups: number[][] = [[sorted[0]]];
-		for (let i = 1; i < sorted.length; i++) {
-			const group = groups[groups.length - 1];
-			const prev = group[group.length - 1];
-			const curr = sorted[i];
-			// Bridge gap if only whitespace/punctuation between them (max gap of 5)
-			let bridgeable = curr - prev <= 5;
-			for (let k = prev + 1; bridgeable && k < curr; k++) {
-				const t = tokens[k];
-				bridgeable = t?.type === 'whitespace' || t?.type === 'punctuation';
-			}
-			if (bridgeable) group.push(curr);
-			else groups.push([curr]);
-		}
-		return groups
-			.map((group) => {
-				let text = '';
-				for (let i = group[0]; i <= group[group.length - 1]; i++) text += tokens[i]?.text ?? '';
-				return text;
-			})
-			.join(', ');
-	}
-
-	const targetText = $derived(buildTargetText());
 </script>
 
 <li
 	role="option"
 	aria-selected={isActive}
 	tabindex="0"
-	data-mapping-id={mapping.id}
+	data-mapping-id={mappingView.id}
 	class="group flex flex-col rounded-md outline-0 duration-200 select-none"
 	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
 	onfocus={() => (isFocused = true)}
@@ -118,7 +88,7 @@
 		class="relative grid flex-1 w-full rounded-t-md transition-colors duration-200"
 		style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat({rowCount}, 1fr); background: {theme.cardBg};"
 	>
-		{#each isEmpty ? EMPTY_ROW : mapping.sourceIndices as srcIdx, i (srcIdx ?? 'empty')}
+		{#each isEmpty ? EMPTY_ROW : mappingView.sourceEntries as entry, i (entry?.tokenIndex ?? 'empty')}
 			{#if i > 0}
 				<!-- divisory line -->
 				<div
@@ -132,7 +102,7 @@
 				<span
 					class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
 					style="color: {theme.hanziText}; opacity: {hanziOpacity};"
-					>{isEmpty ? '未定' : (link.sourceTokens[srcIdx as number]?.text ?? '?')}</span
+					>{isEmpty ? '未定' : (entry?.text ?? '?')}</span
 				>
 			</div>
 
@@ -144,11 +114,11 @@
 					class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
 					style="color: {theme.pinyinText}; opacity: {pinyinOpacity};"
 					placeholder="Empty"
-					value={isEmpty ? '- - - -' : (mapping.pinyin[i] ?? '')}
+					value={isEmpty ? '- - - -' : (entry?.pinyin ?? '')}
 					oninput={isEmpty
 						? undefined
 						: (e) => {
-								mapping.pinyin[i] = e.currentTarget.value;
+								link.setPinyin(mappingView.id, i, e.currentTarget.value);
 							}}
 					onclick={isEmpty ? undefined : (e) => e.stopPropagation()}
 				/>
@@ -179,7 +149,7 @@
 						aria-label="Delete mapping"
 						onclick={(e) => {
 							e.stopPropagation();
-							link.deleteById(mapping.id);
+							link.deleteById(mappingView.id);
 						}}
 					>
 						<svg viewBox={icons['delete-left'].viewBox} class="size-7">
@@ -205,9 +175,9 @@
 		class="flex h-6 w-full items-center justify-center overflow-hidden rounded-b-md transition-colors duration-200"
 		style="background: {theme.botBg};"
 	>
-		{#if targetText}
+		{#if mappingView.targetText}
 			<span class="truncate px-3 font-ss4 text-xs font-[380]" style="color: {theme.botText};"
-				>&ldquo;{targetText}&rdquo;</span
+				>&ldquo;{mappingView.targetText}&rdquo;</span
 			>
 		{:else}
 			<span

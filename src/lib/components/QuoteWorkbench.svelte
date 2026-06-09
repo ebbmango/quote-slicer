@@ -36,8 +36,8 @@
 			: tokenizeTargetSeparate(targetText)
 	);
 
-	$effect(() => { link.sourceTokens = sourceTokens; });
-	$effect(() => { link.targetTokens = targetTokens; });
+	$effect(() => { link.setSourceTokens(sourceTokens); });
+	$effect(() => { link.setTargetTokens(targetTokens); });
 
 	function splitSource(afterIndex: number) { sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) }; }
 	function mergeSource(lineN: number) { sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) }; }
@@ -62,17 +62,9 @@
 	}
 
 	function findDefaultToken(zone: 'source' | 'target'): HTMLElement | null {
-		const tokens = zone === 'source' ? link.sourceTokens : link.targetTokens;
-		const getState = zone === 'source'
-			? (i: number) => link.getSourceTokenState(i)
-			: (i: number) => link.getTargetTokenState(i);
 		const label = zone === 'source' ? 'Source tokens' : 'Target tokens';
-		const isWord = (t: { type: string }) => t.type !== 'whitespace' && t.type !== 'punctuation';
-
-		let idx = tokens.findIndex((t, i) => isWord(t) && getState(i).kind === 'unmapped');
-		if (idx === -1) idx = tokens.findIndex(isWord);
+		const idx = link.findDefaultTokenIndex(zone);
 		if (idx === -1) return null;
-
 		return tokenContainer.querySelector(
 			`[aria-label="${label}"] [data-token-index="${idx}"]`
 		) as HTMLElement | null;
