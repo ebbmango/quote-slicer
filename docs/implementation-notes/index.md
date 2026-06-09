@@ -5,6 +5,8 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-09 | [Line-Break Tokenization and Rendering](./26-06-09-line-break-tokenization.md) | `9bd2677`, `845027a`, `35ba33c` | Tokenizers split on \n and stamp each token with a line index; interactive views insert flex-break divs at line boundaries; flat attribute over nested structure |
+| 2026-06-09 | [Whitespace Token Bridging in Link Mode](./26-06-09-whitespace-token-bridging.md) | `4b2d852` | Whitespace excluded from mapping; neighbor scan derives color state when flanked by same mapping on both sides |
 | 2026-06-08 | [Mapping List: Quantized Card Sizing and Tablet Mosaic Grid](./26-06-08-mapping-mosaic-grid.md) | `15c61a9` | CSS grid span layout; r=floor(H/2)+1 quantizes card heights; perfect tiling without JS measurement; tablet @custom-variant; 1-or-2 columns via clamp minmax |
 | 2026-06-08 | [Mapping Keyboard Delete: Focus Fallback and Input Scoping](./26-06-08-mapping-keyboard-delete.md) | `71d2d95`, `ea2df39` | Delete falls back to activeMappingId when no card is focused; pinyin input no longer intercepted by card keydown handler |
 | 2026-06-08 | [Mapping Card Theme Lookup Object](./26-06-08-mapping-theme-lookup.md) | `480abac` | Single derived `theme` object replaces ~12 inline isActive ternaries; toggleActive() extracted |
