@@ -2,19 +2,27 @@
 	import type { RawSourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
+	import { groupByLine } from '$lib/line';
 	import { longpress } from '$lib/actions/longpress';
 
-	let { tokens }: { tokens: RawSourceToken[] } = $props();
+	let { tokens, onSplit, onMerge }: {
+		tokens: RawSourceToken[];
+		onSplit: (afterIndex: number) => void;
+		onMerge: (lineN: number) => void;
+	} = $props();
 
 	let container: HTMLDivElement;
 	let mode = getModeContext();
 	let link = getLinkContext();
 	let isLinkMode = $derived(mode.current === 'link');
+	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
+
+	let lineGroups = $derived(groupByLine(tokens));
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		tokens; // re-run when tokens change
+		tokens;
 		if (!container) return;
 		const fit = () => {
 			container.style.height = 'auto';
@@ -69,39 +77,130 @@
 	}
 </script>
 
-<div
-	bind:this={container}
-	class="max-h-[40vh] w-full overflow-y-auto px-2"
->
-	<div
-		role="listbox"
-		aria-multiselectable="true"
-		aria-label="Source tokens"
-		class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
-		class:select-none={isLinkMode}
-		onkeydown={handleContainerKeydown}
-		onclick={handleContainerClick}
-	>
-		{#each tokens as token, i (token)}
-			{#if i > 0 && token.line !== tokens[i - 1].line}
-				<div class="w-full"></div>
-			{/if}
-			{@const interactive = isLinkMode && token.type !== 'whitespace' && token.type !== 'punctuation'}
-			<span
-				data-type={token.type}
-				data-token-index={interactive ? i : undefined}
-				role={interactive ? 'option' : undefined}
-				aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
-				tabindex={interactive ? -1 : undefined}
-				class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : ''))}
-				style={tokenStyle(i)}
-				onclick={(e) => interactive && handleClick(e, i)}
-				onkeydown={(e) => interactive && handleKeydown(e, i)}
-				onfocus={(e) => { if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
-				onblur={() => { focusedIndex = null; }}
-				use:longpress={{ duration: 500 }}
-				onlongpress={() => interactive && link.clickSource(i, true)}
-			>{token.text}</span>
-		{/each}
-	</div>
+<div bind:this={container} class="max-h-[40vh] w-full overflow-y-auto px-2">
+	{#if isLineMode}
+		<div
+			class="flex w-full flex-col items-center bg-transparent font-wenkai text-3xl font-light"
+			onkeydown={handleContainerKeydown}
+			onclick={handleContainerClick}
+		>
+			{#each lineGroups as { lineNum, group }, lineIndex}
+				<div class="flex flex-wrap justify-center w-full">
+					{#each group as { token, globalIndex }, i}
+						<span class="opacity-70" data-type={token.type}>{token.text}</span>
+						{#if i < group.length - 1}
+							<button
+								class="split-zone"
+								onclick={(e) => { e.stopPropagation(); onSplit(globalIndex); }}
+								aria-label="Split line here"
+							>
+								<span class="split-indicator"></span>
+							</button>
+						{/if}
+					{/each}
+				</div>
+				{#if lineIndex < lineGroups.length - 1}
+					<button
+						class="merge-zone"
+						onclick={(e) => { e.stopPropagation(); onMerge(lineNum); }}
+						aria-label="Merge with next line"
+					>
+						<span class="merge-indicator"></span>
+					</button>
+				{/if}
+			{/each}
+		</div>
+	{:else}
+		<div
+			role="listbox"
+			aria-multiselectable="true"
+			aria-label="Source tokens"
+			class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
+			class:select-none={isLinkMode}
+			onkeydown={handleContainerKeydown}
+			onclick={handleContainerClick}
+		>
+			{#each tokens as token, i (token)}
+				{#if i > 0 && token.line !== tokens[i - 1].line}
+					<div class="w-full"></div>
+				{/if}
+				{@const interactive = isLinkMode && token.type !== 'whitespace' && token.type !== 'punctuation'}
+				<span
+					data-type={token.type}
+					data-token-index={interactive ? i : undefined}
+					role={interactive ? 'option' : undefined}
+					aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
+					tabindex={interactive ? -1 : undefined}
+					class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : ''))}
+					style={tokenStyle(i)}
+					onclick={(e) => interactive && handleClick(e, i)}
+					onkeydown={(e) => interactive && handleKeydown(e, i)}
+					onfocus={(e) => { if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
+					onblur={() => { focusedIndex = null; }}
+					use:longpress={{ duration: 500 }}
+					onlongpress={() => interactive && link.clickSource(i, true)}
+				>{token.text}</span>
+			{/each}
+		</div>
+	{/if}
 </div>
+
+<style>
+	.split-zone {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 8px;
+		margin: 0 -4px;
+		z-index: 1;
+		align-self: stretch;
+		padding: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		outline: none;
+	}
+
+	.split-indicator {
+		display: block;
+		width: 1.5px;
+		height: 0.85em;
+		background: currentColor;
+		opacity: 0;
+		border-radius: 1px;
+		transition: opacity 150ms;
+	}
+
+	.split-zone:hover .split-indicator,
+	.split-zone:focus-visible .split-indicator {
+		opacity: 0.4;
+	}
+
+	.merge-zone {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 1rem;
+		padding: 0.25rem 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		outline: none;
+	}
+
+	.merge-indicator {
+		display: block;
+		width: 2.5rem;
+		height: 1.5px;
+		background: currentColor;
+		opacity: 0.15;
+		border-radius: 1px;
+		transition: opacity 150ms;
+	}
+
+	.merge-zone:hover .merge-indicator,
+	.merge-zone:focus-visible .merge-indicator {
+		opacity: 0.45;
+	}
+</style>

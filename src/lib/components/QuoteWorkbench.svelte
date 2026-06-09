@@ -2,6 +2,8 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate, SOURCE_INPUT_RE } from '$lib/tokenize';
+	import type { RawSourceToken, RawTargetToken } from '$lib/tokenize';
+	import { splitAfterToken, mergeLines } from '$lib/line';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
 
@@ -17,13 +19,18 @@
 	let editing = $derived(mode.current === 'text');
 	const link = getLinkContext();
 
-	let sourceTokens = $derived(tokenizeSource(sourceText));
-	let targetTokens = $derived(tokenizeTargetSeparate(targetText));
+	let sourceTokens = $state<RawSourceToken[]>(tokenizeSource(sourceText));
+	let targetTokens = $state<RawTargetToken[]>(tokenizeTargetSeparate(targetText));
 
-	$effect(() => {
-		link.sourceTokens = sourceTokens;
-		link.targetTokens = targetTokens;
-	});
+	$effect(() => { sourceTokens = tokenizeSource(sourceText); });
+	$effect(() => { targetTokens = tokenizeTargetSeparate(targetText); });
+	$effect(() => { link.sourceTokens = sourceTokens; });
+	$effect(() => { link.targetTokens = targetTokens; });
+
+	function splitSource(afterIndex: number) { sourceTokens = splitAfterToken(sourceTokens, afterIndex); }
+	function mergeSource(lineN: number) { sourceTokens = mergeLines(sourceTokens, lineN); }
+	function splitTarget(afterIndex: number) { targetTokens = splitAfterToken(targetTokens, afterIndex); }
+	function mergeTarget(lineN: number) { targetTokens = mergeLines(targetTokens, lineN); }
 
 	let tokenContainer: HTMLDivElement;
 	let lastSourceEl: HTMLElement | null = $state(null);
@@ -215,8 +222,8 @@
 		onkeydown={handleArrowNav}
 		onfocusin={handleFocusIn}
 	>
-		<InteractiveSourceText tokens={sourceTokens} />
-		<InteractiveTargetText tokens={targetTokens} />
+		<InteractiveSourceText tokens={sourceTokens} onSplit={splitSource} onMerge={mergeSource} />
+		<InteractiveTargetText tokens={targetTokens} onSplit={splitTarget} onMerge={mergeTarget} />
 	</div>
 {/if}
 <textarea
