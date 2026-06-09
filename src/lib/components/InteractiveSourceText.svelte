@@ -124,21 +124,20 @@
 				{#if i > 0 && token.line !== tokens[i - 1].line}
 					<div class="w-full"></div>
 				{/if}
-				{@const interactive = isLinkMode && token.type !== 'whitespace' && token.type !== 'punctuation'}
+				{@const interactive = isLinkMode && token.type !== 'punctuation'}
 				<span
 					data-type={token.type}
 					data-token-index={interactive ? i : undefined}
 					role={interactive ? 'option' : undefined}
 					aria-selected={interactive ? link.getSourceTokenState(i).kind === 'active' : undefined}
 					tabindex={interactive ? -1 : undefined}
-					class={token.type === 'whitespace' ? 'whitespace-pre' : (tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : ''))}
+					class={tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none duration-180' : '')}
 					style={tokenStyle(i)}
 					onclick={(e) => interactive && handleClick(e, i)}
 					onkeydown={(e) => interactive && handleKeydown(e, i)}
 					onfocus={(e) => { if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i; }}
 					onblur={() => { focusedIndex = null; }}
-					use:longpress={{ duration: 500 }}
-					onlongpress={() => interactive && link.clickSource(i, true)}
+					use:longpress={{ duration: 500, onlongpress: () => interactive && link.clickSource(i, true) }}
 				>{token.text}</span>
 			{/each}
 		</div>

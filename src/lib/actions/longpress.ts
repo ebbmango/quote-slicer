@@ -8,10 +8,11 @@
 
 type LongpressOptions = {
 	duration?: number; // ms before longpress fires, default 500
+	onlongpress?: () => void;
 };
 
 export function longpress(node: HTMLElement, options: LongpressOptions = {}) {
-	const { duration = 500 } = options;
+	const { duration = 500, onlongpress } = options;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let fired = false;
 
@@ -19,7 +20,7 @@ export function longpress(node: HTMLElement, options: LongpressOptions = {}) {
 		fired = false;
 		timer = setTimeout(() => {
 			fired = true;
-			node.dispatchEvent(new CustomEvent('longpress'));
+			onlongpress?.();
 		}, duration);
 	}
 
