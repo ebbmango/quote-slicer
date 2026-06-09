@@ -1,4 +1,6 @@
 <script lang="ts">
+	// version B
+	import { onMount, tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate, SOURCE_INPUT_RE } from '$lib/tokenize';
@@ -36,13 +38,71 @@
 			: tokenizeTargetSeparate(targetText)
 	);
 
-	$effect(() => { link.setSourceTokens(sourceTokens); });
-	$effect(() => { link.setTargetTokens(targetTokens); });
+	$effect(() => {
+		link.setSourceTokens(sourceTokens);
+	});
+	$effect(() => {
+		link.setTargetTokens(targetTokens);
+	});
 
-	function splitSource(afterIndex: number) { sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) }; }
-	function mergeSource(lineN: number) { sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) }; }
-	function splitTarget(afterIndex: number) { targetTokensCache = { text: targetText, tokens: splitAfterToken(targetTokens, afterIndex) }; }
-	function mergeTarget(lineN: number) { targetTokensCache = { text: targetText, tokens: mergeLines(targetTokens, lineN) }; }
+	let sourceWrapperEl: HTMLDivElement | null = $state(null);
+	let targetWrapperEl: HTMLDivElement | null = $state(null);
+	let authorshipEl: HTMLTextAreaElement | null = $state(null);
+	let gsap: (typeof import('gsap'))['gsap'] | null = $state(null);
+
+	onMount(async () => {
+		const { gsap: g } = await import('gsap');
+		gsap = g;
+	});
+
+	async function withShiftAnimation(els: HTMLElement[], mutate: () => void, lockEl?: HTMLElement | null) {
+		if (!gsap) {
+			mutate();
+			return;
+		}
+		const rects = els.map((el) => el.getBoundingClientRect());
+		mutate();
+		await tick();
+		// Lock lockEl to its post-mutation pixel height so any concurrent Flip animation
+		// using absolute:true can't collapse it and shift our GSAP targets mid-animation.
+		if (lockEl) lockEl.style.height = lockEl.getBoundingClientRect().height + 'px';
+		const animations: Promise<void>[] = [];
+		els.forEach((el, i) => {
+			if (!el.isConnected) return;
+			const dy = rects[i].top - el.getBoundingClientRect().top;
+			if (Math.abs(dy) < 0.5) return;
+			animations.push(new Promise<void>((resolve) => {
+				gsap!.fromTo(el, { y: dy }, { y: 0, duration: 0.35, ease: 'power2.inOut', clearProps: 'y', onComplete: resolve });
+			}));
+		});
+		await Promise.all(animations);
+		if (lockEl) lockEl.style.height = '';
+	}
+
+	function splitSource(afterIndex: number) {
+		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		withShiftAnimation(els, () => {
+			sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) };
+		});
+	}
+	function mergeSource(lineN: number) {
+		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		withShiftAnimation(els, () => {
+			sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) };
+		});
+	}
+	function splitTarget(afterIndex: number) {
+		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		withShiftAnimation(els, () => {
+			targetTokensCache = { text: targetText, tokens: splitAfterToken(targetTokens, afterIndex) };
+		}, targetWrapperEl);
+	}
+	function mergeTarget(lineN: number) {
+		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		withShiftAnimation(els, () => {
+			targetTokensCache = { text: targetText, tokens: mergeLines(targetTokens, lineN) };
+		}, targetWrapperEl);
+	}
 
 	let tokenContainer: HTMLDivElement = $state(null!);
 	let lastSourceEl: HTMLElement | null = $state(null);
@@ -72,9 +132,8 @@
 
 	function jumpTo(zone: 'source' | 'target'): void {
 		const remembered = zone === 'source' ? lastSourceEl : lastTargetEl;
-		const el = (remembered && tokenContainer.contains(remembered))
-			? remembered
-			: findDefaultToken(zone);
+		const el =
+			remembered && tokenContainer.contains(remembered) ? remembered : findDefaultToken(zone);
 		el?.focus();
 	}
 
@@ -223,19 +282,24 @@
 		bind:this={tokenContainer}
 		role="grid"
 		aria-label="Token workspace"
-		class="flex flex-col gap-3 py-4 px-1 rounded-xl focus:bg-blue-50 duration-200 outline-0"
+		class="flex flex-col gap-3 rounded-xl px-1 py-4 outline-0 duration-200 focus:bg-blue-50"
 		tabindex="0"
 		onkeydown={handleArrowNav}
 		onfocusin={handleFocusIn}
 	>
-		<InteractiveSourceText tokens={sourceTokens} onSplit={splitSource} onMerge={mergeSource} />
-		<InteractiveTargetText tokens={targetTokens} onSplit={splitTarget} onMerge={mergeTarget} />
+		<div bind:this={sourceWrapperEl}>
+			<InteractiveSourceText tokens={sourceTokens} onSplit={splitSource} onMerge={mergeSource} />
+		</div>
+		<div bind:this={targetWrapperEl}>
+			<InteractiveTargetText tokens={targetTokens} onSplit={splitTarget} onMerge={mergeTarget} />
+		</div>
 	</div>
 {/if}
 <textarea
 	id="authorship"
 	name="authorship"
 	bind:value={authorship}
+	bind:this={authorshipEl}
 	rows="1"
 	use:autosize
 	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
