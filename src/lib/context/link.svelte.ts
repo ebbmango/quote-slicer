@@ -115,6 +115,7 @@ class LinkContext {
 	}
 
 	clickTarget(i: number): void {
+		if (this.targetTokens[i]?.type === 'whitespace') return;
 		const claimed = this.targetMappingIndex.get(i);
 		if (claimed !== undefined) {
 			if (claimed === this.activeMappingId) {
@@ -164,7 +165,31 @@ class LinkContext {
 
 	getTargetTokenState(i: number): TokenState {
 		const claimed = this.targetMappingIndex.get(i);
-		if (claimed === undefined) return { kind: 'unmapped' };
+		if (claimed === undefined) {
+			if (this.targetTokens[i]?.type === 'whitespace') {
+				let left: MappingId | undefined;
+				for (let k = i - 1; k >= 0; k--) {
+					if (this.targetTokens[k]?.type !== 'whitespace') {
+						left = this.targetMappingIndex.get(k);
+						break;
+					}
+				}
+				let right: MappingId | undefined;
+				for (let k = i + 1; k < this.targetTokens.length; k++) {
+					if (this.targetTokens[k]?.type !== 'whitespace') {
+						right = this.targetMappingIndex.get(k);
+						break;
+					}
+				}
+				if (left !== undefined && left === right) {
+					const m = this.mappings.find((x) => x.id === left)!;
+					const color = this.colorFor(m).target;
+					if (left === this.activeMappingId) return { kind: 'active', color };
+					return { kind: 'idle', color };
+				}
+			}
+			return { kind: 'unmapped' };
+		}
 		const m = this.mappings.find((x) => x.id === claimed)!;
 		const color = this.colorFor(m).target;
 		if (claimed === this.activeMappingId) return { kind: 'active', color };
