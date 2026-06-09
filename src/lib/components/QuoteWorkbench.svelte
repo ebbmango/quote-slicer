@@ -19,20 +19,32 @@
 	let editing = $derived(mode.current === 'text');
 	const link = getLinkContext();
 
-	let sourceTokens = $state<RawSourceToken[]>(tokenizeSource(sourceText));
-	let targetTokens = $state<RawTargetToken[]>(tokenizeTargetSeparate(targetText));
+	// Text-keyed caches: if text matches, use the cached (possibly split/merged) token array;
+	// otherwise fall through to fresh tokenization. This makes the final token arrays purely
+	// $derived while still allowing split/merge mutations to persist within an editing session.
+	let sourceTokensCache = $state<{ text: string; tokens: RawSourceToken[] } | null>(null);
+	let targetTokensCache = $state<{ text: string; tokens: RawTargetToken[] } | null>(null);
 
-	$effect(() => { sourceTokens = tokenizeSource(sourceText); });
-	$effect(() => { targetTokens = tokenizeTargetSeparate(targetText); });
+	let sourceTokens = $derived(
+		sourceTokensCache !== null && sourceTokensCache.text === sourceText
+			? sourceTokensCache.tokens
+			: tokenizeSource(sourceText)
+	);
+	let targetTokens = $derived(
+		targetTokensCache !== null && targetTokensCache.text === targetText
+			? targetTokensCache.tokens
+			: tokenizeTargetSeparate(targetText)
+	);
+
 	$effect(() => { link.sourceTokens = sourceTokens; });
 	$effect(() => { link.targetTokens = targetTokens; });
 
-	function splitSource(afterIndex: number) { sourceTokens = splitAfterToken(sourceTokens, afterIndex); }
-	function mergeSource(lineN: number) { sourceTokens = mergeLines(sourceTokens, lineN); }
-	function splitTarget(afterIndex: number) { targetTokens = splitAfterToken(targetTokens, afterIndex); }
-	function mergeTarget(lineN: number) { targetTokens = mergeLines(targetTokens, lineN); }
+	function splitSource(afterIndex: number) { sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) }; }
+	function mergeSource(lineN: number) { sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) }; }
+	function splitTarget(afterIndex: number) { targetTokensCache = { text: targetText, tokens: splitAfterToken(targetTokens, afterIndex) }; }
+	function mergeTarget(lineN: number) { targetTokensCache = { text: targetText, tokens: mergeLines(targetTokens, lineN) }; }
 
-	let tokenContainer: HTMLDivElement;
+	let tokenContainer: HTMLDivElement = $state(null!);
 	let lastSourceEl: HTMLElement | null = $state(null);
 	let lastTargetEl: HTMLElement | null = $state(null);
 
@@ -174,9 +186,9 @@
 		rows="1"
 		use:autosize
 		oncompositionstart={() => (composing = true)}
-		oninput={(e) => {
-			if ((e as InputEvent).isComposing) return;
-			const el = e.currentTarget;
+		oninput={(e: InputEvent) => {
+			if (e.isComposing) return;
+			const el = e.currentTarget as HTMLTextAreaElement;
 			const start = el.selectionStart ?? 0;
 			const end = el.selectionEnd ?? 0;
 			const filtered = el.value.replace(SOURCE_INPUT_RE, '');
@@ -187,9 +199,9 @@
 				el.setSelectionRange(start - removed, end - removed);
 			}
 		}}
-		oncompositionend={(e) => {
+		oncompositionend={(e: CompositionEvent) => {
 			composing = false;
-			const el = e.currentTarget;
+			const el = e.currentTarget as HTMLTextAreaElement;
 			const start = el.selectionStart ?? 0;
 			const end = el.selectionEnd ?? 0;
 			const filtered = el.value.replace(SOURCE_INPUT_RE, '');
@@ -217,6 +229,8 @@
 {:else}
 	<div
 		bind:this={tokenContainer}
+		role="grid"
+		aria-label="Token workspace"
 		class="flex flex-col gap-3 py-4 px-1 rounded-xl focus:bg-blue-50 duration-200 outline-0"
 		tabindex="0"
 		onkeydown={handleArrowNav}
