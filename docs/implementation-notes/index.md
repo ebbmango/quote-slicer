@@ -5,6 +5,9 @@ Newest first.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-09 | [Interactive Token Components: ARIA Semantics](./26-06-09-interactive-text-aria-semantics.md) | `dd461ab` | Keyed each blocks, listbox tabindex, and {#if interactive} split replacing ternary role/tabindex — static structure so Svelte analyser can prove semantic correctness |
+| 2026-06-09 | [LinkContext: MappingView and Interface Narrowing](./26-06-09-link-context-mapping-view.md) | `6203692` | Raw token arrays hidden behind LinkContext interface; MappingView pre-resolves display data so Mapping.svelte never touches sourceTokens or targetTokens |
+| 2026-06-09 | [Token State Derivation: Extracted Pure Module](./26-06-09-token-state-pure-module.md) | `820d3db` | Token state logic + whitespace bridging extracted from LinkContext into framework-free tokenState.ts; vitest-testable without Svelte runtime |
 | 2026-06-09 | [Svelte 5 Diagnostic Session: Writable Derived State, Custom Action Events, and ARIA Roles](./26-06-09-svelte5-type-and-diagnostic-fixes.md) | `c24d212`, `29c60c1` | Text-keyed cache for writable derived tokens; longpress callback via action options (Svelte 5 custom event typing); role="grid" for 2D navigation container |
 | 2026-06-09 | [Line Editing Mode: Interactive Split and Merge](./26-06-09-line-editing-mode.md) | `abeb93e`, `22aa98b`, `d19b66e`, `314a8d0` | part/join collapsed into unified line mode; split/merge via zero-width buttons and whitespace tokens; boundary whitespace trick avoids token insertion |
 | 2026-06-09 | [Line-Break Tokenization and Rendering](./26-06-09-line-break-tokenization.md) | `9bd2677`, `845027a`, `35ba33c` | Tokenizers split on \n and stamp each token with a line index; interactive views insert flex-break divs at line boundaries; flat attribute over nested structure |
