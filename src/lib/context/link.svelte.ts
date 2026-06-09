@@ -1,28 +1,21 @@
 import { getContext, setContext } from 'svelte';
 import { pinyin } from 'pinyin-pro';
-import { MAPPING_COLORS, type MappingColor } from '$lib/constants/colors';
 import type { RawSourceToken, RawTargetToken } from '$lib/tokenize';
+import {
+	deriveSourceTokenState,
+	deriveTargetTokenState,
+	type Mapping,
+	type MappingId,
+	type TokenState,
+} from '$lib/tokenState';
+
+export type { Mapping, MappingId, TokenState };
 
 function tokenPinyin(token: RawSourceToken | undefined): string {
 	if (!token || token.type !== 'character') return '';
 	const { text } = token;
 	return pinyin(text, { toneType: 'symbol', separator: ' ' });
 }
-
-export type MappingId = string;
-
-export type Mapping = {
-	id: MappingId;
-	colorIndex: number;
-	sourceIndices: number[];
-	targetIndices: number[];
-	pinyin: string[]; // parallel to sourceIndices
-};
-
-export type TokenState =
-	| { kind: 'unmapped' }
-	| { kind: 'idle'; color: string }
-	| { kind: 'active'; color: string };
 
 const LINK_KEY = Symbol('link');
 
@@ -52,10 +45,6 @@ class LinkContext {
 
 	private get activeMapping(): Mapping | undefined {
 		return this.mappings.find((m) => m.id === this.activeMappingId);
-	}
-
-	private colorFor(m: Mapping): MappingColor {
-		return MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length];
 	}
 
 	private createMapping(): Mapping {
@@ -155,45 +144,17 @@ class LinkContext {
 	}
 
 	getSourceTokenState(i: number): TokenState {
-		const claimed = this.sourceMappingIndex.get(i);
-		if (claimed === undefined) return { kind: 'unmapped' };
-		const m = this.mappings.find((x) => x.id === claimed)!;
-		const color = this.colorFor(m).source;
-		if (claimed === this.activeMappingId) return { kind: 'active', color };
-		return { kind: 'idle', color };
+		return deriveSourceTokenState(i, this.sourceMappingIndex, this.mappings, this.activeMappingId);
 	}
 
 	getTargetTokenState(i: number): TokenState {
-		const claimed = this.targetMappingIndex.get(i);
-		if (claimed === undefined) {
-			if (this.targetTokens[i]?.type === 'whitespace') {
-				let left: MappingId | undefined;
-				for (let k = i - 1; k >= 0; k--) {
-					if (this.targetTokens[k]?.type !== 'whitespace') {
-						left = this.targetMappingIndex.get(k);
-						break;
-					}
-				}
-				let right: MappingId | undefined;
-				for (let k = i + 1; k < this.targetTokens.length; k++) {
-					if (this.targetTokens[k]?.type !== 'whitespace') {
-						right = this.targetMappingIndex.get(k);
-						break;
-					}
-				}
-				if (left !== undefined && left === right) {
-					const m = this.mappings.find((x) => x.id === left)!;
-					const color = this.colorFor(m).target;
-					if (left === this.activeMappingId) return { kind: 'active', color };
-					return { kind: 'idle', color };
-				}
-			}
-			return { kind: 'unmapped' };
-		}
-		const m = this.mappings.find((x) => x.id === claimed)!;
-		const color = this.colorFor(m).target;
-		if (claimed === this.activeMappingId) return { kind: 'active', color };
-		return { kind: 'idle', color };
+		return deriveTargetTokenState(
+			i,
+			this.targetTokens,
+			this.targetMappingIndex,
+			this.mappings,
+			this.activeMappingId
+		);
 	}
 }
 
