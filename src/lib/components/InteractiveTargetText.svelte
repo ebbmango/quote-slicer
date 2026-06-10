@@ -13,7 +13,7 @@
 		onMerge: (lineN: number) => void;
 	} = $props();
 
-	let lineContainer: HTMLDivElement;
+	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
 	let link = getLinkContext();
 	let isLinkMode = $derived(mode.current === 'link');

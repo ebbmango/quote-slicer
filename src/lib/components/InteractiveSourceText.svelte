@@ -3,7 +3,6 @@
 	import type { SourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getLinkContext } from '$lib/context/link.svelte';
-	import { groupByLine } from '$lib/line';
 	import { longpress } from '$lib/actions/longpress';
 
 	let {
@@ -17,14 +16,12 @@
 	} = $props();
 
 	let container: HTMLDivElement;
-	let lineContainer: HTMLDivElement;
+	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
 	let link = getLinkContext();
 	let isLinkMode = $derived(mode.current === 'link');
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
-
-	let lineGroups = $derived(groupByLine(tokens));
 
 	let Flip: typeof import('gsap/Flip')['Flip'] | null = $state(null);
 

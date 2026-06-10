@@ -80,25 +80,25 @@
 	}
 
 	function splitSource(afterIndex: number) {
-		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
 			sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) };
 		});
 	}
 	function mergeSource(lineN: number) {
-		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
 			sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) };
 		});
 	}
 	function splitTarget(afterIndex: number) {
-		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
 			targetTokensCache = { text: targetText, tokens: splitAfterToken(targetTokens, afterIndex) };
 		}, targetWrapperEl);
 	}
 	function mergeTarget(lineN: number) {
-		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLElement => el !== null);
+		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
 			targetTokensCache = { text: targetText, tokens: mergeLines(targetTokens, lineN) };
 		}, targetWrapperEl);
