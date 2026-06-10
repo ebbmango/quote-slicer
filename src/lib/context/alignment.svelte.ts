@@ -44,8 +44,6 @@ class Alignment {
 		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
 	});
 
-	exportJson: string = $derived(JSON.stringify(this.exportData));
-
 	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
 	private sourceIdToIndex: Map<number, number> = $derived(
 		new Map(this.sourceTokens.map((t, i) => [t.id, i]))
