@@ -20,6 +20,8 @@
 </script>
 
 <!-- prettier-ignore -->
+<!-- Inside <pre>, every whitespace char is rendered literally — keep this on as few
+     lines as possible. Reformatting adds newlines/indentation between tokens. -->
 <pre class="highlighted-code"><code>{#each lines as line, i (i)}{#each line as token, j (j)}<span style="color: {token.color}">{token.content}</span>{/each}
 {/each}</code></pre>
 
@@ -27,5 +29,10 @@
 	.highlighted-code {
 		margin: 0;
 		white-space: pre;
+		font-family: 'JetBrains Mono', ui-monospace, monospace;
+	}
+
+	.highlighted-code :global(code) {
+		font-family: inherit;
 	}
 </style>

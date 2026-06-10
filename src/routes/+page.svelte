@@ -289,7 +289,6 @@
 <style lang="postcss">
 	.shiki-export :global(pre) {
 		background: transparent !important;
-		font-family: inherit;
 	}
 
 	#tools button {
