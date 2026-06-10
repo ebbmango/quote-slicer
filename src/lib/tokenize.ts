@@ -6,6 +6,7 @@ export type SourceToken = {
 	text: string;
 	line: number;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
+	pinyin?: string;
 };
 
 export type TargetToken = {

@@ -8,7 +8,6 @@ export type Mapping = {
 	colorIndex: number;
 	sourceTokenIds: number[]; // token ids, stable across split/merge
 	targetTokenIds: number[]; // token ids, stable across split/merge
-	pinyin: string[]; // parallel to sourceTokenIds
 };
 
 export type QuoteExportMeta = {

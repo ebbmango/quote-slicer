@@ -98,8 +98,12 @@ class LinkContext {
 			colorIndex: this.nextColorIndex++,
 			sourceTokenIds: [],
 			targetTokenIds: [],
-			pinyin: [],
 		};
+	}
+
+	private setSourceTokenPinyin(tokenId: number, value: string | undefined): void {
+		const idx = this.sourceIdToIndex.get(tokenId);
+		if (idx !== undefined) this.sourceTokens[idx].pinyin = value;
 	}
 
 	private pruneActive(): void {
@@ -117,12 +121,12 @@ class LinkContext {
 		return {
 			id: m.id,
 			colorIndex: m.colorIndex,
-			sourceEntries: m.sourceTokenIds.map((tokenId, i) => {
+			sourceEntries: m.sourceTokenIds.map((tokenId) => {
 				const idx = this.sourceIdToIndex.get(tokenId) ?? -1;
 				return {
 					tokenIndex: idx,
 					text: this.sourceTokens[idx]?.text ?? '',
-					pinyin: m.pinyin[i] ?? '',
+					pinyin: this.sourceTokens[idx]?.pinyin ?? '',
 				};
 			}),
 			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens),
@@ -151,7 +155,8 @@ class LinkContext {
 
 	setPinyin(id: MappingId, position: number, value: string): void {
 		const m = this.mappings.find((x) => x.id === id);
-		if (m) m.pinyin[position] = value;
+		const tokenId = m?.sourceTokenIds[position];
+		if (tokenId !== undefined) this.setSourceTokenPinyin(tokenId, value);
 	}
 
 	findDefaultTokenIndex(zone: 'source' | 'target'): number {
@@ -173,9 +178,8 @@ class LinkContext {
 				// remove from active mapping (shift irrelevant here)
 				const m = this.activeMapping!;
 				const tokenId = this.sourceTokens[i].id;
-				const pos = m.sourceTokenIds.indexOf(tokenId);
-				m.pinyin = m.pinyin.filter((_, j) => j !== pos);
 				m.sourceTokenIds = m.sourceTokenIds.filter((id) => id !== tokenId);
+				this.setSourceTokenPinyin(tokenId, undefined);
 				this.pruneActive();
 			} else {
 				// switch to that mapping
@@ -187,13 +191,13 @@ class LinkContext {
 				// shift = force-add; no sources yet = first source slot, add freely
 				const tokenId = this.sourceTokens[i].id;
 				m.sourceTokenIds = [...m.sourceTokenIds, tokenId];
-				m.pinyin = [...m.pinyin, tokenPinyin(this.sourceTokens[i])];
+				this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
 			} else {
 				// mapping already has a source — create new mapping for this token
 				const newM = this.createMapping();
 				const tokenId = this.sourceTokens[i].id;
 				newM.sourceTokenIds = [tokenId];
-				newM.pinyin = [tokenPinyin(this.sourceTokens[i])];
+				this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
 				this.mappings = [...this.mappings, newM];
 				this.activeMappingId = newM.id;
 			}
@@ -202,7 +206,7 @@ class LinkContext {
 			const m = this.createMapping();
 			const tokenId = this.sourceTokens[i].id;
 			m.sourceTokenIds = [tokenId];
-			m.pinyin = [tokenPinyin(this.sourceTokens[i])];
+			this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
 			this.mappings = [...this.mappings, m];
 			this.activeMappingId = m.id;
 		}
