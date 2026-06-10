@@ -41,3 +41,9 @@ Quick reference: every source file and its responsibility.
 | File | Responsibility |
 |------|---------------|
 | `src/lib/actions/longpress.ts` | Svelte action: fires `onlongpress` callback after N ms; used for mobile multi-add on source tokens |
+
+## Animation
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/animation/flipTransition.svelte.ts` | `createFlipTransition()` — lazy-loads GSAP's `Flip` plugin and runs a `[data-flip-id]` Flip animation around a mutation; shared by `InteractiveSourceText` and `InteractiveTargetText` |

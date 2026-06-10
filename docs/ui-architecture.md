@@ -75,11 +75,13 @@ GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time b
 
 ### Internal Flip (InteractiveSourceText / InteractiveTargetText)
 
-Used for per-panel token shuffle when a line splits or merges.
+Used for per-panel token shuffle when a line splits or merges. Both components share `createFlipTransition()` (`src/lib/animation/flipTransition.svelte.ts`), which owns the lazy `Flip` import and exposes `run(container, mutate)`:
 
-1. `Flip.getState(querySelectorAll('[data-flip-id]'))` before mutation
-2. Mutation + `await tick()`
+1. `Flip.getState(container.querySelectorAll('[data-flip-id]'))` before mutation
+2. `mutate()` + `await tick()`
 3. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true })`
+
+If `Flip` hasn't loaded yet (or `container` is null), `run()` just calls `mutate()` with no animation.
 
 Every token span carries `data-flip-id` so Flip can track it across DOM moves. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking.
 
