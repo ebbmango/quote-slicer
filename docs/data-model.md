@@ -44,7 +44,7 @@ type Mapping = {
 
 `splitAfterToken` and `mergeLines` in `src/lib/line.ts` only mutate the `.line` field and spread tokens — they never insert or remove tokens, so IDs survive line edits intact.
 
-`Mapping` stores `sourceTokenIds` and `targetTokenIds` (IDs, not array indices). `LinkContext` derives two reverse maps at runtime:
+`Mapping` stores `sourceTokenIds` and `targetTokenIds` (IDs, not array indices). `Alignment` derives two reverse maps at runtime:
 
 - `sourceIdToIndex: Map<tokenId, arrayIndex>`
 - `targetIdToIndex: Map<tokenId, arrayIndex>`
@@ -68,7 +68,7 @@ type TokenState =
 
 ## MappingView
 
-`MappingView` is a derived, read-only snapshot of a `Mapping` for display, defined in `src/lib/context/link.svelte.ts:15`:
+`MappingView` is a derived, read-only snapshot of a `Mapping` for display, defined in `src/lib/context/alignment.svelte.ts:18`:
 
 ```ts
 type MappingView = {

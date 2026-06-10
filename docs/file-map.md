@@ -25,7 +25,7 @@ Quick reference: every source file and its responsibility.
 | File | Responsibility |
 |------|---------------|
 | `src/lib/context/mode.svelte.ts` | `ModeContext` — `current: Mode` (`'text'` \| `'link'` \| `'line'` \| `'view'`); `setModeContext()` / `getModeContext()` |
-| `src/lib/context/link.svelte.ts` | `LinkContext` — owns `mappings[]`, shadow token arrays, derived index maps, `sortedMappingViews`, click handlers; `setLinkContext()` / `getLinkContext()`; exports `MappingView` type |
+| `src/lib/context/alignment.svelte.ts` | `Alignment` — owns `mappings[]`, shadow token arrays, derived index maps, `sortedMappingViews`, toggle handlers; `setAlignmentContext()` / `getAlignmentContext()`; exports `MappingView` type |
 
 ## Components
 

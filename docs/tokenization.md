@@ -46,7 +46,7 @@ This boundary token serves as the merge affordance in line mode: clicking it mer
 
 Whitespace tokens (type `'whitespace'`) exist in the target token stream but are:
 
-- **Not interactive in link mode** — `clickTarget` returns early for whitespace (`link.svelte.ts:196`)
+- **Not interactive in link mode** — `toggleTarget` returns early for whitespace (`alignment.svelte.ts:209`)
 - **Not directly mappable** — no mapping will ever store a whitespace token ID
 - **Bridged visually** — if a whitespace token is flanked on both sides by tokens from the same mapping, it inherits that mapping's color (`findBridgeMappingId()` in `tokenState.ts:35`)
 - **Bridged in text output** — `buildTargetText()` treats gaps of ≤ 5 tokens where all gap tokens are whitespace or punctuation as contiguous, so `"simple"` renders as a single phrase rather than split fragments

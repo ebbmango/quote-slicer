@@ -1,10 +1,10 @@
 # Link Mode
 
-Link mode (`mode.current === 'link'`) is where users draw word-to-word alignments. The state machine lives in `LinkContext` (`src/lib/context/link.svelte.ts`).
+Link mode (`mode.current === 'link'`) is where users draw word-to-word alignments. The state machine lives in `Alignment` (`src/lib/context/alignment.svelte.ts`).
 
-## LinkContext
+## Alignment
 
-`LinkContext` is a Svelte 5 class instantiated once in `+page.svelte` via `setLinkContext()` and accessed anywhere in the tree via `getLinkContext()`. It owns:
+`Alignment` is a Svelte 5 class instantiated once in `+page.svelte` via `setAlignmentContext()` and accessed anywhere in the tree via `getAlignmentContext()`. It owns:
 
 - `mappings: Mapping[]` — the full list of mappings (private `$state`)
 - `activeMappingId: MappingId | null` — the currently selected mapping (`$state`, public)
@@ -15,11 +15,11 @@ Link mode (`mode.current === 'link'`) is where users draw word-to-word alignment
 
 ## Click state machine
 
-### `clickSource(i, shift)`
+### `toggleSource(i, opts)`
 
-`i` is the current array index of the clicked source token. `shift` is `true` when Cmd/Ctrl is held (mouse) or Alt+Shift+Space is pressed (keyboard). See `link.svelte.ts:153`.
+`i` is the current array index of the clicked source token. `opts.force` is `true` when Cmd/Ctrl is held (mouse), Alt+Shift+Space is pressed (keyboard), or on longpress (mobile). See `alignment.svelte.ts:191`.
 
-| Token state | Shift | Action |
+| Token state | force | Action |
 |---|---|---|
 | Belongs to active mapping | any | Remove token from mapping; prune if empty |
 | Belongs to another mapping | any | Switch active mapping to that one |
@@ -28,11 +28,13 @@ Link mode (`mode.current === 'link'`) is where users draw word-to-word alignment
 | No mapping; active mapping exists; active already has a source | true | Append to active mapping (force-add) |
 | No mapping; no active mapping | any | Create new mapping for this token |
 
+The "belongs to active mapping" and "belongs to another mapping" rows are handled by a shared `tryRemoveOrSwitch()` helper (`alignment.svelte.ts:177`), also used by `toggleTarget`.
+
 Punctuation source tokens are excluded from interaction (no `role="option"` in the DOM, no click handler).
 
-### `clickTarget(i)`
+### `toggleTarget(i)`
 
-`i` is the current array index of the clicked target token. See `link.svelte.ts:195`.
+`i` is the current array index of the clicked target token. See `alignment.svelte.ts:209`.
 
 | Token state | Action |
 |---|---|
@@ -42,12 +44,12 @@ Punctuation source tokens are excluded from interaction (no `role="option"` in t
 | No mapping; active mapping exists | Append to active mapping |
 | No mapping; no active mapping | Create new mapping for this token |
 
-Target tokens have no shift/multi-add path — any non-whitespace target token can be freely added to the active mapping.
+Target tokens have no force/multi-add path — any non-whitespace target token can be freely added to the active mapping.
 
 ## Mapping lifecycle
 
-- **Create** — `createMapping()` (`link.svelte.ts:83`): UUID, next `colorIndex` from a monotonic counter, empty token ID arrays
-- **Prune** — `pruneActive()` (`link.svelte.ts:93`): deletes the active mapping if it has zero source + zero target tokens; called after every removal
+- **Create** — `createMapping()` (`alignment.svelte.ts:95`): UUID, next `colorIndex` from a monotonic counter, empty token ID arrays
+- **Prune** — `pruneActive()` (`alignment.svelte.ts:109`): deletes the active mapping if it has zero source + zero target tokens; called after every removal
 - **Deselect** — `deselect()`: sets `activeMappingId = null` without deleting
 - **Delete** — `deleteById(id)` or `deleteActive()`: removes by ID; clears `activeMappingId` if it matches
 
@@ -55,7 +57,7 @@ Target tokens have no shift/multi-add path — any non-whitespace target token c
 
 ## Pinyin auto-fill
 
-When a source token is added to a mapping, `tokenPinyin()` (`link.svelte.ts:22`) calls `pinyin-pro` to generate the initial romanisation. It uses `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result is written to `SourceToken.pinyin` via `setSourceTokenPinyin()` (`link.svelte.ts:104`), keyed by token ID — not stored on `Mapping`. Users can override it in the mapping card's pinyin input (`setPinyin()`, which resolves the mapping's source token at `position` and updates that token's `pinyin`).
+When a source token is added to a mapping, `tokenPinyin()` (`alignment.svelte.ts:24`) calls `pinyin-pro` to generate the initial romanisation. It uses `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result is written to `SourceToken.pinyin` via `setSourceTokenPinyin()` (`alignment.svelte.ts:104`), keyed by token ID — not stored on `Mapping`. Users can override it in the mapping card's pinyin input (`setPinyin()`, which resolves the mapping's source token at `position` and updates that token's `pinyin`).
 
 When a source token is removed from a mapping, its `pinyin` field is cleared back to `undefined`.
 
@@ -76,7 +78,7 @@ Implemented in `QuoteWorkbench.svelte`. Tokens are removed from the Tab order; n
 | Alt+↑ / Alt+↓ | Move focus to visual row above/below; wraps from source bottom to target, and target top to source |
 | Alt+← / Alt+→ | Move focus to prev/next token in DOM order |
 | Alt+Enter | Toggle focus between source and target panels (remembers last focused token per panel) |
-| Alt+Space | Select/deselect token (calls `clickSource` or `clickTarget`) |
+| Alt+Space | Select/deselect token (calls `toggleSource` or `toggleTarget`) |
 | Alt+Shift+Space | Force-add source token to current mapping |
 | Escape | Deselect active mapping |
 | Backspace / Delete | Delete focused mapping card (or active mapping if no card focused) |
