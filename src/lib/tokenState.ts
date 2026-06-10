@@ -17,11 +17,13 @@ export type QuoteExportMeta = {
 	authorship: string;
 };
 
+export type ExportMapping = Omit<Mapping, 'colorIndex'>;
+
 export type QuoteExport = {
 	meta: QuoteExportMeta;
 	sourceTokens: SourceToken[];
 	targetTokens: TargetToken[];
-	mappings: Mapping[];
+	mappings: ExportMapping[];
 };
 
 export type TokenState =

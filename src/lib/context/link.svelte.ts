@@ -41,7 +41,7 @@ class LinkContext {
 		meta: this.meta,
 		sourceTokens: this.sourceTokens,
 		targetTokens: this.targetTokens,
-		mappings: this.mappings,
+		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
 	});
 
 	exportJson: string = $derived(JSON.stringify(this.exportData));
