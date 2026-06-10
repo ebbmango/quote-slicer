@@ -55,9 +55,11 @@ Target tokens have no shift/multi-add path — any non-whitespace target token c
 
 ## Pinyin auto-fill
 
-When a source token is added to a mapping, `tokenPinyin()` (`link.svelte.ts:22`) calls `pinyin-pro` to generate the initial romanisation. It uses `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result is stored in `Mapping.pinyin[]` parallel to `sourceTokenIds`. Users can override it in the mapping card's pinyin input.
+When a source token is added to a mapping, `tokenPinyin()` (`link.svelte.ts:22`) calls `pinyin-pro` to generate the initial romanisation. It uses `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result is written to `SourceToken.pinyin` via `setSourceTokenPinyin()` (`link.svelte.ts:104`), keyed by token ID — not stored on `Mapping`. Users can override it in the mapping card's pinyin input (`setPinyin()`, which resolves the mapping's source token at `position` and updates that token's `pinyin`).
 
-Only `'character'` type source tokens get pinyin — punctuation, numbers, and symbols get an empty string.
+When a source token is removed from a mapping, its `pinyin` field is cleared back to `undefined`.
+
+Only `'character'` type source tokens get pinyin — punctuation, numbers, and symbols are never assigned one (`MappingView.sourceEntries[].pinyin` falls back to `''`).
 
 ## Whitespace bridging
 

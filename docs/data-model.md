@@ -10,6 +10,7 @@ type SourceToken = {
   text: string;
   line: number;
   type: 'character' | 'punctuation' | 'number' | 'symbol';
+  pinyin?: string; // set when token joins a mapping; cleared when removed
 };
 
 type TargetToken = {
@@ -34,7 +35,6 @@ type Mapping = {
   colorIndex: number;         // index into MAPPING_COLORS; assigned at creation, never changes
   sourceTokenIds: number[];   // stable token IDs, not array indices
   targetTokenIds: number[];   // stable token IDs, not array indices
-  pinyin: string[];           // parallel to sourceTokenIds
 };
 ```
 
@@ -80,3 +80,5 @@ type MappingView = {
 ```
 
 `Mapping.svelte` reads only `MappingView` — it never touches the raw `Mapping` state or the token arrays directly. `targetText` is built by `buildTargetText()`, which spans contiguous groups of target tokens (bridging whitespace and punctuation gaps ≤ 5 tokens) and joins non-contiguous groups with `, `.
+
+`sourceEntries[].pinyin` reads `SourceToken.pinyin ?? ''` — pinyin lives on the source token, not on `Mapping`.

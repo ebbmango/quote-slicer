@@ -20,7 +20,7 @@ Clicking the advance arrow in `text` mode commits both texts and moves to `link`
 Each mapping links a set of source characters to a set of target words and carries:
 
 - a color, assigned from a fixed 9-color palette and stable for the lifetime of the mapping
-- a pinyin array (one entry per source character), auto-filled from `pinyin-pro` and editable in the sidebar card
+- pinyin for each source character, auto-filled from `pinyin-pro` (stored on the source token, editable in the sidebar card)
 - a display label (sequential number shown on the card)
 
 Mappings are displayed in the left sidebar, sorted by the first source character's position in the text.
