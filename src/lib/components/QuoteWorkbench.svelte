@@ -44,6 +44,9 @@
 	$effect(() => {
 		link.setTargetTokens(targetTokens);
 	});
+	$effect(() => {
+		link.setMeta({ sourceText, targetText, authorship });
+	});
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);

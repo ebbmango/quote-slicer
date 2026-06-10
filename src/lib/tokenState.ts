@@ -1,5 +1,5 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
-import type { TargetToken } from '$lib/tokenize';
+import type { SourceToken, TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;
 
@@ -9,6 +9,19 @@ export type Mapping = {
 	sourceTokenIds: number[]; // token ids, stable across split/merge
 	targetTokenIds: number[]; // token ids, stable across split/merge
 	pinyin: string[]; // parallel to sourceTokenIds
+};
+
+export type QuoteExportMeta = {
+	sourceText: string;
+	targetText: string;
+	authorship: string;
+};
+
+export type QuoteExport = {
+	meta: QuoteExportMeta;
+	sourceTokens: SourceToken[];
+	targetTokens: TargetToken[];
+	mappings: Mapping[];
 };
 
 export type TokenState =

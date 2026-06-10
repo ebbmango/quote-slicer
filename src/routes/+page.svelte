@@ -196,7 +196,9 @@
 	<aside
 		class="sidebar sidebar-right bg-[#f9f9f9]"
 		aria-hidden={modeCtx.current === 'text'}
-	></aside>
+	>
+		<pre class="h-full w-full overflow-auto p-6 text-xs">{JSON.stringify(link.exportData, null, 2)}</pre>
+	</aside>
 </div>
 
 <style lang="postcss">

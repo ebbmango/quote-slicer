@@ -7,10 +7,12 @@ import {
 	deriveTargetTokenState,
 	type Mapping,
 	type MappingId,
+	type QuoteExport,
+	type QuoteExportMeta,
 	type TokenState,
 } from '$lib/tokenState';
 
-export type { Mapping, MappingId, TokenState };
+export type { Mapping, MappingId, QuoteExport, QuoteExportMeta, TokenState };
 
 export type MappingView = {
 	id: MappingId;
@@ -33,6 +35,16 @@ class LinkContext {
 	private mappings: Mapping[] = $state([]);
 	private sourceTokens: SourceToken[] = $state([]);
 	private targetTokens: TargetToken[] = $state([]);
+	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
+
+	exportData: QuoteExport = $derived({
+		meta: this.meta,
+		sourceTokens: this.sourceTokens,
+		targetTokens: this.targetTokens,
+		mappings: this.mappings,
+	});
+
+	exportJson: string = $derived(JSON.stringify(this.exportData));
 
 	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
 	private sourceIdToIndex: Map<number, number> = $derived(
@@ -127,6 +139,10 @@ class LinkContext {
 
 	setTargetTokens(tokens: TargetToken[]): void {
 		this.targetTokens = tokens;
+	}
+
+	setMeta(meta: QuoteExportMeta): void {
+		this.meta = meta;
 	}
 
 	setActive(id: MappingId | null): void {
