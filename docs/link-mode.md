@@ -71,7 +71,7 @@ The bridged token renders as `idle` or `active` depending on whether its neighbo
 
 ## Keyboard scheme (link mode)
 
-Implemented in `QuoteWorkbench.svelte`. Tokens are removed from the Tab order; navigation is via Alt+Arrow within the token workspace.
+Provided by `createTokenGridNav()` (`src/lib/navigation/tokenGridNav.ts`), wired up in `QuoteWorkbench.svelte`. Tokens are removed from the Tab order; navigation is via Alt+Arrow within the token workspace. See [TokenGridNav](ui-architecture.md#tokengridnav) for the shared mechanism — this table covers link mode's specific bindings.
 
 | Shortcut | Action |
 |---|---|
@@ -80,5 +80,5 @@ Implemented in `QuoteWorkbench.svelte`. Tokens are removed from the Tab order; n
 | Alt+Enter | Toggle focus between source and target panels (remembers last focused token per panel) |
 | Alt+Space | Select/deselect token (calls `toggleSource` or `toggleTarget`) |
 | Alt+Shift+Space | Force-add source token to current mapping |
-| Escape | Deselect active mapping |
+| Escape | Blur the focused token, then deselect the active mapping |
 | Backspace / Delete | Delete focused mapping card (or active mapping if no card focused) |

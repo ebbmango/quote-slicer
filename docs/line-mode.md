@@ -81,6 +81,21 @@ The target panel uses whitespace tokens as the interaction surface rather than z
 
 Non-whitespace tokens and non-boundary whitespace tokens are plain spans.
 
+## Keyboard scheme (line mode)
+
+Provided by the same `createTokenGridNav()` instance as link mode (`src/lib/navigation/tokenGridNav.ts`), wired up in `QuoteWorkbench.svelte`. See [TokenGridNav](ui-architecture.md#tokengridnav) for the shared mechanism.
+
+The navigable elements are the split/merge buttons (`.split-zone`, `.merge-zone`, `.ws-split`, `.ws-boundary`) — all real `<button>`s, so they're focusable without `data-token-index`.
+
+| Shortcut | Action |
+|---|---|
+| Alt+↑ / Alt+↓ | Move focus to the split/merge button on the visual row above/below |
+| Alt+← / Alt+→ | Move focus to prev/next split/merge button in DOM order |
+| Alt+Space / Alt+Shift+Space | Activate the focused button — triggers its `click` handler (`handleSplit`/`handleMerge`) |
+| Escape | Blur the focused button |
+
+Alt+Enter and the source↔target row-boundary jump are link-mode only (`crossZoneJump`); in line mode, reaching the top/bottom edge of a panel's buttons with Alt+↑/↓ does nothing.
+
 ## Animation
 
 Both panels lazy-load GSAP's `Flip` plugin inside `onMount`. On split or merge:

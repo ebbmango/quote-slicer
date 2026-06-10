@@ -35,14 +35,16 @@
 - In link/line mode: renders the `role="grid"` keyboard navigation container
 - Implements `withShiftAnimation()` for cross-panel sibling Y-shift when a split/merge changes the height of one panel
 - Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks
-- Handles all Alt+Arrow keyboard navigation across both token panels (`handleArrowNav`)
+- Instantiates `createTokenGridNav()` and wires its `handleKeydown`/`handleFocusIn` to the `role="grid"` container; supplies the mode-dependent config (see [TokenGridNav](#tokengridnav))
+- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` so `TokenGridNav` can resolve which panel an element belongs to in either mode
 
 ### `InteractiveSourceText.svelte`
 
 - Renders source tokens as a flat flex-wrap layout in both link and line mode
-- **Link mode**: renders interactive `role="option"` spans for non-punctuation tokens; calls `alignment.toggleSource(i, { force })` on click (Cmd/Ctrl) or Alt+Space (keyboard); uses `longpress` action for mobile multi-add
+- **Link mode**: renders interactive `role="option"` spans for non-punctuation tokens; calls `alignment.toggleSource(i, { force })` on click (Cmd/Ctrl); `TokenGridNav` calls it on Alt+Space; uses `longpress` action for mobile multi-add
 - **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; applies GSAP Flip for per-panel token shuffle animation
 - Sets an explicit pixel height on its container after every token change (via `$effect`) to prevent Flip's `absolute: true` from collapsing the container
+- No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
 
 ### `InteractiveTargetText.svelte`
 
@@ -50,6 +52,23 @@
 - **Link mode**: whitespace tokens are non-interactive (`toggleTarget` is a no-op for them)
 - **Line mode**: whitespace tokens are the split/merge affordance — interior whitespace → split button, boundary whitespace → merge button (the boundary token itself plus a full-width merge-zone below it)
 - No container height lock needed; `QuoteWorkbench` provides `lockEl` to `withShiftAnimation` instead
+- No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
+
+## TokenGridNav
+
+`createTokenGridNav()` (`src/lib/navigation/tokenGridNav.ts`) is the single owner of the token-grid keyboard contract for **both** link and line mode. `QuoteWorkbench` creates one instance and wires `handleKeydown`/`handleFocusIn` to the `role="grid"` container's `onkeydown`/`onfocusin`.
+
+It takes a `getContainer()` accessor and a config object whose fields are getters/callbacks re-evaluated on every keystroke, so a single instance can serve both modes:
+
+- `itemSelector()` — CSS selector for the currently navigable elements: `[role="option"]` in link mode, `.split-zone, .merge-zone, .ws-split, .ws-boundary` in line mode
+- `crossZoneJump()` — `true` in link mode (enables Alt+Enter and the source↔target row-boundary jump), `false` in line mode
+- `getDefaultIndex(zone)` — link mode delegates to `alignment.findDefaultTokenIndex(zone)`; unused in line mode (`crossZoneJump` is `false`, so `jumpTo` never runs)
+- `onActivate(el, e)` — Alt+Space/Alt+Shift+Space: link mode resolves `el`'s zone via `data-zone` and `data-token-index` and calls `alignment.toggleSource`/`toggleTarget`; line mode calls `el.click()` to trigger the button's existing split/merge handler
+- `onEscape()` — link mode calls `alignment.deselect()`; line mode is a no-op (Escape still blurs the focused element first, in both modes)
+
+`getZone(el)` (exported alongside `createTokenGridNav`) resolves a zone by walking up to the nearest `[data-zone="source"|"target"]` ancestor — the wrapper divs `QuoteWorkbench` renders around each panel, present in both modes.
+
+The visual row/column math (`findVisualNeighbor`) delegates to the pure function `pickVisualNeighbor()` in `src/lib/navigation/visualNeighbor.ts`, which operates on plain `{ top, bottom, left, width }` rects and is unit-tested in `visualNeighbor.spec.ts`.
 
 ### `Mapping.svelte`
 
