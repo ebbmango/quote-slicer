@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { tick, onMount } from 'svelte';
 	import type { TargetToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
+	import { createFlipTransition } from '$lib/animation/flipTransition.svelte';
 	let {
 		tokens,
 		onSplit,
@@ -20,33 +20,14 @@
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
 
-	let Flip: (typeof import('gsap/Flip'))['Flip'] | null = $state(null);
+	const flip = createFlipTransition();
 
-	onMount(async () => {
-		const { Flip: F } = await import('gsap/Flip');
-		Flip = F;
-	});
-
-	async function handleSplit(globalIndex: number) {
-		if (!Flip || !lineContainer) {
-			onSplit(globalIndex);
-			return;
-		}
-		const state = Flip.getState(lineContainer.querySelectorAll('[data-flip-id]'));
-		onSplit(globalIndex);
-		await tick();
-		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true });
+	function handleSplit(globalIndex: number) {
+		flip.run(lineContainer, () => onSplit(globalIndex));
 	}
 
-	async function handleMerge(lineN: number) {
-		if (!Flip || !lineContainer) {
-			onMerge(lineN);
-			return;
-		}
-		const state = Flip.getState(lineContainer.querySelectorAll('[data-flip-id]'));
-		onMerge(lineN);
-		await tick();
-		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true });
+	function handleMerge(lineN: number) {
+		flip.run(lineContainer, () => onMerge(lineN));
 	}
 
 	function handleClick(i: number) {
