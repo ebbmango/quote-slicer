@@ -29,6 +29,17 @@
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
+	let exportJsonHtml: string = $state('');
+
+	$effect(() => {
+		const code = JSON.stringify(link.exportData, null, 2);
+		import('shiki').then(({ codeToHtml }) =>
+			codeToHtml(code, { lang: 'json', theme: 'github-light' })
+		).then((html) => {
+			exportJsonHtml = html;
+		});
+	});
+
 	onMount(() => {
 		function handleDeleteKey(e: KeyboardEvent) {
 			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
@@ -197,11 +208,16 @@
 		class="sidebar sidebar-right bg-[#f9f9f9]"
 		aria-hidden={modeCtx.current === 'text'}
 	>
-		<pre class="h-full w-full overflow-auto p-6 text-xs">{JSON.stringify(link.exportData, null, 2)}</pre>
+		<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">{@html exportJsonHtml}</div>
 	</aside>
 </div>
 
 <style lang="postcss">
+	.shiki-export :global(pre) {
+		background: transparent !important;
+		font-family: inherit;
+	}
+
 	#tools button {
 		@apply duration-300;
 	}
