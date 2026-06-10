@@ -51,17 +51,6 @@
 		alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
 	}
 
-	function handleKeydown(e: KeyboardEvent, i: number) {
-		if (!isLinkMode) return;
-		if (!e.altKey || e.key !== ' ') return;
-		e.preventDefault();
-		alignment.toggleSource(i, { force: e.shiftKey });
-	}
-
-	function handleContainerKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') alignment.deselect();
-	}
-
 	function handleContainerClick(e: MouseEvent) {
 		if (e.target === e.currentTarget) alignment.deselect();
 	}
@@ -130,7 +119,6 @@
 			aria-label="Source tokens"
 			class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
 			class:select-none={isLinkMode}
-			onkeydown={handleContainerKeydown}
 			onclick={handleContainerClick}
 		>
 			{#each tokens as token, i (token)}
@@ -148,7 +136,6 @@
 						class={tokenOpacity(i) + ' cursor-pointer duration-180 outline-none'}
 						style={tokenStyle(i)}
 						onclick={(e) => handleClick(e, i)}
-						onkeydown={(e) => handleKeydown(e, i)}
 						onfocus={(e) => {
 							if (e.currentTarget.matches(':focus-visible')) focusedIndex = i;
 						}}
