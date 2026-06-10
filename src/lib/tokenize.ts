@@ -6,7 +6,7 @@ export type SourceToken = {
 	text: string;
 	line: number;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
-	pinyin?: string;
+	pinyin?: string | null; // undefined: character not yet annotated; null: not applicable
 };
 
 export type TargetToken = {
@@ -25,10 +25,12 @@ export type TargetToken = {
 export function tokenizeSource(text: string): SourceToken[] {
 	return text.split('\n').flatMap((lineText, line) =>
 		[...lineText].map((char) => {
-			if (/\p{Script=Han}/u.test(char)) return { text: char, line, type: 'character' as const };
-			if (/\p{N}/u.test(char)) return { text: char, line, type: 'number' as const };
-			if (/[\p{P}\p{S}]/u.test(char)) return { text: char, line, type: 'punctuation' as const };
-			return { text: char, line, type: 'symbol' as const };
+			if (/\p{Script=Han}/u.test(char))
+				return { text: char, line, type: 'character' as const, pinyin: undefined };
+			if (/\p{N}/u.test(char)) return { text: char, line, type: 'number' as const, pinyin: null };
+			if (/[\p{P}\p{S}]/u.test(char))
+				return { text: char, line, type: 'punctuation' as const, pinyin: null };
+			return { text: char, line, type: 'symbol' as const, pinyin: null };
 		})
 	).map((t, id) => ({ ...t, id }));
 }
