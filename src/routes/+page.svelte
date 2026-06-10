@@ -5,6 +5,7 @@
 	import Mapping from '$lib/components/Mapping.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
+	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -29,7 +30,6 @@
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
-	let exportJsonHtml: string = $state('');
 
 	function isPrimitive(v: unknown): boolean {
 		return v === null || typeof v !== 'object';
@@ -110,14 +110,7 @@
 		return JSON.stringify(value);
 	}
 
-	$effect(() => {
-		const code = formatJson(alignment.exportData);
-		import('shiki').then(({ codeToHtml }) =>
-			codeToHtml(code, { lang: 'json', theme: 'github-light' })
-		).then((html) => {
-			exportJsonHtml = html;
-		});
-	});
+	const exportJson = $derived(formatJson(alignment.exportData));
 
 	onMount(() => {
 		function handleDeleteKey(e: KeyboardEvent) {
@@ -287,7 +280,9 @@
 		class="sidebar sidebar-right bg-[#f9f9f9]"
 		aria-hidden={modeCtx.current === 'text'}
 	>
-		<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">{@html exportJsonHtml}</div>
+		<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">
+			<HighlightedCode code={exportJson} />
+		</div>
 	</aside>
 </div>
 
