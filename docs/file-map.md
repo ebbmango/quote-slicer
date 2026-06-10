@@ -1,0 +1,43 @@
+# File Map
+
+Quick reference: every source file and its responsibility.
+
+## Routes
+
+| File | Responsibility |
+|------|---------------|
+| `src/routes/+layout.svelte` | GSAP plugin registration (lazy, inside `onMount`) |
+| `src/routes/+layout.ts` | `export const prerender = true` — static output, no SSR |
+| `src/routes/+page.svelte` | Root layout: three-column grid, context setup, mode toolbar, sidebar scroll, document-level keyboard/click handlers |
+
+## Library
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/tokenize.ts` | `SourceToken` / `TargetToken` types; `tokenizeSource()`, `tokenizeTargetSeparate()`, `tokenizeTargetCombined()`; `SOURCE_INPUT_RE` |
+| `src/lib/line.ts` | `splitAfterToken()`, `mergeLines()`, `groupByLine()` — pure generics over `T extends { line: number }` |
+| `src/lib/tokenState.ts` | `Mapping` / `MappingId` / `TokenState` types; `deriveSourceTokenState()`, `deriveTargetTokenState()`, `buildTargetText()`, `findBridgeMappingId()` — framework-free, vitest-safe |
+| `src/lib/constants/colors.ts` | `MAPPING_COLORS` array — 9 named palettes (`applesour`, `lush`, `seabreeze`, `azure`, `compostella`, `sugar`, `strawberry`, `maple`, `beeswax`); `MappingColor` type |
+| `src/lib/assets/icons.json` | SVG icon path data |
+
+## Context
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/context/mode.svelte.ts` | `ModeContext` — `current: Mode` (`'text'` \| `'link'` \| `'line'` \| `'view'`); `setModeContext()` / `getModeContext()` |
+| `src/lib/context/link.svelte.ts` | `LinkContext` — owns `mappings[]`, shadow token arrays, derived index maps, `sortedMappingViews`, click handlers; `setLinkContext()` / `getLinkContext()`; exports `MappingView` type |
+
+## Components
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/components/QuoteWorkbench.svelte` | Text-keyed token caches; source/target textarea (text mode); `role="grid"` navigation container (link/line mode); `withShiftAnimation()` for cross-panel Y-shift; Alt+Arrow keyboard navigation; IME-aware Han input filtering |
+| `src/lib/components/InteractiveSourceText.svelte` | Source token display; link mode click/keyboard interaction; line mode split/merge with GSAP Flip; container height lock via `$effect` |
+| `src/lib/components/InteractiveTargetText.svelte` | Target token display; link mode click/keyboard; line mode split/merge using whitespace tokens as the split/merge affordance; GSAP Flip |
+| `src/lib/components/Mapping.svelte` | Single mapping card; reads `MappingView` only; quantized grid-row sizing; `theme` derived object; pinyin inputs; delete button |
+
+## Actions
+
+| File | Responsibility |
+|------|---------------|
+| `src/lib/actions/longpress.ts` | Svelte action: fires `onlongpress` callback after N ms; used for mobile multi-add on source tokens |
