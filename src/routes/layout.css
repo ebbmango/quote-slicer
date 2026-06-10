@@ -48,10 +48,27 @@
 	font-display: swap;
 }
 
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('../lib/fonts/jetbrains-mono.ttf') format('truetype');
+	font-weight: 100 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('../lib/fonts/jetbrains-mono-italic.ttf') format('truetype');
+	font-weight: 100 800;
+	font-style: italic;
+	font-display: swap;
+}
+
 @theme {
 	--font-ss4: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-wenkai: Wenkai, ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-noto: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
+	--font-jetmono: 'JetBrains Mono', ui-monospace, monospace;
 	--mapping-gap: calc(var(--spacing) * 3);
 }
 
