@@ -4,7 +4,7 @@
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import Mapping from '$lib/components/Mapping.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
-	import { setLinkContext } from '$lib/context/link.svelte';
+	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -23,7 +23,7 @@
 	}
 
 	const modeCtx = setModeContext();
-	const link = setLinkContext();
+	const alignment = setAlignmentContext();
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
@@ -32,7 +32,7 @@
 	let exportJsonHtml: string = $state('');
 
 	$effect(() => {
-		const code = JSON.stringify(link.exportData, null, 2);
+		const code = JSON.stringify(alignment.exportData, null, 2);
 		import('shiki').then(({ codeToHtml }) =>
 			codeToHtml(code, { lang: 'json', theme: 'github-light' })
 		).then((html) => {
@@ -48,10 +48,10 @@
 			const focusedId = (active?.closest('li[data-mapping-id]') as HTMLElement)?.dataset.mappingId;
 			// Fresh/active mappings aren't focused yet — fall back to the active one so
 			// Backspace works right after creating a mapping, not just while tabbing the list.
-			const id = focusedId ?? link.activeMappingId;
+			const id = focusedId ?? alignment.activeMappingId;
 			if (!id) return;
 			e.preventDefault();
-			link.deleteById(id);
+			alignment.deleteById(id);
 		}
 
 		function handleDocumentClick(e: MouseEvent) {
@@ -59,7 +59,7 @@
 			if (target.closest('[data-mapping-id]')) return;
 			if (target.closest('[aria-label="Source tokens"]')) return;
 			if (target.closest('[aria-label="Target tokens"]')) return;
-			link.deselect();
+			alignment.deselect();
 		}
 
 		document.addEventListener('keydown', handleDeleteKey);
@@ -107,7 +107,7 @@
 	}
 
 	$effect(() => {
-		const id = link.activeMappingId;
+		const id = alignment.activeMappingId;
 		if (!id || !listEl) return;
 		const card = listEl.querySelector(`li[data-mapping-id="${id}"]`);
 		if (card) scrollCardIntoView(card);
@@ -122,7 +122,7 @@
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
 		<ol role="listbox" aria-label="Mappings" class="grid h-full w-full overflow-y-auto scroll-smooth p-6 [gap:var(--mapping-gap)] auto-rows-[5.75rem] grid-cols-[1fr] tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]" bind:this={listEl} onkeydown={handleListTab}>
-			{#each link.sortedMappingViews as mappingView, i (mappingView.id)}
+			{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
 				<Mapping {mappingView} index={i} />
 			{/each}
 		</ol>

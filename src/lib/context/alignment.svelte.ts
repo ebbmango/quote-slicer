@@ -27,9 +27,9 @@ function tokenPinyin(token: SourceToken | undefined): string {
 	return pinyin(text, { toneType: 'symbol', separator: ' ' });
 }
 
-const LINK_KEY = Symbol('link');
+const ALIGNMENT_KEY = Symbol('alignment');
 
-class LinkContext {
+class Alignment {
 	activeMappingId: MappingId | null = $state(null);
 	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
@@ -164,76 +164,57 @@ class LinkContext {
 		const isWord = (t: { type: string }) => t.type !== 'whitespace' && t.type !== 'punctuation';
 		const getState =
 			zone === 'source'
-				? (i: number) => this.getSourceTokenState(i)
-				: (i: number) => this.getTargetTokenState(i);
+				? (i: number) => this.stateOfSource(i)
+				: (i: number) => this.stateOfTarget(i);
 		let idx = tokens.findIndex((t, i) => isWord(t) && getState(i).kind === 'unmapped');
 		if (idx === -1) idx = tokens.findIndex(isWord);
 		return idx;
 	}
 
-	clickSource(i: number, shift = false): void {
-		const claimed = this.sourceMappingIndex.get(i);
-		if (claimed !== undefined) {
-			if (claimed === this.activeMappingId) {
-				// remove from active mapping (shift irrelevant here)
-				const m = this.activeMapping!;
-				const tokenId = this.sourceTokens[i].id;
-				m.sourceTokenIds = m.sourceTokenIds.filter((id) => id !== tokenId);
-				this.setSourceTokenPinyin(tokenId, undefined);
-				this.pruneActive();
-			} else {
-				// switch to that mapping
-				this.activeMappingId = claimed;
-			}
-		} else if (this.activeMappingId !== null) {
-			const m = this.activeMapping!;
-			if (shift || m.sourceTokenIds.length === 0) {
-				// shift = force-add; no sources yet = first source slot, add freely
-				const tokenId = this.sourceTokens[i].id;
-				m.sourceTokenIds = [...m.sourceTokenIds, tokenId];
-				this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
-			} else {
-				// mapping already has a source — create new mapping for this token
-				const newM = this.createMapping();
-				const tokenId = this.sourceTokens[i].id;
-				newM.sourceTokenIds = [tokenId];
-				this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
-				this.mappings = [...this.mappings, newM];
-				this.activeMappingId = newM.id;
-			}
+	// Shared by toggleSource/toggleTarget: if `tokenId` already belongs to a mapping,
+	// either remove it (active mapping) or switch the active mapping to it (other mapping).
+	// Returns true if either happened, so the caller stops there.
+	private tryRemoveOrSwitch(panel: 'source' | 'target', tokenId: number): boolean {
+		const key = panel === 'source' ? 'sourceTokenIds' : 'targetTokenIds';
+		const claimed = this.mappings.find((m) => m[key].includes(tokenId));
+		if (!claimed) return false;
+		if (claimed.id === this.activeMappingId) {
+			claimed[key] = claimed[key].filter((id) => id !== tokenId);
+			if (panel === 'source') this.setSourceTokenPinyin(tokenId, undefined);
+			this.pruneActive();
 		} else {
-			// create new mapping
-			const m = this.createMapping();
-			const tokenId = this.sourceTokens[i].id;
-			m.sourceTokenIds = [tokenId];
-			this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
-			this.mappings = [...this.mappings, m];
-			this.activeMappingId = m.id;
+			this.activeMappingId = claimed.id;
 		}
+		return true;
 	}
 
-	clickTarget(i: number): void {
-		if (this.targetTokens[i]?.type === 'whitespace') return;
-		const claimed = this.targetMappingIndex.get(i);
-		if (claimed !== undefined) {
-			if (claimed === this.activeMappingId) {
-				// remove from active mapping
-				const m = this.activeMapping!;
-				const tokenId = this.targetTokens[i].id;
-				m.targetTokenIds = m.targetTokenIds.filter((id) => id !== tokenId);
-				this.pruneActive();
-			} else {
-				// switch to that mapping
-				this.activeMappingId = claimed;
-			}
-		} else if (this.activeMappingId !== null) {
-			// add to active mapping
-			const tokenId = this.targetTokens[i].id;
-			this.activeMapping!.targetTokenIds = [...this.activeMapping!.targetTokenIds, tokenId];
+	toggleSource(i: number, opts: { force?: boolean } = {}): void {
+		const tokenId = this.sourceTokens[i].id;
+		if (this.tryRemoveOrSwitch('source', tokenId)) return;
+
+		const m = this.activeMapping;
+		if (m && (opts.force || m.sourceTokenIds.length === 0)) {
+			// force-add, or first source slot — add freely
+			m.sourceTokenIds = [...m.sourceTokenIds, tokenId];
 		} else {
-			// create new mapping
+			// active mapping already has a source — create new mapping for this token
+			const newM = this.createMapping();
+			newM.sourceTokenIds = [tokenId];
+			this.mappings = [...this.mappings, newM];
+			this.activeMappingId = newM.id;
+		}
+		this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
+	}
+
+	toggleTarget(i: number): void {
+		if (this.targetTokens[i]?.type === 'whitespace') return;
+		const tokenId = this.targetTokens[i].id;
+		if (this.tryRemoveOrSwitch('target', tokenId)) return;
+
+		if (this.activeMapping) {
+			this.activeMapping.targetTokenIds = [...this.activeMapping.targetTokenIds, tokenId];
+		} else {
 			const m = this.createMapping();
-			const tokenId = this.targetTokens[i].id;
 			m.targetTokenIds = [tokenId];
 			this.mappings = [...this.mappings, m];
 			this.activeMappingId = m.id;
@@ -255,11 +236,11 @@ class LinkContext {
 		if (this.activeMappingId === id) this.activeMappingId = null;
 	}
 
-	getSourceTokenState(i: number): TokenState {
+	stateOfSource(i: number): TokenState {
 		return deriveSourceTokenState(i, this.sourceMappingIndex, this.mappings, this.activeMappingId);
 	}
 
-	getTargetTokenState(i: number): TokenState {
+	stateOfTarget(i: number): TokenState {
 		return deriveTargetTokenState(
 			i,
 			this.targetTokens,
@@ -270,10 +251,10 @@ class LinkContext {
 	}
 }
 
-export function setLinkContext(): LinkContext {
-	return setContext(LINK_KEY, new LinkContext());
+export function setAlignmentContext(): Alignment {
+	return setContext(ALIGNMENT_KEY, new Alignment());
 }
 
-export function getLinkContext(): LinkContext {
-	return getContext<LinkContext>(LINK_KEY);
+export function getAlignmentContext(): Alignment {
+	return getContext<Alignment>(ALIGNMENT_KEY);
 }

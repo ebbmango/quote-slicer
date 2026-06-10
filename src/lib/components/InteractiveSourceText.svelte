@@ -2,7 +2,7 @@
 	import { tick, onMount } from 'svelte';
 	import type { SourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
-	import { getLinkContext } from '$lib/context/link.svelte';
+	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
 
 	let {
@@ -18,7 +18,7 @@
 	let container: HTMLDivElement;
 	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
-	let link = getLinkContext();
+	let alignment = getAlignmentContext();
 	let isLinkMode = $derived(mode.current === 'link');
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
@@ -61,29 +61,29 @@
 
 	function handleClick(e: MouseEvent, i: number) {
 		if (!isLinkMode) return;
-		link.clickSource(i, e.metaKey || e.ctrlKey);
+		alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
 	}
 
 	function handleKeydown(e: KeyboardEvent, i: number) {
 		if (!isLinkMode) return;
 		if (!e.altKey || e.key !== ' ') return;
 		e.preventDefault();
-		link.clickSource(i, e.shiftKey);
+		alignment.toggleSource(i, { force: e.shiftKey });
 	}
 
 	function handleContainerKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') link.deselect();
+		if (e.key === 'Escape') alignment.deselect();
 	}
 
 	function handleContainerClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) link.deselect();
+		if (e.target === e.currentTarget) alignment.deselect();
 	}
 
 	function tokenStyle(i: number): string {
 		if (!isLinkMode) return '';
 		const token = tokens[i];
 		if (token.type === 'punctuation') return '';
-		const s = link.getSourceTokenState(i);
+		const s = alignment.stateOfSource(i);
 		const focused = focusedIndex === i;
 		if (s.kind === 'active' && focused) return `color: ${s.color}; filter: brightness(0.75);`;
 		if (s.kind === 'active') return `color: ${s.color};`;
@@ -95,7 +95,7 @@
 		if (!isLinkMode) return 'opacity-30';
 		const token = tokens[i];
 		if (token.type === 'punctuation') return 'opacity-30';
-		const s = link.getSourceTokenState(i);
+		const s = alignment.stateOfSource(i);
 		const focused = focusedIndex === i;
 		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
 		if (s.kind === 'idle') return 'opacity-70';
@@ -156,7 +156,7 @@
 						data-type={token.type}
 						data-token-index={i}
 						role="option"
-						aria-selected={link.getSourceTokenState(i).kind === 'active'}
+						aria-selected={alignment.stateOfSource(i).kind === 'active'}
 						tabindex="-1"
 						class={tokenOpacity(i) + ' cursor-pointer duration-180 outline-none'}
 						style={tokenStyle(i)}
@@ -168,7 +168,7 @@
 						onblur={() => {
 							focusedIndex = null;
 						}}
-						use:longpress={{ duration: 500, onlongpress: () => link.clickSource(i, true) }}
+						use:longpress={{ duration: 500, onlongpress: () => alignment.toggleSource(i, { force: true }) }}
 						>{token.text}</span
 					>
 				{:else}

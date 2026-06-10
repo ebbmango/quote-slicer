@@ -2,7 +2,7 @@
 	import { tick, onMount } from 'svelte';
 	import type { TargetToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
-	import { getLinkContext } from '$lib/context/link.svelte';
+	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	let {
 		tokens,
 		onSplit,
@@ -15,7 +15,7 @@
 
 	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
-	let link = getLinkContext();
+	let alignment = getAlignmentContext();
 	let isLinkMode = $derived(mode.current === 'link');
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
@@ -51,28 +51,28 @@
 
 	function handleClick(i: number) {
 		if (!isLinkMode) return;
-		link.clickTarget(i);
+		alignment.toggleTarget(i);
 	}
 
 	function handleKeydown(e: KeyboardEvent, i: number) {
 		if (!isLinkMode) return;
 		if (!e.altKey || e.key !== ' ') return;
 		e.preventDefault();
-		link.clickTarget(i);
+		alignment.toggleTarget(i);
 	}
 
 	function handleContainerKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') link.deselect();
+		if (e.key === 'Escape') alignment.deselect();
 	}
 
 	function handleContainerClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) link.deselect();
+		if (e.target === e.currentTarget) alignment.deselect();
 	}
 
 	function tokenStyle(i: number): string {
 		if (!isLinkMode) return '';
 		const transition = 'transition: color 280ms ease, font-weight 280ms ease;';
-		const s = link.getTargetTokenState(i);
+		const s = alignment.stateOfTarget(i);
 		const focused = focusedIndex === i;
 		if (s.kind === 'active' && focused)
 			return `${transition} color: ${s.color}; font-weight: 600; filter: brightness(0.75);`;
@@ -83,7 +83,7 @@
 
 	function tokenOpacity(i: number): string {
 		if (!isLinkMode) return '';
-		const s = link.getTargetTokenState(i);
+		const s = alignment.stateOfTarget(i);
 		const focused = focusedIndex === i;
 		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
 		if (s.kind === 'idle') return 'opacity-70';
@@ -155,7 +155,7 @@
 					data-type={token.type}
 					data-token-index={i}
 					role="option"
-					aria-selected={link.getTargetTokenState(i).kind === 'active'}
+					aria-selected={alignment.stateOfTarget(i).kind === 'active'}
 					tabindex="-1"
 					class={tokenOpacity(i) + ' cursor-pointer outline-none'}
 					style={tokenStyle(i)}

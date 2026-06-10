@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { getLinkContext, type MappingView } from '$lib/context/link.svelte';
+	import { getAlignmentContext, type MappingView } from '$lib/context/alignment.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
 	import icons from '$lib/assets/icons.json';
 
 	let { mappingView, index }: { mappingView: MappingView; index: number } = $props();
 
-	const link = getLinkContext();
+	const alignment = getAlignmentContext();
 	const color = $derived(MAPPING_COLORS[mappingView.colorIndex % MAPPING_COLORS.length]);
-	const isActive = $derived(link.activeMappingId === mappingView.id);
+	const isActive = $derived(alignment.activeMappingId === mappingView.id);
 	let isFocused = $state(false);
 	let isButtonHovered = $state(false);
 	const isEmpty = $derived(mappingView.sourceEntries.length === 0);
@@ -54,8 +54,8 @@
 	const deleteGlyphFill = $derived(isButtonHovered ? theme.deleteHoverText : color.tagBgActive);
 
 	function toggleActive() {
-		if (link.activeMappingId === mappingView.id) link.deselect();
-		else link.setActive(mappingView.id);
+		if (alignment.activeMappingId === mappingView.id) alignment.deselect();
+		else alignment.setActive(mappingView.id);
 	}
 </script>
 
@@ -73,7 +73,7 @@
 		if (e.target instanceof HTMLInputElement) return;
 		if (e.key === 'Escape') {
 			e.preventDefault();
-			link.deselect();
+			alignment.deselect();
 			(e.currentTarget as HTMLElement).blur();
 			return;
 		}
@@ -118,7 +118,7 @@
 					oninput={isEmpty
 						? undefined
 						: (e) => {
-								link.setPinyin(mappingView.id, i, e.currentTarget.value);
+								alignment.setPinyin(mappingView.id, i, e.currentTarget.value);
 							}}
 					onclick={isEmpty ? undefined : (e) => e.stopPropagation()}
 				/>
@@ -149,7 +149,7 @@
 						aria-label="Delete mapping"
 						onclick={(e) => {
 							e.stopPropagation();
-							link.deleteById(mappingView.id);
+							alignment.deleteById(mappingView.id);
 						}}
 					>
 						<svg viewBox={icons['delete-left'].viewBox} class="size-7">

@@ -2,7 +2,7 @@
 	// version B
 	import { onMount, tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
-	import { getLinkContext } from '$lib/context/link.svelte';
+	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { tokenizeSource, tokenizeTargetSeparate, SOURCE_INPUT_RE } from '$lib/tokenize';
 	import type { SourceToken, TargetToken } from '$lib/tokenize';
 	import { splitAfterToken, mergeLines } from '$lib/line';
@@ -19,7 +19,7 @@
 
 	let mode = getModeContext();
 	let editing = $derived(mode.current === 'text');
-	const link = getLinkContext();
+	const alignment = getAlignmentContext();
 
 	// Text-keyed caches: if text matches, use the cached (possibly split/merged) token array;
 	// otherwise fall through to fresh tokenization. This makes the final token arrays purely
@@ -39,13 +39,13 @@
 	);
 
 	$effect(() => {
-		link.setSourceTokens(sourceTokens);
+		alignment.setSourceTokens(sourceTokens);
 	});
 	$effect(() => {
-		link.setTargetTokens(targetTokens);
+		alignment.setTargetTokens(targetTokens);
 	});
 	$effect(() => {
-		link.setMeta({ sourceText, targetText, authorship });
+		alignment.setMeta({ sourceText, targetText, authorship });
 	});
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
@@ -126,7 +126,7 @@
 
 	function findDefaultToken(zone: 'source' | 'target'): HTMLElement | null {
 		const label = zone === 'source' ? 'Source tokens' : 'Target tokens';
-		const idx = link.findDefaultTokenIndex(zone);
+		const idx = alignment.findDefaultTokenIndex(zone);
 		if (idx === -1) return null;
 		return tokenContainer.querySelector(
 			`[aria-label="${label}"] [data-token-index="${idx}"]`
