@@ -105,6 +105,8 @@
 		{/each}
 	</div>
 {:else}
+	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		role="listbox"
 		tabindex="-1"
@@ -129,6 +131,11 @@
 					class={tokenOpacity(i) + ' cursor-pointer outline-none'}
 					style={tokenStyle(i)}
 					onclick={() => handleClick(i)}
+					onkeydown={(e) => {
+						if (e.key !== 'Enter' && e.key !== ' ') return;
+						e.preventDefault();
+						alignment.toggleTarget(i);
+					}}
 					onfocus={(e) => {
 						if (e.currentTarget.matches(':focus-visible')) focusedIndex = i;
 					}}
