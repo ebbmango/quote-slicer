@@ -30,6 +30,20 @@
 		flip.run(lineContainer, () => onMerge(lineN));
 	}
 
+	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		tokens;
+		if (!isLineMode || !lineContainer) return;
+		const el = lineContainer;
+		const fit = () => {
+			el.style.height = 'auto';
+			el.style.height = el.scrollHeight + 'px';
+		};
+		fit();
+		window.addEventListener('resize', fit);
+		return () => window.removeEventListener('resize', fit);
+	});
+
 	function handleClick(i: number) {
 		if (!isLinkMode) return;
 		alignment.toggleTarget(i);
@@ -64,7 +78,7 @@
 {#if isLineMode}
 	<div
 		bind:this={lineContainer}
-		class="flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic"
+		class="relative flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic"
 	>
 		{#each tokens as token, i (i)}
 			{@const isBoundary =

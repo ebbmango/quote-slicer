@@ -19,7 +19,7 @@ export function createFlipTransition() {
 		const state = Flip.getState(container.querySelectorAll('[data-flip-id]'));
 		mutate();
 		await tick();
-		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true });
+		Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false });
 	}
 
 	return { run };
