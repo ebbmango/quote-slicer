@@ -135,6 +135,13 @@ class Alignment {
 		return this.buildMappingView(this.mappings.find((x) => x.id === id)!);
 	}
 
+	// Live source tokens carrying pinyin. Pinyin is written into these reactive
+	// signals (not into QuoteWorkbench's raw tokenize() output), so split/merge
+	// must operate on this array to preserve it — see setSourceTokenPinyin.
+	get sourceTokenList(): SourceToken[] {
+		return this.sourceTokens;
+	}
+
 	setSourceTokens(tokens: SourceToken[]): void {
 		this.sourceTokens = tokens;
 	}

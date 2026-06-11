@@ -86,15 +86,18 @@
 	}
 
 	function splitSource(afterIndex: number) {
+		// Operate on alignment's live tokens (which carry pinyin), not the raw
+		// derived array — on the first split the derived is fresh tokenize() output
+		// without pinyin. See Alignment.sourceTokenList.
 		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
-			sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) };
+			sourceTokensCache = { text: sourceText, tokens: splitAfterToken(alignment.sourceTokenList, afterIndex) };
 		});
 	}
 	function mergeSource(lineN: number) {
 		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
 		withShiftAnimation(els, () => {
-			sourceTokensCache = { text: sourceText, tokens: mergeLines(sourceTokens, lineN) };
+			sourceTokensCache = { text: sourceText, tokens: mergeLines(alignment.sourceTokenList, lineN) };
 		});
 	}
 	function splitTarget(afterIndex: number) {
