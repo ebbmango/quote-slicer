@@ -87,14 +87,6 @@
 			{#if isBoundary}
 				<button
 					data-flip-id="tgt-{i}"
-					class="ws-boundary"
-					onclick={(e) => {
-						e.stopPropagation();
-						handleMerge(token.line);
-					}}
-					aria-label="Merge lines">{token.text}</button
-				>
-				<button
 					class="merge-zone"
 					onclick={(e) => {
 						e.stopPropagation();
@@ -237,46 +229,6 @@
 
 	.merge-zone:hover .merge-indicator,
 	.merge-zone:focus-visible .merge-indicator {
-		opacity: var(--line-tool-opacity-hover);
-	}
-
-	.ws-boundary {
-		display: inline-block;
-		position: relative;
-		font-size: inherit;
-		font-family: inherit;
-		font-style: inherit;
-		font-weight: inherit;
-		color: inherit;
-		background: none;
-		border: none;
-		padding: 0;
-		cursor: pointer;
-		outline: none;
-		white-space: pre;
-		opacity: 0.7;
-	}
-
-	/* Horizontal line = merge (as opposed to split's vertical line) */
-	.ws-boundary::after {
-		content: '';
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
-		width: 0.75em;
-		height: var(--line-tool-width);
-		background: repeating-linear-gradient(
-			to right,
-			var(--line-tool-color) 0 var(--line-tool-dash),
-			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
-		);
-		opacity: var(--line-tool-opacity-idle);
-		transition: opacity 150ms;
-	}
-
-	.ws-boundary:hover::after,
-	.ws-boundary:focus-visible::after {
 		opacity: var(--line-tool-opacity-hover);
 	}
 </style>
