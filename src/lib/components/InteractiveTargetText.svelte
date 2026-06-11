@@ -23,17 +23,18 @@
 	const flip = createFlipTransition();
 
 	function handleSplit(globalIndex: number) {
-		flip.run(lineContainer, () => onSplit(globalIndex));
+		flip.run(lineContainer, lineContainer, () => onSplit(globalIndex));
 	}
 
 	function handleMerge(lineN: number) {
-		flip.run(lineContainer, () => onMerge(lineN));
+		flip.run(lineContainer, lineContainer, () => onMerge(lineN));
 	}
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens;
-		if (!isLineMode || !lineContainer) return;
+		// flip.run owns the height while a split/merge animates; don't fight its tween.
+		if (!isLineMode || !lineContainer || flip.animating) return;
 		const el = lineContainer;
 		const fit = () => {
 			el.style.height = 'auto';
