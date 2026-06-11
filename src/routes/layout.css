@@ -72,6 +72,17 @@
 	--mapping-gap: calc(var(--spacing) * 3);
 }
 
+@layer utilities {
+	.hide-scrollbar {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.hide-scrollbar::-webkit-scrollbar {
+		display: none;
+	}
+}
+
 @custom-variant hocus (&:is(:hover, :focus-visible));
 
 @custom-variant touch {
