@@ -64,7 +64,7 @@
 {#if isLineMode}
 	<div
 		bind:this={lineContainer}
-		class="flex w-full flex-wrap justify-center bg-transparent font-ss4 text-base font-[350] italic"
+		class="flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic"
 	>
 		{#each tokens as token, i (i)}
 			{@const isBoundary =
