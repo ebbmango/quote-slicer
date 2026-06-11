@@ -70,6 +70,15 @@
 	--font-noto: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
 	--font-jetmono: 'JetBrains Mono', ui-monospace, monospace;
 	--mapping-gap: calc(var(--spacing) * 3);
+
+	/* Line-mode split/merge indicators */
+	--line-tool-color: #ae7e5d;
+	--line-tool-width: 1.5px;
+	--line-tool-dash: 3px;
+	--line-tool-gap: 3px;
+	--line-tool-opacity-idle: 0;
+	--line-tool-opacity-idle-merge: 0.15;
+	--line-tool-opacity-hover: 0.7;
 }
 
 @custom-variant hocus (&:is(:hover, :focus-visible));

@@ -193,17 +193,20 @@
 		left: 50%;
 		top: 50%;
 		transform: translate(-50%, -50%);
-		width: 1.5px;
+		width: var(--line-tool-width);
 		height: 0.85em;
-		background: currentColor;
-		opacity: 0;
-		border-radius: 1px;
+		background: repeating-linear-gradient(
+			to bottom,
+			var(--line-tool-color) 0 var(--line-tool-dash),
+			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
+		);
+		opacity: var(--line-tool-opacity-idle);
 		transition: opacity 150ms;
 	}
 
 	.ws-split:hover::after,
 	.ws-split:focus-visible::after {
-		opacity: 0.4;
+		opacity: var(--line-tool-opacity-hover);
 	}
 
 	.merge-zone {
@@ -222,16 +225,19 @@
 	.merge-indicator {
 		display: block;
 		width: 2.5rem;
-		height: 1.5px;
-		background: currentColor;
-		opacity: 0.15;
-		border-radius: 1px;
+		height: var(--line-tool-width);
+		background: repeating-linear-gradient(
+			to right,
+			var(--line-tool-color) 0 var(--line-tool-dash),
+			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
+		);
+		opacity: var(--line-tool-opacity-idle-merge);
 		transition: opacity 150ms;
 	}
 
 	.merge-zone:hover .merge-indicator,
 	.merge-zone:focus-visible .merge-indicator {
-		opacity: 0.45;
+		opacity: var(--line-tool-opacity-hover);
 	}
 
 	.ws-boundary {
@@ -259,15 +265,18 @@
 		top: 50%;
 		transform: translate(-50%, -50%);
 		width: 0.75em;
-		height: 1.5px;
-		background: currentColor;
-		opacity: 0;
-		border-radius: 1px;
+		height: var(--line-tool-width);
+		background: repeating-linear-gradient(
+			to right,
+			var(--line-tool-color) 0 var(--line-tool-dash),
+			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
+		);
+		opacity: var(--line-tool-opacity-idle);
 		transition: opacity 150ms;
 	}
 
 	.ws-boundary:hover::after,
 	.ws-boundary:focus-visible::after {
-		opacity: 0.4;
+		opacity: var(--line-tool-opacity-hover);
 	}
 </style>
