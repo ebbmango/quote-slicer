@@ -80,7 +80,7 @@
 	}
 </script>
 
-<div bind:this={container} class="relative max-h-[40vh] w-full overflow-y-auto px-2">
+<div bind:this={container} class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
 	{#if isLineMode}
 		<div bind:this={lineContainer} class="flex w-full flex-wrap justify-center bg-transparent font-wenkai text-3xl font-light">
 			{#each tokens as token, i (i)}

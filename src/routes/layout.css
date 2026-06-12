@@ -81,6 +81,15 @@
 	--line-tool-opacity-hover: 0.7;
 }
 
+@utility no-scrollbar {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
 @custom-variant hocus (&:is(:hover, :focus-visible));
 
 @custom-variant touch {
