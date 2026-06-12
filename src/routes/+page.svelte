@@ -242,7 +242,20 @@
 					</svg>
 				</button>
 			{:else}
-				<div id="tools" class="flex h-full w-full items-center justify-center gap-1.5">
+				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-2">
+					<div class="subtools flex gap-2">
+						<button aria-label="maps" tabindex={-1} class="size-6 opacity-20 outline-0 duration-150">
+							<svg viewBox={icons['objects-column'].viewBox}>
+								<path d={icons['objects-column'].classic.regular} />
+							</svg>
+						</button>
+						<button aria-label="json" tabindex={-1} class="size-6 opacity-20 outline-0 duration-150">
+							<svg viewBox={icons['curly-brackets'].viewBox}>
+								<path d={icons['curly-brackets'].classic.regular} />
+							</svg>
+						</button>
+					</div>
+					<div class="flex gap-1.5">
 					<button
 						aria-label="link"
 						tabindex={1}
@@ -276,6 +289,7 @@
 							<path d={icons.eye.classic.regular} />
 						</svg>
 					</button>
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -318,6 +332,10 @@
 	#tools button.opacity-20:hover,
 	#tools button.opacity-20:focus-visible {
 		@apply opacity-60;
+	}
+
+	.subtools {
+		display: flex;
 	}
 
 	.layout {
@@ -430,6 +448,10 @@
 
 		.sidebar-right {
 			display: block;
+		}
+
+		.subtools {
+			display: none;
 		}
 	}
 
