@@ -15,6 +15,20 @@ export type MappingColor = {
 	bgFocusInactive: string; // card backdrop, focused but not active
 };
 
+export const MAPPING_COLOR_NAMES = [
+	'applesour',
+	'lush',
+	'seabreeze',
+	'azure',
+	'compostella',
+	'sugar',
+	'strawberry',
+	'maple',
+	'beeswax'
+] as const;
+
+export type MappingColorName = (typeof MAPPING_COLOR_NAMES)[number];
+
 export const MAPPING_COLORS: MappingColor[] = [
 	{
 		// applesour
@@ -152,3 +166,7 @@ export const MAPPING_COLORS: MappingColor[] = [
 		bgFocusInactive: '#FDFBF6' // unused
 	}
 ];
+
+export const colors: Record<MappingColorName, MappingColor> = Object.fromEntries(
+	MAPPING_COLOR_NAMES.map((name, i) => [name, MAPPING_COLORS[i]])
+) as Record<MappingColorName, MappingColor>;

@@ -4,15 +4,21 @@
 	let {
 		code,
 		lang = 'json',
-		theme = 'github-light'
-	}: { code: string; lang?: BundledLanguage; theme?: BundledTheme } = $props();
+		theme = 'dracula',
+		colorReplacements
+	}: {
+		code: string;
+		lang?: BundledLanguage;
+		theme?: BundledTheme;
+		colorReplacements?: Record<string, Record<string, string>>;
+	} = $props();
 
 	let lines: ThemedToken[][] = $state([]);
 
 	$effect(() => {
 		const currentCode = code;
 		import('shiki')
-			.then(({ codeToTokens }) => codeToTokens(currentCode, { lang, theme }))
+			.then(({ codeToTokens }) => codeToTokens(currentCode, { lang, theme, colorReplacements }))
 			.then((result) => {
 				lines = result.tokens;
 			});

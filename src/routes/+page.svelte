@@ -6,6 +6,7 @@
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
+	import { colors } from '$lib/constants/colors';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -29,7 +30,6 @@
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
-
 
 	function isPrimitive(v: unknown): boolean {
 		return v === null || typeof v !== 'object';
@@ -164,9 +164,7 @@
 	function handleListTab(e: KeyboardEvent) {
 		if (e.key !== 'Tab') return;
 		const focusable = [
-			...listEl.querySelectorAll<HTMLElement>(
-				'li[tabindex="0"], input[tabindex="0"]'
-			)
+			...listEl.querySelectorAll<HTMLElement>('li[tabindex="0"], input[tabindex="0"]')
 		];
 		const currentIdx = focusable.indexOf(document.activeElement as HTMLElement);
 		if (currentIdx === -1) return;
@@ -193,12 +191,18 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<ol role="listbox" aria-label="Mappings" class="grid h-full w-full overflow-y-auto scroll-smooth p-6 [gap:var(--mapping-gap)] auto-rows-[5.75rem] grid-cols-[1fr] tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]" bind:this={listEl} onkeydown={handleListTab}>
+		<ol
+			role="listbox"
+			aria-label="Mappings"
+			class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+			bind:this={listEl}
+			onkeydown={handleListTab}
+		>
 			{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
 				<Mapping {mappingView} index={i} />
 			{/each}
 		</ol>
-</aside>			
+	</aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
 		<div class="flex h-10 w-full justify-center">
@@ -276,12 +280,28 @@
 			{/if}
 		</div>
 	</main>
-	<aside
-		class="sidebar sidebar-right bg-[#f9f9f9]"
-		aria-hidden={modeCtx.current === 'text'}
-	>
+	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
 		<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">
-			<HighlightedCode code={exportJson} />
+			<HighlightedCode
+				code={exportJson}
+				colorReplacements={{
+					dracula: {
+						// strings
+						'#f1fa8c': colors.compostella.base,
+						'#e9f284': colors.compostella.base,
+						// properties
+						'#8be9fe': '#A8A8A8',
+						'#8be9fd': '#A8A8A8',
+						// colons & brackets
+						'#ff79c6': '#A8A8A8',
+						'#f8f8f2': '#A8A8A8',
+						// numbers
+						'#bd93f9': colors.azure.base,
+						// undefined
+						'#ff5555': colors.sugar.base
+					}
+				}}
+			/>
 		</div>
 	</aside>
 </div>
