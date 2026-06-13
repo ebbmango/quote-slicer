@@ -198,6 +198,8 @@ class Alignment {
 	}
 
 	toggleSource(i: number, opts: { force?: boolean } = {}): void {
+		const type = this.sourceTokens[i]?.type;
+		if (type === 'whitespace' || type === 'punctuation') return;
 		const tokenId = this.sourceTokens[i].id;
 		if (this.tryRemoveOrSwitch('source', tokenId)) return;
 
@@ -216,7 +218,8 @@ class Alignment {
 	}
 
 	toggleTarget(i: number): void {
-		if (this.targetTokens[i]?.type === 'whitespace') return;
+		const type = this.targetTokens[i]?.type;
+		if (type === 'whitespace' || type === 'punctuation') return;
 		const tokenId = this.targetTokens[i].id;
 		if (this.tryRemoveOrSwitch('target', tokenId)) return;
 

@@ -78,7 +78,7 @@
      whitespace becomes the full-width merge zone whose height animates the line
      break open/closed. -->
 <!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	bind:this={lineContainer}
 	role={isLineMode ? undefined : 'listbox'}
