@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { pushState } from '$app/navigation';
+	import { page } from '$app/state';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import Mapping from '$lib/components/Mapping.svelte';
@@ -29,6 +32,48 @@
 
 	let asideView: 'maps' | 'json' = $state('maps');
 	let wide = $state(false);
+
+	// Minimal viewport = below medium AND not the tall-portrait tablet layout.
+	// Only here does the maps/json toggle open a modal instead of an aside.
+	let belowMedium = $state(false);
+	let tabletPortrait = $state(false);
+	const minimal = $derived(belowMedium && !tabletPortrait);
+
+	let modalOpen = $state(false);
+	// Set true only when leaving the minimal breakpoint, so that close skips the
+	// slide animation (out:fly duration 0). Reset on the next open.
+	let forceClose = false;
+
+	// Slide direction: maps enters/leaves left, json enters/leaves right. Read at
+	// transition start, so a content swap while open never re-animates. Distance =
+	// full viewport width so the panel fully clears the screen edge (.layout clips).
+	const flyX = $derived.by(() => {
+		const d = typeof window !== 'undefined' ? window.innerWidth : 1000;
+		return asideView === 'maps' ? -d : d;
+	});
+
+	function openModal(view: 'maps' | 'json') {
+		forceClose = false; // animate the next user-driven close
+		asideView = view;
+		if (modalOpen) return; // already open: just swapped content, no push/animate
+		modalOpen = true;
+		pushState('', { modal: true }); // Android back closes the modal
+	}
+
+	function closeModal() {
+		if (!modalOpen) return;
+		modalOpen = false;
+		if (page.state.modal) history.back(); // unwind our pushed entry
+	}
+
+	// Leaving minimal force-closes the modal instantly (out:fly duration 0).
+	// forceClose stays set until the next openModal re-arms the animation.
+	$effect(() => {
+		if (!minimal && modalOpen) {
+			forceClose = true;
+			closeModal();
+		}
+	});
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
@@ -121,6 +166,24 @@
 		const handleMqChange = (e: MediaQueryListEvent) => (wide = e.matches);
 		mq.addEventListener('change', handleMqChange);
 
+		// Keep these queries in sync with the @media blocks in <style>.
+		const mqBelowMedium = window.matchMedia('(max-width: 899px)');
+		const mqTablet = window.matchMedia(
+			'(orientation: portrait) and (min-height: 1000px) and (max-width: 899px)'
+		);
+		belowMedium = mqBelowMedium.matches;
+		tabletPortrait = mqTablet.matches;
+		const handleBelowMedium = (e: MediaQueryListEvent) => (belowMedium = e.matches);
+		const handleTablet = (e: MediaQueryListEvent) => (tabletPortrait = e.matches);
+		mqBelowMedium.addEventListener('change', handleBelowMedium);
+		mqTablet.addEventListener('change', handleTablet);
+
+		// Android/browser back button closes the modal (history already popped here).
+		const handlePopState = () => {
+			if (modalOpen) modalOpen = false;
+		};
+		window.addEventListener('popstate', handlePopState);
+
 		function handleDeleteKey(e: KeyboardEvent) {
 			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
 			const active = document.activeElement;
@@ -146,6 +209,9 @@
 		document.addEventListener('click', handleDocumentClick);
 		return () => {
 			mq.removeEventListener('change', handleMqChange);
+			mqBelowMedium.removeEventListener('change', handleBelowMedium);
+			mqTablet.removeEventListener('change', handleTablet);
+			window.removeEventListener('popstate', handlePopState);
 			document.removeEventListener('keydown', handleDeleteKey);
 			document.removeEventListener('click', handleDocumentClick);
 		};
@@ -237,12 +303,28 @@
 	</div>
 {/snippet}
 
+{#snippet mapsIcon()}
+	<svg viewBox={icons['objects-column'].viewBox}>
+		<path d={icons['objects-column'].classic.regular} />
+	</svg>
+{/snippet}
+
+{#snippet jsonIcon()}
+	<svg viewBox={icons['curly-brackets'].viewBox}>
+		<path d={icons['curly-brackets'].classic.regular} />
+	</svg>
+{/snippet}
+
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		{#if wide || asideView === 'maps'}
-			{@render mappingsList()}
-		{:else}
-			{@render jsonExport()}
+		<!-- At minimal the modal owns the maps/json content (and the listEl bind),
+		     so the hidden aside renders nothing to avoid a duplicate binding. -->
+		{#if !minimal}
+			{#if wide || asideView === 'maps'}
+				{@render mappingsList()}
+			{:else}
+				{@render jsonExport()}
+			{/if}
 		{/if}
 	</aside>
 	<main class="content flex flex-col justify-between">
@@ -255,8 +337,23 @@
 			</button>
 		</div>
 		<!-- Quote Workbench Area -->
-		<div class="flex h-full w-full flex-col items-center justify-center gap-3">
+		<div class="relative flex h-full w-full flex-col items-center justify-center gap-3">
 			<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
+			<!-- Slides in/out toward asideView's side. Breakpoint exit force-closes with
+			     duration 0 (instant, no animation); user close animates over 450ms. -->
+			{#if modalOpen}
+				<div
+					class="data-modal bg-[#f9f9f9]"
+					in:fly={{ x: flyX, duration: 450 }}
+					out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
+				>
+					{#if asideView === 'maps'}
+						{@render mappingsList()}
+					{:else}
+						{@render jsonExport()}
+					{/if}
+				</div>
+			{/if}
 		</div>
 		<!-- Tools Area -->
 		<div class="flex w-full flex-col items-center justify-center">
@@ -285,7 +382,8 @@
 				</button>
 			{:else}
 				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-2">
-					<div class="subtools flex gap-2">
+					<!-- aside variant: tablet + medium toggle which view the left aside shows -->
+					<div class="subtools-aside gap-2">
 						<button
 							aria-label="maps"
 							tabindex={-1}
@@ -293,9 +391,7 @@
 							class:opacity-20={asideView !== 'maps'}
 							onclick={() => (asideView = 'maps')}
 						>
-							<svg viewBox={icons['objects-column'].viewBox}>
-								<path d={icons['objects-column'].classic.regular} />
-							</svg>
+							{@render mapsIcon()}
 						</button>
 						<button
 							aria-label="json"
@@ -304,9 +400,28 @@
 							class:opacity-20={asideView !== 'json'}
 							onclick={() => (asideView = 'json')}
 						>
-							<svg viewBox={icons['curly-brackets'].viewBox}>
-								<path d={icons['curly-brackets'].classic.regular} />
-							</svg>
+							{@render jsonIcon()}
+						</button>
+					</div>
+					<!-- modal variant: minimal viewport opens/toggles the data modal -->
+					<div class="subtools-modal gap-2">
+						<button
+							aria-label="maps"
+							tabindex={-1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={!(modalOpen && asideView === 'maps')}
+							onclick={() => (modalOpen && asideView === 'maps' ? closeModal() : openModal('maps'))}
+						>
+							{@render mapsIcon()}
+						</button>
+						<button
+							aria-label="json"
+							tabindex={-1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={!(modalOpen && asideView === 'json')}
+							onclick={() => (modalOpen && asideView === 'json' ? closeModal() : openModal('json'))}
+						>
+							{@render jsonIcon()}
 						</button>
 					</div>
 					<div class="flex gap-1.5">
@@ -367,8 +482,25 @@
 		@apply opacity-60;
 	}
 
-	.subtools {
+	/* Two visually identical toggle pairs; exactly one is shown per breakpoint.
+	   minimal: modal variant. tablet + medium: aside variant. desktop: neither. */
+	.subtools-aside {
+		display: none;
+	}
+
+	.subtools-modal {
 		display: flex;
+	}
+
+	/* Fills the workbench band between the sun icon and the tools row, keeping
+	   --layout-spacing from each; flush to the content box horizontally (already
+	   --layout-spacing from the screen edges, matching the icons). */
+	.data-modal {
+		position: absolute;
+		inset: var(--layout-spacing) 0;
+		border-radius: 20px;
+		overflow: hidden;
+		z-index: 2;
 	}
 
 	.layout {
@@ -449,6 +581,14 @@
 			display: block;
 			transform: translateY(calc(100% + var(--layout-spacing)));
 		}
+
+		.subtools-aside {
+			display: flex;
+		}
+
+		.subtools-modal {
+			display: none;
+		}
 	}
 
 	/* medium: one sidebar + main */
@@ -465,6 +605,14 @@
 
 		.sidebar-left {
 			display: block;
+		}
+
+		.subtools-aside {
+			display: flex;
+		}
+
+		.subtools-modal {
+			display: none;
 		}
 	}
 
@@ -483,7 +631,7 @@
 			display: block;
 		}
 
-		.subtools {
+		.subtools-aside {
 			display: none;
 		}
 	}
