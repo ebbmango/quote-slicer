@@ -85,7 +85,7 @@
 	tabindex={isLineMode ? undefined : -1}
 	aria-multiselectable={isLineMode ? undefined : true}
 	aria-label={isLineMode ? undefined : 'Target tokens'}
-	class="relative flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic no-scrollbar"
+	class="relative no-scrollbar flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic"
 	class:select-none={isLinkMode}
 	onclick={handleContainerClick}
 >

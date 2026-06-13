@@ -38,7 +38,11 @@ class Alignment {
 	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
 
 	exportData: QuoteExport = $derived({
-		meta: this.meta,
+		meta: {
+			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
+			targetText: this.meta.targetText.replace(/\n+/g, ' ').trim(),
+			authorship: this.meta.authorship.replace(/\n+/g, ' ').trim(),
+		},
 		sourceTokens: this.sourceTokens,
 		targetTokens: this.targetTokens,
 		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
