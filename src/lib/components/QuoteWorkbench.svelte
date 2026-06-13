@@ -212,6 +212,7 @@
 	bind:this={authorshipEl}
 	rows="1"
 	use:autosize
-	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none"
+	disabled={mode.current === 'view'}
+	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
 	placeholder="Source"
 ></textarea>
