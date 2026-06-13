@@ -107,8 +107,11 @@
 				<span class="merge-indicator"></span>
 			</button>
 		{:else if token.type === 'whitespace'}
-			<button
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<span
 				data-flip-id="tgt-{i}"
+				role="button"
 				class="ws-split"
 				class:line-active={isLineMode}
 				tabindex={isLineMode ? undefined : -1}
@@ -116,7 +119,7 @@
 					e.stopPropagation();
 					if (isLineMode) handleSplit(i);
 				}}
-				aria-label="Split line here">{token.text}</button
+				aria-label="Split line here">{token.text}</span
 			>
 		{:else}
 			{@const interactive = isLinkMode}
@@ -170,6 +173,8 @@
 		outline: none;
 		white-space: pre;
 		opacity: 0.7;
+		user-select: text;
+		-webkit-user-select: text;
 	}
 
 	.ws-split:not(.line-active) {
