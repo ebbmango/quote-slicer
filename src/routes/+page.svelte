@@ -319,13 +319,13 @@
 
 {#snippet mapsIcon()}
 	<svg viewBox={icons['objects-column'].viewBox}>
-		<path d={icons['objects-column'].classic.regular} />
+		<path d={icons['objects-column'].classic.light} />
 	</svg>
 {/snippet}
 
 {#snippet jsonIcon()}
 	<svg viewBox={icons['curly-brackets'].viewBox}>
-		<path d={icons['curly-brackets'].classic.regular} />
+		<path d={icons['curly-brackets'].classic.light} />
 	</svg>
 {/snippet}
 
@@ -391,7 +391,7 @@
 					}}
 				>
 					<svg viewBox={iconArrow.viewBox} class="duration-250 group-hocus:translate-y-0.5">
-						<path d={iconArrow.sharp.regular} />
+						<path d={iconArrow.sharp.light} />
 					</svg>
 				</button>
 			{:else}
@@ -451,7 +451,7 @@
 						onclick={() => (modeCtx.current = 'link')}
 					>
 						<svg viewBox={icons.language.viewBox}>
-							<path d={icons.language.sharp.regular} />
+							<path d={icons.language.sharp.light} />
 						</svg>
 					</button>
 					<button
@@ -462,7 +462,7 @@
 						onclick={() => (modeCtx.current = 'line')}
 					>
 						<svg viewBox={icons.paragraph.viewBox}>
-							<path d={icons.paragraph.sharp.regular} />
+							<path d={icons.paragraph.sharp.light} />
 						</svg>
 					</button>
 					<button
@@ -473,7 +473,7 @@
 						onclick={() => (modeCtx.current = 'view')}
 					>
 						<svg viewBox={icons.eye.viewBox}>
-							<path d={icons.eye.classic.regular} />
+							<path d={icons.eye.classic.light} />
 						</svg>
 					</button>
 					</div>
