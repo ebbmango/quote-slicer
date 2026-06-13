@@ -74,7 +74,7 @@
 	/* Line-mode split/merge indicators */
 	--line-tool-color: #ae7e5d;
 	--line-tool-width: 1.5px;
-	--line-tool-dash: 3px;
+	--line-tool-dash: 8px;
 	--line-tool-gap: 3px;
 	--line-tool-opacity-idle: 0;
 	--line-tool-opacity-idle-merge: 0.15;

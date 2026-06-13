@@ -183,6 +183,14 @@
 		border: none;
 		cursor: pointer;
 		outline: none;
+		transition: width 150ms ease;
+	}
+
+	/* Gate hover vs focus-visible by interaction mode so a mouse-hovered zone and
+	   a Tab-focused zone never light up at once (see interactionMode.svelte.ts). */
+	:global(html[data-interaction='mouse']) .split-zone.line-active:hover,
+	:global(html[data-interaction='keyboard']) .split-zone.line-active:focus-visible {
+		width: 12px;
 	}
 
 	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
@@ -203,8 +211,10 @@
 		transition: opacity 150ms;
 	}
 
-	.split-zone.line-active:hover .split-indicator,
-	.split-zone.line-active:focus-visible .split-indicator {
+	:global(html[data-interaction='mouse']) .split-zone.line-active:hover .split-indicator,
+	:global(html[data-interaction='keyboard'])
+		.split-zone.line-active:focus-visible
+		.split-indicator {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
@@ -244,23 +254,30 @@
 		display: block;
 		width: 2.5rem;
 		height: var(--line-tool-width);
-		background: repeating-linear-gradient(
+		background-image: linear-gradient(
 			to right,
-			var(--line-tool-color) 0 var(--line-tool-dash),
-			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
+			var(--line-tool-color) 0 50%,
+			transparent 50% 100%
 		);
+		background-repeat: repeat-x;
+		background-size: calc(var(--line-tool-dash) + var(--line-tool-gap)) 100%;
 		opacity: var(--line-tool-opacity-idle-merge);
-		transition: opacity 150ms;
+		transition: opacity 150ms, width 200ms ease, background-size 200ms ease;
 	}
 
-	.merge-zone.line-active:hover .merge-indicator,
-	.merge-zone.line-active:focus-visible .merge-indicator {
+	:global(html[data-interaction='mouse']) .merge-zone.line-active:hover .merge-indicator,
+	:global(html[data-interaction='keyboard'])
+		.merge-zone.line-active:focus-visible
+		.merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
+		width: 100%;
+		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 2) 100%;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.tok,
-		.merge-zone {
+		.merge-zone,
+		.split-zone {
 			transition: none;
 		}
 	}

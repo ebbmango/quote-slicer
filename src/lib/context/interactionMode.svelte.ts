@@ -20,6 +20,7 @@ export const interactionMode: InteractionModeState = $state({
 	current: 'mouse',
 	set: (newMode: ActionMode) => {
 		interactionMode.current = newMode;
+		document.documentElement.dataset.interaction = newMode;
 	},
 	get isMouse() {
 		return interactionMode.current === 'mouse';
@@ -35,6 +36,8 @@ let initialized = false;
 export function initModeTracking() {
 	if (initialized) return;
 	initialized = true;
+
+	document.documentElement.dataset.interaction = interactionMode.current;
 
 	function handleMouseMove() {
 		interactionMode.set('mouse');

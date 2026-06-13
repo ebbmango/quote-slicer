@@ -28,6 +28,9 @@ npx playwright test  # e2e tests
 
 Mode held in `ModeContext` (`src/lib/context/mode.svelte.ts`).
 
+> Not to be confused with **interaction mode** (mouse vs keyboard input
+> tracking) — see Domain vocabulary below.
+
 ---
 
 ## Domain vocabulary
@@ -45,6 +48,10 @@ Mode held in `ModeContext` (`src/lib/context/mode.svelte.ts`).
 | **whitespace bridging** | Whitespace token inherits color when flanked on both sides by the same mapping — `findBridgeMappingId()` |
 | **boundary whitespace** | Synthetic `{ text: ' ', type: 'whitespace' }` token appended between lines; merge affordance in line mode |
 | **token ID** | `SourceToken.id` / `TargetToken.id` — stable integer, assigned once at tokenization; `Mapping` stores IDs, not indices |
+| **interaction mode** | `"mouse"` \| `"keyboard"` — global `interactionMode` singleton in `src/lib/context/interactionMode.svelte.ts`; tracks last input device so hover- and focus-styles don't both apply at once |
+| **mode tracking** | `initModeTracking()` — attaches global `mousemove` (→ mouse) and `Tab` keydown (→ keyboard) listeners; called once in `src/routes/+layout.svelte`. On each change, also writes `document.documentElement.dataset.interaction` so CSS can gate `:hover`/`:focus-visible` via `:global(html[data-interaction='mouse'\|'keyboard'])` — used by the line-mode split/merge zones in `InteractiveSourceText.svelte` / `InteractiveTargetText.svelte` to prevent two simultaneously "hocused" divisors. |
+
+> Before this change, `interactionMode.current` existed as a `$state` singleton but nothing consumed it — `:hover` and `:focus-visible` divisor styles applied unconditionally, so a mouse-hovered split/merge zone and a Tab-focused one could both highlight at once. The fix wires the singleton to a `data-interaction` attribute on `<html>` (set in `initModeTracking`/`interactionMode.set`), which CSS selectors gate on — no per-component imports needed.
 
 ---
 
