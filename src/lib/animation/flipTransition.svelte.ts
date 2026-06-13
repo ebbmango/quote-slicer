@@ -59,7 +59,9 @@ export function createFlipTransition() {
 				duration: DURATION,
 				ease: EASE,
 				onComplete: () => {
-					heightEl.style.height = target + 'px';
+					// Release to `auto` (equals the measured target) so the scroll box can
+					// later follow the separator height transitions on a mode change.
+					heightEl.style.height = '';
 					animating = false;
 				}
 			});

@@ -15,7 +15,7 @@
 		onMerge: (lineN: number) => void;
 	} = $props();
 
-	let container: HTMLDivElement;
+	let container: HTMLDivElement = $state()!;
 	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
 	let alignment = getAlignmentContext();
@@ -36,15 +36,12 @@
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens;
-		// flip.run owns the height while a split/merge animates; don't fight its tween.
+		// Leave the scroll box at `auto` height so it follows content in flow —
+		// including the line-separator height transitions that animate the mode
+		// change. flip.run owns an explicit pixel height while a split/merge tweens;
+		// don't fight it.
 		if (!container || flip.animating) return;
-		const fit = () => {
-			container.style.height = 'auto';
-			container.style.height = container.scrollHeight + 'px';
-		};
-		fit();
-		window.addEventListener('resize', fit);
-		return () => window.removeEventListener('resize', fit);
+		container.style.height = '';
 	});
 
 	function handleClick(e: MouseEvent, i: number) {
@@ -57,6 +54,8 @@
 	}
 
 	function tokenStyle(i: number): string {
+		// Color only in link mode; leaving link mode unsets color so the span
+		// transitions back to the default text color (see the `.tok` transition).
 		if (!isLinkMode) return '';
 		const token = tokens[i];
 		if (token.type === 'punctuation') return '';
@@ -69,7 +68,8 @@
 	}
 
 	function tokenOpacity(i: number): string {
-		if (!isLinkMode) return 'opacity-30';
+		if (isLineMode) return 'opacity-70';
+		if (!isLinkMode) return 'opacity-30'; // view
 		const token = tokens[i];
 		if (token.type === 'punctuation') return 'opacity-30';
 		const s = alignment.stateOfSource(i);
@@ -80,90 +80,96 @@
 	}
 </script>
 
+<!-- One DOM tree for every mode so spans/separators persist across mode changes
+     and their color/height transitions can animate instead of snapping. The
+     line-mode split/merge buttons are always present (net-zero width / collapsed
+     height) and only become interactive in line mode. -->
 <div bind:this={container} class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
-	{#if isLineMode}
-		<div bind:this={lineContainer} class="flex w-full flex-wrap justify-center bg-transparent font-wenkai text-3xl font-light">
-			{#each tokens as token, i (i)}
-				<span data-flip-id="src-{i}" class="opacity-70" data-type={token.type}>{token.text}</span>
-				{#if i < tokens.length - 1}
-					{#if tokens[i + 1].line !== token.line}
-						<button
-							class="merge-zone"
-							onclick={(e) => {
-								e.stopPropagation();
-								handleMerge(token.line);
-							}}
-							aria-label="Merge with next line"
-						>
-							<span class="merge-indicator"></span>
-						</button>
-					{:else}
-						<button
-							class="split-zone"
-							onclick={(e) => {
-								e.stopPropagation();
-								handleSplit(i);
-							}}
-							aria-label="Split line here"
-						>
-							<span class="split-indicator"></span>
-						</button>
-					{/if}
-				{/if}
-			{/each}
-		</div>
-	{:else}
-		<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<div
-			role="listbox"
-			tabindex="-1"
-			aria-multiselectable="true"
-			aria-label="Source tokens"
-			class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
-			class:select-none={isLinkMode}
-			onclick={handleContainerClick}
-		>
-			{#each tokens as token, i (token)}
-				{#if i > 0 && token.line !== tokens[i - 1].line}
-					<div class="w-full"></div>
-				{/if}
-				{@const interactive = isLinkMode && token.type !== 'punctuation'}
-				{#if interactive}
-					<span
-						data-type={token.type}
-						data-token-index={i}
-						role="option"
-						aria-selected={alignment.stateOfSource(i).kind === 'active'}
-						tabindex="-1"
-						class={tokenOpacity(i) + ' cursor-pointer duration-180 outline-none'}
-						style={tokenStyle(i)}
-						onclick={(e) => handleClick(e, i)}
-						onkeydown={(e) => {
-							if (e.key !== 'Enter' && e.key !== ' ') return;
-							e.preventDefault();
-							alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
+	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_tabindex -->
+	<div
+		bind:this={lineContainer}
+		role={isLineMode ? undefined : 'listbox'}
+		tabindex={isLineMode ? undefined : -1}
+		aria-multiselectable={isLineMode ? undefined : true}
+		aria-label={isLineMode ? undefined : 'Source tokens'}
+		class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
+		class:select-none={isLinkMode}
+		onclick={handleContainerClick}
+	>
+		{#each tokens as token, i (i)}
+			{@const interactive = isLinkMode && token.type !== 'punctuation'}
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+			<span
+				data-flip-id="src-{i}"
+				data-type={token.type}
+				data-token-index={i}
+				role={interactive ? 'option' : undefined}
+				aria-selected={interactive ? alignment.stateOfSource(i).kind === 'active' : undefined}
+				tabindex={interactive ? -1 : undefined}
+				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
+				style={tokenStyle(i)}
+				onclick={(e) => handleClick(e, i)}
+				onkeydown={(e) => {
+					if (!isLinkMode || (e.key !== 'Enter' && e.key !== ' ')) return;
+					e.preventDefault();
+					alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
+				}}
+				onfocus={(e) => {
+					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;
+				}}
+				onblur={() => {
+					focusedIndex = null;
+				}}
+				use:longpress={{
+					duration: 500,
+					onlongpress: () => {
+						if (isLinkMode) alignment.toggleSource(i, { force: true });
+					}
+				}}>{token.text}</span
+			>
+			{#if i < tokens.length - 1}
+				{#if tokens[i + 1].line !== token.line}
+					<button
+						class="merge-zone"
+						class:line-active={isLineMode}
+						tabindex={isLineMode ? undefined : -1}
+						onclick={(e) => {
+							e.stopPropagation();
+							if (isLineMode) handleMerge(token.line);
 						}}
-						onfocus={(e) => {
-							if (e.currentTarget.matches(':focus-visible')) focusedIndex = i;
-						}}
-						onblur={() => {
-							focusedIndex = null;
-						}}
-						use:longpress={{ duration: 500, onlongpress: () => alignment.toggleSource(i, { force: true }) }}
-						>{token.text}</span
+						aria-label="Merge with next line"
 					>
+						<span class="merge-indicator"></span>
+					</button>
 				{:else}
-					<span data-type={token.type} class={tokenOpacity(i)} style={tokenStyle(i)}
-						>{token.text}</span
+					<button
+						class="split-zone"
+						class:line-active={isLineMode}
+						tabindex={isLineMode ? undefined : -1}
+						onclick={(e) => {
+							e.stopPropagation();
+							if (isLineMode) handleSplit(i);
+						}}
+						aria-label="Split line here"
 					>
+						<span class="split-indicator"></span>
+					</button>
 				{/if}
-			{/each}
-		</div>
-	{/if}
+			{/if}
+		{/each}
+	</div>
 </div>
 
 <style>
+	/* Persistent token spans crossfade color/opacity when the mode changes
+	   instead of snapping (only possible because the element is never swapped). */
+	.tok {
+		transition:
+			color 280ms ease,
+			opacity 280ms ease;
+	}
+
 	.split-zone {
 		display: flex;
 		align-items: center;
@@ -179,6 +185,11 @@
 		outline: none;
 	}
 
+	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
+	.split-zone:not(.line-active) {
+		pointer-events: none;
+	}
+
 	.split-indicator {
 		display: block;
 		width: var(--line-tool-width);
@@ -192,22 +203,41 @@
 		transition: opacity 150ms;
 	}
 
-	.split-zone:hover .split-indicator,
-	.split-zone:focus-visible .split-indicator {
+	.split-zone.line-active:hover .split-indicator,
+	.split-zone.line-active:focus-visible .split-indicator {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
+	/* Full-width line break. Height animates 0 ↔ 1.5rem on the mode change so the
+	   lines "come apart"; the scroll box (height: auto) follows in flow. At height
+	   0 it still forces a flex wrap, so it doubles as the plain line break in
+	   link/view modes. */
 	.merge-zone {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		height: 1rem;
-		padding: 0.25rem 0;
+		height: 0;
+		padding: 0;
+		overflow: hidden;
 		background: none;
 		border: none;
 		cursor: pointer;
 		outline: none;
+		transition: height 350ms ease;
+	}
+
+	/* NOTE: in one headless/automated probe, forcing `height` on this flex item
+	   (even via inline style, transition disabled) computed to 0px, while
+	   `min-height` worked. Looked fine in a real browser. If this ever shows up
+	   as a real bug, swap `height` for `min-height` here (and in
+	   InteractiveTargetText's matching rule) and re-check the close transition. */
+	.merge-zone.line-active {
+		height: 1.5rem;
+	}
+
+	.merge-zone:not(.line-active) {
+		pointer-events: none;
 	}
 
 	.merge-indicator {
@@ -223,8 +253,15 @@
 		transition: opacity 150ms;
 	}
 
-	.merge-zone:hover .merge-indicator,
-	.merge-zone:focus-visible .merge-indicator {
+	.merge-zone.line-active:hover .merge-indicator,
+	.merge-zone.line-active:focus-visible .merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.tok,
+		.merge-zone {
+			transition: none;
+		}
 	}
 </style>
