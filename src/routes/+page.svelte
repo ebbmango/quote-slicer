@@ -217,10 +217,24 @@
 		};
 	});
 
-	let listEl: HTMLOListElement;
+	// The aside and modal copies of mappingsList() can momentarily coexist during
+	// a breakpoint force-close (out:fly lingers a tick). A plain bind:this would let
+	// the stale copy's teardown null the ref the staying copy just claimed; this
+	// action only nulls when it still owns listEl, so the survivor wins.
+	let listEl: HTMLOListElement | undefined = $state();
 	const SCROLL_PADDING = 20;
 
+	function listRef(node: HTMLOListElement) {
+		listEl = node;
+		return {
+			destroy() {
+				if (listEl === node) listEl = undefined;
+			}
+		};
+	}
+
 	function scrollCardIntoView(card: Element) {
+		if (!listEl) return;
 		const cardRect = card.getBoundingClientRect();
 		const containerRect = listEl.getBoundingClientRect();
 		if (cardRect.bottom > containerRect.bottom - SCROLL_PADDING) {
@@ -237,7 +251,7 @@
 	}
 
 	function handleListTab(e: KeyboardEvent) {
-		if (e.key !== 'Tab') return;
+		if (e.key !== 'Tab' || !listEl) return;
 		const focusable = [
 			...listEl.querySelectorAll<HTMLElement>('li[tabindex="0"], input[tabindex="0"]')
 		];
@@ -269,7 +283,7 @@
 		role="listbox"
 		aria-label="Mappings"
 		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
-		bind:this={listEl}
+		use:listRef
 		onkeydown={handleListTab}
 	>
 		{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
@@ -386,6 +400,7 @@
 					<div class="subtools-aside gap-2">
 						<button
 							aria-label="maps"
+							data-testid="maps-aside"
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={asideView !== 'maps'}
@@ -395,6 +410,7 @@
 						</button>
 						<button
 							aria-label="json"
+							data-testid="json-aside"
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={asideView !== 'json'}
@@ -407,6 +423,7 @@
 					<div class="subtools-modal gap-2">
 						<button
 							aria-label="maps"
+							data-testid="maps-modal"
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={!(modalOpen && asideView === 'maps')}
@@ -416,6 +433,7 @@
 						</button>
 						<button
 							aria-label="json"
+							data-testid="json-modal"
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={!(modalOpen && asideView === 'json')}
