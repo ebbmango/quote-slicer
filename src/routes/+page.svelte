@@ -279,21 +279,27 @@
 </script>
 
 {#snippet mappingsList()}
-	<ol
-		role="listbox"
-		aria-label="Mappings"
-		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
-		use:listRef
-		onkeydown={handleListTab}
-	>
-		{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
-			<Mapping {mappingView} index={i} />
-		{/each}
-	</ol>
+	{#if alignment.sortedMappingViews.length === 0}
+		<div class="flex h-full w-full flex-col items-center justify-center gap-1 p-6 text-center opacity-30 font-ss4 font-[350]">
+			<p>No mappings.</p>
+		</div>
+	{:else}
+		<ol
+			role="listbox"
+			aria-label="Mappings"
+			class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 no-scrollbar tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+			use:listRef
+			onkeydown={handleListTab}
+		>
+			{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
+				<Mapping {mappingView} index={i} />
+			{/each}
+		</ol>
+	{/if}
 {/snippet}
 
 {#snippet jsonExport()}
-	<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">
+	<div class="shiki-export h-full w-full overflow-auto p-6 text-xs no-scrollbar">
 		<HighlightedCode
 			code={exportJson}
 			colorReplacements={{
@@ -334,11 +340,13 @@
 		<!-- At minimal the modal owns the maps/json content (and the listEl bind),
 		     so the hidden aside renders nothing to avoid a duplicate binding. -->
 		{#if !minimal}
-			{#if wide || asideView === 'maps'}
-				{@render mappingsList()}
-			{:else}
-				{@render jsonExport()}
-			{/if}
+			<div class="fade-edges h-full w-full">
+				{#if wide || asideView === 'maps'}
+					{@render mappingsList()}
+				{:else}
+					{@render jsonExport()}
+				{/if}
+			</div>
 		{/if}
 	</aside>
 	<main class="content flex flex-col justify-between">
@@ -361,11 +369,13 @@
 					in:fly={{ x: flyX, duration: 450 }}
 					out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
 				>
-					{#if asideView === 'maps'}
-						{@render mappingsList()}
-					{:else}
-						{@render jsonExport()}
-					{/if}
+					<div class="fade-edges h-full w-full">
+						{#if asideView === 'maps'}
+							{@render mappingsList()}
+						{:else}
+							{@render jsonExport()}
+						{/if}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -482,13 +492,44 @@
 		</div>
 	</main>
 	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		{@render jsonExport()}
+		<div class="fade-edges h-full w-full">
+			{@render jsonExport()}
+		</div>
 	</aside>
 </div>
 
 <style lang="postcss">
 	.shiki-export :global(pre) {
 		background: transparent !important;
+	}
+
+	.fade-edges {
+		--fade: 24px;
+		/* Smoothstep-eased ramp: alpha slope is 0 at both the transparent edge
+		   and the opaque junction, so neither end shows a visible kink. */
+		--ramp-y:
+			transparent 0,
+			rgba(0, 0, 0, 0.06) calc(var(--fade) * 0.15),
+			rgba(0, 0, 0, 0.22) calc(var(--fade) * 0.3),
+			rgba(0, 0, 0, 0.5) calc(var(--fade) * 0.5),
+			rgba(0, 0, 0, 0.78) calc(var(--fade) * 0.7),
+			rgba(0, 0, 0, 0.94) calc(var(--fade) * 0.85),
+			black var(--fade),
+			black calc(100% - var(--fade)),
+			rgba(0, 0, 0, 0.94) calc(100% - var(--fade) * 0.85),
+			rgba(0, 0, 0, 0.78) calc(100% - var(--fade) * 0.7),
+			rgba(0, 0, 0, 0.5) calc(100% - var(--fade) * 0.5),
+			rgba(0, 0, 0, 0.22) calc(100% - var(--fade) * 0.3),
+			rgba(0, 0, 0, 0.06) calc(100% - var(--fade) * 0.15),
+			transparent 100%;
+		mask-image:
+			linear-gradient(to bottom, var(--ramp-y)),
+			linear-gradient(to right, var(--ramp-y));
+		mask-composite: intersect;
+		-webkit-mask-image:
+			linear-gradient(to bottom, var(--ramp-y)),
+			linear-gradient(to right, var(--ramp-y));
+		-webkit-mask-composite: source-in;
 	}
 
 	#tools button {
