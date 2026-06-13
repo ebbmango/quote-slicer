@@ -35,70 +35,42 @@ export function tokenizeSource(text: string): SourceToken[] {
 	).map((t, id) => ({ ...t, id }));
 }
 
-// ── Target — V1: all punctuation separate ────────────────────────────────────
+// ── Target ────────────────────────────────────────────────────────────────────
 
 // Matches, in priority order:
 //   1. single Han character
-//   2. Latin word, optionally with one internal apostrophe (contractions: don't, it's)
+//   2. a word (Latin letters or digits) with any flanking punctuation absorbed:
+//      optional leading punct + word + optional contraction groups + optional trailing punct.
+//      Lookbehind/lookahead `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` stop punctuation that is
+//      flanked by word-chars on BOTH sides (hyphens, decimal points, thousands separators)
+//      from being absorbed — those split out as standalone tokens. The contraction group
+//      `(?:['’][A-Za-z0-9]+)*` is the exception: a straight or curly apostrophe between
+//      word-chars stays merged (don't, it’s, James').
 //   3. whitespace run (excluding newlines)
-//   4. any remaining non-letter non-digit run (punctuation, symbols, em-dashes, etc.)
-const SEPARATE_RE = /\p{Script=Han}|[A-Za-z]+(?:'[A-Za-z]+)*|[^\S\n]+|[^\p{L}\p{N}\s]+/gu;
+//   4. standalone punctuation run not adjacent to any word
+const TARGET_RE =
+	/\p{Script=Han}|(?<![A-Za-z0-9])[^\p{L}\p{N}\s]*[A-Za-z0-9]+(?:['’][A-Za-z0-9]+)*[^\p{L}\p{N}\s]*(?![A-Za-z0-9])|[^\S\n]+|[^\p{L}\p{N}\s]+/gu;
 
 /**
- * Tokenizes target text with every punctuation run as its own token.
- * Newlines delimit lines; they are not emitted as tokens.
- *
- * `There's nothing "simple" in programming.`
- * → [There's][ ][nothing][ ]["][simple]["][ ][in][ ][programming][.]
- */
-export function tokenizeTargetSeparate(text: string): TargetToken[] {
-	const lines = text.split('\n');
-	return lines.flatMap((lineText, line) => {
-		const tokens: Omit<TargetToken, 'id'>[] = [];
-		for (const { 0: t } of lineText.matchAll(SEPARATE_RE)) {
-			if (/^\s+$/.test(t)) {
-				tokens.push({ text: t, line, type: 'whitespace' });
-			} else if (/^\p{Script=Han}$/u.test(t)) {
-				tokens.push({ text: t, line, type: 'hanzi' });
-			} else if (/^[A-Za-z]/u.test(t)) {
-				tokens.push({ text: t, line, type: 'text' });
-			} else {
-				tokens.push({ text: t, line, type: 'punctuation' });
-			}
-		}
-		// Boundary whitespace: acts as merge affordance in line mode.
-		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
-		return tokens;
-	}).map((t, id) => ({ ...t, id }));
-}
-
-// ── Target — V2: punctuation attaches to adjacent words ──────────────────────
-
-// Matches, in priority order:
-//   1. optional leading punct + Latin word + optional trailing punct  (e.g. "simple", programming.)
-//   2. single Han character
-//   3. whitespace run (excluding newlines)
-//   4. standalone punctuation not adjacent to any word
-const COMBINED_RE =
-	/[^\p{L}\p{N}\s]*[A-Za-z]+(?:'[A-Za-z]+)*[^\p{L}\p{N}\s]*|\p{Script=Han}|[^\S\n]+|[^\p{L}\p{N}\s]+/gu;
-
-/**
- * Tokenizes target text with flanking punctuation absorbed into word tokens.
+ * Tokenizes target text. Punctuation touching a word (letters or digits) is absorbed into
+ * that word's token, EXCEPT punctuation flanked by word-chars on both sides — hyphens
+ * (well-known → [well][-][known]) and decimal/thousands separators (3.14 → [3][.][14]) —
+ * which split out so the user can map each piece. Apostrophes inside contractions stay merged.
  * Newlines delimit lines; they are not emitted as tokens.
  *
  * `There's nothing "simple" in programming.`
  * → [There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]
  */
-export function tokenizeTargetCombined(text: string): TargetToken[] {
+export function tokenizeTarget(text: string): TargetToken[] {
 	const lines = text.split('\n');
 	return lines.flatMap((lineText, line) => {
 		const tokens: Omit<TargetToken, 'id'>[] = [];
-		for (const { 0: t } of lineText.matchAll(COMBINED_RE)) {
+		for (const { 0: t } of lineText.matchAll(TARGET_RE)) {
 			if (/^\s+$/.test(t)) {
 				tokens.push({ text: t, line, type: 'whitespace' });
 			} else if (/^\p{Script=Han}$/u.test(t)) {
 				tokens.push({ text: t, line, type: 'hanzi' });
-			} else if (/\p{L}/u.test(t)) {
+			} else if (/[\p{L}\p{N}]/u.test(t)) {
 				tokens.push({ text: t, line, type: 'text' });
 			} else {
 				tokens.push({ text: t, line, type: 'punctuation' });

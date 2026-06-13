@@ -3,7 +3,7 @@
 	import { onMount, tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { tokenizeSource, tokenizeTargetSeparate, SOURCE_INPUT_RE } from '$lib/tokenize';
+	import { tokenizeSource, tokenizeTarget, SOURCE_INPUT_RE } from '$lib/tokenize';
 	import type { SourceToken, TargetToken } from '$lib/tokenize';
 	import { splitAfterToken, mergeLines } from '$lib/line';
 	import { createTokenGridNav, getZone, type Zone } from '$lib/navigation/tokenGridNav';
@@ -38,7 +38,7 @@
 	let targetTokens = $derived(
 		targetTokensCache !== null && targetTokensCache.text === targetText
 			? targetTokensCache.tokens
-			: tokenizeTargetSeparate(targetText)
+			: tokenizeTarget(targetText)
 	);
 
 	$effect(() => {

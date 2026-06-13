@@ -14,7 +14,7 @@ Quick reference: every source file and its responsibility.
 
 | File | Responsibility |
 |------|---------------|
-| `src/lib/tokenize.ts` | `SourceToken` / `TargetToken` types; `tokenizeSource()`, `tokenizeTargetSeparate()`, `tokenizeTargetCombined()`; `SOURCE_INPUT_RE` |
+| `src/lib/tokenize.ts` | `SourceToken` / `TargetToken` types; `tokenizeSource()`, `tokenizeTarget()`; `SOURCE_INPUT_RE` |
 | `src/lib/line.ts` | `splitAfterToken()`, `mergeLines()`, `groupByLine()` — pure generics over `T extends { line: number }` |
 | `src/lib/tokenState.ts` | `Mapping` / `MappingId` / `TokenState` types; `deriveSourceTokenState()`, `deriveTargetTokenState()`, `buildTargetText()`, `findBridgeMappingId()` — framework-free, vitest-safe |
 | `src/lib/constants/colors.ts` | `MAPPING_COLORS` array — 9 named palettes (`applesour`, `lush`, `seabreeze`, `azure`, `compostella`, `sugar`, `strawberry`, `maple`, `beeswax`); `MappingColor` type |

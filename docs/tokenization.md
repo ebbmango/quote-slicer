@@ -12,29 +12,34 @@ Token types: `'character'` (Han script), `'number'` (Unicode `\p{N}`), `'punctua
 
 The source input field filters out non-Han characters in real time using `SOURCE_INPUT_RE` (`tokenize.ts:2`), so in practice the tokenizer only sees Han characters, CJK punctuation, and numbers.
 
-## Target tokenizers
+## Target tokenizer
 
-Two variants exist. `QuoteWorkbench.svelte` uses `tokenizeTargetSeparate`.
+`tokenizeTarget(text: string): TargetToken[]` — used by `QuoteWorkbench.svelte`.
 
-### `tokenizeTargetSeparate(text: string): TargetToken[]`
-
-Every punctuation run is its own token. The regex `SEPARATE_RE` (`tokenize.ts:42`) matches in priority order: single Han character, Latin word (with optional internal apostrophe for contractions), whitespace run, remaining punctuation/symbol run.
-
-Example: `There's nothing "simple" in programming.`
-→ `[There's][ ][nothing][ ]["][simple]["][ ][in][ ][programming][.]`
-
-### `tokenizeTargetCombined(text: string): TargetToken[]`
-
-Flanking punctuation is absorbed into the adjacent word token. The regex `COMBINED_RE` (`tokenize.ts:80`) adds an optional leading and trailing punctuation group around the Latin word pattern.
+Punctuation that **touches a word** (Latin letters or digits) is absorbed into that word's token. The regex `TARGET_RE` (`tokenize.ts`) matches in priority order: single Han character, word-with-flanking-punct, whitespace run, standalone punctuation run.
 
 Example: `There's nothing "simple" in programming.`
 → `[There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]`
 
+### Merge rules
+
+- **Flanking punct absorbed** — leading and trailing punctuation merge into the word: `"simple"`, `programming.`, `(hello)`, `$5`, `5%`, `5.`
+- **Interior punct splits out** — punctuation flanked by word-chars on **both** sides is *not* absorbed, so the user can map each piece. Hyphens: `well-known` → `[well][-][known]`. Decimal/thousands separators: `3.14` → `[3][.][14]`, `$5,000.00` → `[$5][,][000][.][00]`.
+- **Contractions excepted** — a straight `'` or curly `’` apostrophe between word-chars stays merged: `don't`, `it’s`, `dogs'`. This is the one interior-punct case that does not split (regex group `(?:['’][A-Za-z0-9]+)*`, plus trailing-possessive absorbed as trailing punct).
+- **Standalone punct** — a punctuation run with no adjacent word stays its own `'punctuation'` token: `...`, em-dashes between words (`word—word` → `[word][—][word]`).
+- **Target hanzi untouched** — Han characters in target text remain single-char tokens; adjacent punctuation stays standalone (`你好!` → `[你][好][!]`).
+
+The lookbehind/lookahead `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` enforce the interior-vs-flanking distinction.
+
+### Token type
+
+`'whitespace'` for whitespace runs, `'hanzi'` for single Han chars, `'text'` for any token containing a letter or digit (so merged tokens like `$5` and `simple.` are `'text'` — mappable and alignable), `'punctuation'` for pure-symbol runs.
+
 ## Line stamping
 
-Both target tokenizers split on `\n` and stamp each token with a `line` index matching its segment. Newlines are consumed, not emitted.
+The target tokenizer splits on `\n` and stamps each token with a `line` index matching its segment. Newlines are consumed, not emitted.
 
-After the tokens for each line segment, a synthetic boundary whitespace token is appended — except after the last line (`tokenize.ts:67`, `tokenize.ts:105`):
+After the tokens for each line segment, a synthetic boundary whitespace token is appended — except after the last line:
 
 ```ts
 if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
