@@ -109,3 +109,11 @@
 		@slot;
 	}
 }
+
+/* Minimal-viewport modal: same two-column threshold as the tablet aside, but
+   width-only since the modal has no tall-portrait constraint. */
+@custom-variant modal-wide {
+	@media (max-width: 899px) and (min-width: 600px) {
+		@slot;
+	}
+}
