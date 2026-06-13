@@ -27,6 +27,9 @@
 	const modeCtx = setModeContext();
 	const alignment = setAlignmentContext();
 
+	let asideView: 'maps' | 'json' = $state('maps');
+	let wide = $state(false);
+
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
@@ -113,6 +116,11 @@
 	const exportJson = $derived(formatJson(alignment.exportData));
 
 	onMount(() => {
+		const mq = window.matchMedia('(min-width: 1200px)');
+		wide = mq.matches;
+		const handleMqChange = (e: MediaQueryListEvent) => (wide = e.matches);
+		mq.addEventListener('change', handleMqChange);
+
 		function handleDeleteKey(e: KeyboardEvent) {
 			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
 			const active = document.activeElement;
@@ -137,6 +145,7 @@
 		document.addEventListener('keydown', handleDeleteKey);
 		document.addEventListener('click', handleDocumentClick);
 		return () => {
+			mq.removeEventListener('change', handleMqChange);
 			document.removeEventListener('keydown', handleDeleteKey);
 			document.removeEventListener('click', handleDocumentClick);
 		};
@@ -189,19 +198,52 @@
 	const iconArrow = icons['arrow-down'];
 </script>
 
+{#snippet mappingsList()}
+	<ol
+		role="listbox"
+		aria-label="Mappings"
+		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+		bind:this={listEl}
+		onkeydown={handleListTab}
+	>
+		{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
+			<Mapping {mappingView} index={i} />
+		{/each}
+	</ol>
+{/snippet}
+
+{#snippet jsonExport()}
+	<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">
+		<HighlightedCode
+			code={exportJson}
+			colorReplacements={{
+				dracula: {
+					// strings
+					'#f1fa8c': colors.compostella.base,
+					'#e9f284': colors.compostella.base,
+					// properties
+					'#8be9fe': '#A8A8A8',
+					'#8be9fd': '#A8A8A8',
+					// colons & brackets
+					'#ff79c6': '#A8A8A8',
+					'#f8f8f2': '#A8A8A8',
+					// numbers
+					'#bd93f9': colors.azure.base,
+					// undefined
+					'#ff5555': colors.sugar.base
+				}
+			}}
+		/>
+	</div>
+{/snippet}
+
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<ol
-			role="listbox"
-			aria-label="Mappings"
-			class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
-			bind:this={listEl}
-			onkeydown={handleListTab}
-		>
-			{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
-				<Mapping {mappingView} index={i} />
-			{/each}
-		</ol>
+		{#if wide || asideView === 'maps'}
+			{@render mappingsList()}
+		{:else}
+			{@render jsonExport()}
+		{/if}
 	</aside>
 	<main class="content flex flex-col">
 		<!-- Placeholder for the Light Switch Area -->
@@ -244,12 +286,24 @@
 			{:else}
 				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-2">
 					<div class="subtools flex gap-2">
-						<button aria-label="maps" tabindex={-1} class="size-6 opacity-20 outline-0 duration-150">
+						<button
+							aria-label="maps"
+							tabindex={-1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={asideView !== 'maps'}
+							onclick={() => (asideView = 'maps')}
+						>
 							<svg viewBox={icons['objects-column'].viewBox}>
 								<path d={icons['objects-column'].classic.regular} />
 							</svg>
 						</button>
-						<button aria-label="json" tabindex={-1} class="size-6 opacity-20 outline-0 duration-150">
+						<button
+							aria-label="json"
+							tabindex={-1}
+							class="size-6 outline-0 duration-150"
+							class:opacity-20={asideView !== 'json'}
+							onclick={() => (asideView = 'json')}
+						>
 							<svg viewBox={icons['curly-brackets'].viewBox}>
 								<path d={icons['curly-brackets'].classic.regular} />
 							</svg>
@@ -295,28 +349,7 @@
 		</div>
 	</main>
 	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<div class="shiki-export h-full w-full overflow-auto p-6 text-xs">
-			<HighlightedCode
-				code={exportJson}
-				colorReplacements={{
-					dracula: {
-						// strings
-						'#f1fa8c': colors.compostella.base,
-						'#e9f284': colors.compostella.base,
-						// properties
-						'#8be9fe': '#A8A8A8',
-						'#8be9fd': '#A8A8A8',
-						// colons & brackets
-						'#ff79c6': '#A8A8A8',
-						'#f8f8f2': '#A8A8A8',
-						// numbers
-						'#bd93f9': colors.azure.base,
-						// undefined
-						'#ff5555': colors.sugar.base
-					}
-				}}
-			/>
-		</div>
+		{@render jsonExport()}
 	</aside>
 </div>
 
