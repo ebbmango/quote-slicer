@@ -202,11 +202,7 @@
 		display: block;
 		width: var(--line-tool-width);
 		height: 0.85em;
-		background: repeating-linear-gradient(
-			to bottom,
-			var(--line-tool-color) 0 var(--line-tool-dash),
-			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
-		);
+		background: var(--line-tool-color);
 		opacity: var(--line-tool-opacity-idle);
 		transition: opacity 150ms;
 	}
@@ -262,7 +258,7 @@
 		background-repeat: repeat-x;
 		background-size: calc(var(--line-tool-dash) + var(--line-tool-gap)) 100%;
 		opacity: var(--line-tool-opacity-idle-merge);
-		transition: opacity 150ms, width 200ms ease, background-size 200ms ease;
+		transition: opacity 340ms, width 340ms ease, background-size 340ms ease;
 	}
 
 	:global(html[data-interaction='mouse']) .merge-zone.line-active:hover .merge-indicator,
@@ -270,8 +266,8 @@
 		.merge-zone.line-active:focus-visible
 		.merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
-		width: 100%;
-		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 2) 100%;
+		width: 30%;
+		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

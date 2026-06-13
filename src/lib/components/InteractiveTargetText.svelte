@@ -186,14 +186,10 @@
 		position: absolute;
 		left: 50%;
 		top: 50%;
-		transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%) skewX(-10deg);
 		width: var(--line-tool-width);
 		height: 0.85em;
-		background: repeating-linear-gradient(
-			to bottom,
-			var(--line-tool-color) 0 var(--line-tool-dash),
-			transparent var(--line-tool-dash) calc(var(--line-tool-dash) + var(--line-tool-gap))
-		);
+		background: var(--line-tool-color);
 		opacity: var(--line-tool-opacity-idle);
 		transition: opacity 150ms;
 	}
