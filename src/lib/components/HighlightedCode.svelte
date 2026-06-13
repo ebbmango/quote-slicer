@@ -34,6 +34,8 @@
 <style>
 	.highlighted-code {
 		margin: 0;
+		/* grow to longest line so panel padding reaches past overflowing text */
+		width: max-content;
 		white-space: pre;
 		font-family: 'JetBrains Mono', ui-monospace, monospace;
 	}
