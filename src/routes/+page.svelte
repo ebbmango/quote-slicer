@@ -245,21 +245,21 @@
 			{@render jsonExport()}
 		{/if}
 	</aside>
-	<main class="content flex flex-col">
+	<main class="content flex flex-col justify-between">
 		<!-- Placeholder for the Light Switch Area -->
-		<div class="flex h-10 w-full justify-center">
-			<!-- <button aria-label="theme-toggle" class="size-6">
-				<svg viewBox={iconSun.viewBox}>
-					<path d={iconSun.paths['sharp-light']} />
+		<div class="flex w-full justify-center">
+			<button aria-label="theme-toggle" class="size-6">
+				<svg viewBox={icons['sun-bright'].viewBox}>
+					<path d={icons['sun-bright'].sharp.light} />
 				</svg>
-			</button> -->
+			</button>
 		</div>
 		<!-- Quote Workbench Area -->
 		<div class="flex h-full w-full flex-col items-center justify-center gap-3">
 			<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
 		</div>
 		<!-- Tools Area -->
-		<div class="flex h-20 w-full flex-col items-center justify-center">
+		<div class="flex w-full flex-col items-center justify-center">
 			{#if modeCtx.current === 'text'}
 				<button
 					aria-label="next"
