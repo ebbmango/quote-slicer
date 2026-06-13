@@ -42,7 +42,7 @@
 	let modalOpen = $state(false);
 	// Set true only when leaving the minimal breakpoint, so that close skips the
 	// slide animation (out:fly duration 0). Reset on the next open.
-	let forceClose = false;
+	let forceClose = $state(false);
 
 	// Slide direction: maps enters/leaves left, json enters/leaves right. Read at
 	// transition start, so a content swap while open never re-animates. Distance =
