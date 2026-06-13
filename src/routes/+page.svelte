@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { pushState } from '$app/navigation';
 	import { page } from '$app/state';
 	import icons from '$lib/assets/icons.json';
@@ -276,6 +276,27 @@
 
 	// const iconSun = icons['sun-bright'];
 	const iconArrow = icons['arrow-down'];
+
+	let arrowExiting = $state(false);
+
+	function advanceToLinkMode() {
+		if (arrowExiting) return;
+		arrowExiting = true;
+		setTimeout(() => {
+			const anyFilled = sourceText || targetText || authorship;
+			if (!anyFilled) {
+				sourceText = '知命者不怨天，知己者不怨人。';
+				targetText =
+					'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
+				authorship = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
+			} else {
+				if (!sourceText) sourceText = '空';
+				if (!targetText) targetText = 'Use this box to enter your translated text.';
+				if (!authorship) authorship = 'Source';
+			}
+			modeCtx.current = 'link';
+		}, 450);
+	}
 </script>
 
 {#snippet mappingsList()}
@@ -351,7 +372,7 @@
 	</aside>
 	<main class="content flex flex-col justify-between">
 		<!-- Placeholder for the Light Switch Area -->
-		<div class="flex w-full justify-center">
+		<div class="flex w-full justify-center opacity-20 hocus:opacity-100 duration-200">
 			<button aria-label="theme-toggle" class="size-6">
 				<svg viewBox={icons['sun-bright'].viewBox}>
 					<path d={icons['sun-bright'].sharp.light} />
@@ -384,28 +405,20 @@
 			{#if modeCtx.current === 'text'}
 				<button
 					aria-label="next"
-					class="group size-5 opacity-20 outline-0 duration-250 hocus:opacity-40"
-					onclick={() => {
-						const anyFilled = sourceText || targetText || authorship;
-						if (!anyFilled) {
-							sourceText = '知命者不怨天，知己者不怨人。';
-							targetText =
-								'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
-							authorship = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
-						} else {
-							if (!sourceText) sourceText = '空';
-							if (!targetText) targetText = 'Use this box to enter your translated text.';
-							if (!authorship) authorship = 'Source';
-						}
-						modeCtx.current = 'link';
-					}}
+					class="arrow-btn group size-5 opacity-20 outline-0 hocus:opacity-40"
+					class:arrow-exit={arrowExiting}
+					onclick={advanceToLinkMode}
 				>
-					<svg viewBox={iconArrow.viewBox} class="duration-250 group-hocus:translate-y-0.5">
+					<svg viewBox={iconArrow.viewBox} class="arrow-svg">
 						<path d={iconArrow.sharp.light} />
 					</svg>
 				</button>
 			{:else}
-				<div id="tools" class="flex h-full w-full flex-col items-center justify-center gap-2">
+				<div
+					id="tools"
+					class="flex h-full w-full flex-col items-center justify-center gap-2"
+					in:fade={{ duration: 300, delay: 250 }}
+				>
 					<!-- aside variant: tablet + medium toggle which view the left aside shows -->
 					<div class="subtools-aside gap-2">
 						<button
@@ -530,6 +543,57 @@
 			linear-gradient(to bottom, var(--ramp-y)),
 			linear-gradient(to right, var(--ramp-y));
 		-webkit-mask-composite: source-in;
+	}
+
+	/* Hover/focus nudges the arrow gently downward (subtle aim cue). The launch
+	   animation lives on the same element so, while it runs, it overrides this
+	   transition outright — the hover slide can never "finish" mid-shot. */
+	.arrow-btn {
+		transition: opacity 250ms ease;
+	}
+
+	.arrow-svg {
+		transform-origin: center;
+		transition: transform 260ms cubic-bezier(0.34, 1.2, 0.64, 1);
+		will-change: transform, opacity;
+	}
+
+	.group:hover .arrow-svg,
+	.group:focus-visible .arrow-svg {
+		transform: translateY(3px);
+	}
+
+	/* Draw-and-shoot: anticipate up (slight overshoot), hold the draw a beat,
+	   then accelerate hard downward and fade — like a loosed arrow. */
+	@keyframes arrow-launch {
+		0% {
+			transform: translateY(0) scaleY(1);
+			opacity: 0.4;
+			animation-timing-function: cubic-bezier(0.34, 1.45, 0.64, 1);
+		}
+		34% {
+			transform: translateY(-0.5rem) scaleY(1.14);
+			opacity: 0.6;
+			animation-timing-function: ease-in-out;
+		}
+		46% {
+			transform: translateY(-0.42rem) scaleY(1.12);
+			opacity: 0.6;
+			animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.25);
+		}
+		100% {
+			transform: translateY(3rem) scaleY(1.04);
+			opacity: 0;
+		}
+	}
+
+	/* Button fade yields to the svg's own opacity so the shot controls the fade. */
+	.arrow-btn.arrow-exit {
+		opacity: 1;
+	}
+
+	.arrow-exit .arrow-svg {
+		animation: arrow-launch 450ms forwards;
 	}
 
 	#tools button {
