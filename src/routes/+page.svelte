@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fly, fade } from 'svelte/transition';
-	import { pushState } from '$app/navigation';
-	import { page } from '$app/state';
+	import { fade } from 'svelte/transition';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import DataPanel from '$lib/components/DataPanel.svelte';
+	import DataModal from '$lib/components/DataModal.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
@@ -33,54 +32,14 @@
 	const alignment = setAlignmentContext(tokenStore);
 
 	let asideView: 'maps' | 'json' = $state('maps');
-
 	let modalOpen = $state(false);
-	// Set true only when leaving the minimal breakpoint, so that close skips the
-	// slide animation (out:fly duration 0). Reset on the next open.
-	let forceClose = $state(false);
-
-	// Slide direction: maps enters/leaves left, json enters/leaves right. Read at
-	// transition start, so a content swap while open never re-animates. Distance =
-	// full viewport width so the panel fully clears the screen edge (.layout clips).
-	const flyX = $derived.by(() => {
-		const d = typeof window !== 'undefined' ? window.innerWidth : 1000;
-		return asideView === 'maps' ? -d : d;
-	});
-
-	function openModal(view: 'maps' | 'json') {
-		forceClose = false; // animate the next user-driven close
-		asideView = view;
-		if (modalOpen) return; // already open: just swapped content, no push/animate
-		modalOpen = true;
-		pushState('', { modal: true }); // Android back closes the modal
-	}
-
-	function closeModal() {
-		if (!modalOpen) return;
-		modalOpen = false;
-		if (page.state.modal) history.back(); // unwind our pushed entry
-	}
-
-	// Leaving minimal force-closes the modal instantly (out:fly duration 0).
-	// forceClose stays set until the next openModal re-arms the animation.
-	$effect(() => {
-		if (!breakpoints.minimal && modalOpen) {
-			forceClose = true;
-			closeModal();
-		}
-	});
+	let dataModal: ReturnType<typeof DataModal> | undefined;
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
 
 	onMount(() => {
-		// Android/browser back button closes the modal (history already popped here).
-		const handlePopState = () => {
-			if (modalOpen) modalOpen = false;
-		};
-		window.addEventListener('popstate', handlePopState);
-
 		function handleDeleteKey(e: KeyboardEvent) {
 			if (e.key !== 'Delete' && e.key !== 'Backspace') return;
 			const active = document.activeElement;
@@ -105,7 +64,6 @@
 		document.addEventListener('keydown', handleDeleteKey);
 		document.addEventListener('click', handleDocumentClick);
 		return () => {
-			window.removeEventListener('popstate', handlePopState);
 			document.removeEventListener('keydown', handleDeleteKey);
 			document.removeEventListener('click', handleDocumentClick);
 		};
@@ -170,17 +128,12 @@
 		<!-- Quote Workbench Area -->
 		<div class="relative flex h-full w-full flex-col items-center justify-center gap-3">
 			<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
-			<!-- Slides in/out toward asideView's side. Breakpoint exit force-closes with
-			     duration 0 (instant, no animation); user close animates over 450ms. -->
-			{#if modalOpen}
-				<div
-					class="data-modal bg-[#f9f9f9]"
-					in:fly={{ x: flyX, duration: 450 }}
-					out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
-				>
-					<DataPanel view={asideView} />
-				</div>
-			{/if}
+			<DataModal
+				bind:this={dataModal}
+				bind:asideView
+				bind:modalOpen
+				minimal={breakpoints.minimal}
+			/>
 		</div>
 		<!-- Tools Area -->
 		<div class="flex w-full flex-col items-center justify-center">
@@ -232,7 +185,7 @@
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={!(modalOpen && asideView === 'maps')}
-							onclick={() => (modalOpen && asideView === 'maps' ? closeModal() : openModal('maps'))}
+							onclick={() => (modalOpen && asideView === 'maps' ? dataModal?.closeModal() : dataModal?.openModal('maps'))}
 						>
 							{@render mapsIcon()}
 						</button>
@@ -242,7 +195,7 @@
 							tabindex={-1}
 							class="size-6 outline-0 duration-150"
 							class:opacity-20={!(modalOpen && asideView === 'json')}
-							onclick={() => (modalOpen && asideView === 'json' ? closeModal() : openModal('json'))}
+							onclick={() => (modalOpen && asideView === 'json' ? dataModal?.closeModal() : dataModal?.openModal('json'))}
 						>
 							{@render jsonIcon()}
 						</button>
@@ -360,17 +313,6 @@
 
 	.subtools-modal {
 		display: flex;
-	}
-
-	/* Fills the workbench band between the sun icon and the tools row, keeping
-	   --layout-spacing from each; flush to the content box horizontally (already
-	   --layout-spacing from the screen edges, matching the icons). */
-	.data-modal {
-		position: absolute;
-		inset: var(--layout-spacing) 0;
-		border-radius: 20px;
-		overflow: hidden;
-		z-index: 2;
 	}
 
 	.layout {
