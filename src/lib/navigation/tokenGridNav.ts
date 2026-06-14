@@ -5,8 +5,6 @@ export type Zone = 'source' | 'target';
 export type TokenGridNavConfig = {
 	/** CSS selector for the currently navigable elements (varies by mode). */
 	itemSelector: () => string;
-	/** Whether Alt+Enter / row-boundary Arrow keys jump between source and target. */
-	crossZoneJump: () => boolean;
 	/** Index of the default token to focus when jumping into `zone` with no remembered focus. */
 	getDefaultIndex: (zone: Zone) => number;
 	/** Alt+Space / Alt+Shift+Space on a navigable element. */
@@ -19,7 +17,7 @@ export type TokenGridNavConfig = {
 // Alt+↑ / Alt+↓        Navigate focus to the element on the visual row above/below.
 //                       At a zone's far edge (link mode only) → jumps to the other zone.
 // Alt+← / Alt+→        Move focus to prev/next navigable element in DOM order.
-// Alt+Enter            Toggle focus between source and target (link mode only).
+// Alt+Enter            Toggle focus between source and target.
 // Alt+Space            Activate the focused element.
 // Alt+Shift+Space      Activate with `force` (meaning is mode-specific).
 // Escape               Blur the focused element; mode-specific extra action.
@@ -44,8 +42,15 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		const container = getContainer();
 		if (!container) return null;
 		const idx = config.getDefaultIndex(zone);
-		if (idx === -1) return null;
-		return container.querySelector(`[data-zone="${zone}"] [data-token-index="${idx}"]`);
+		if (idx !== -1) {
+			const el = container.querySelector<HTMLElement>(`[data-zone="${zone}"] [data-token-index="${idx}"]`);
+			if (el) return el;
+		}
+		// Scope to the zone's container first, then run itemSelector() inside it.
+		// itemSelector() can be a comma-list (line mode); string-prefixing a list
+		// only scopes its first branch, so the rest would match other zones.
+		const zoneEl = container.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
+		return zoneEl?.querySelector<HTMLElement>(config.itemSelector()) ?? null;
 	}
 
 	function jumpTo(zone: Zone): void {
@@ -74,7 +79,15 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 			return;
 		}
 
-		if (!e.altKey) return;
+		// Suppress native plain Enter/Space activation on navigable elements —
+		// activation is alt-gated only (Alt+Space → onActivate). Centralized here so
+		// the divisor buttons and option tokens don't each need an inline handler.
+		if (!e.altKey) {
+			if ((e.key === 'Enter' || e.key === ' ') && target.matches(config.itemSelector())) {
+				e.preventDefault();
+			}
+			return;
+		}
 
 		if (e.key === ' ') {
 			if (!target.matches(config.itemSelector())) return;
@@ -86,7 +99,6 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) return;
 
 		if (e.key === 'Enter') {
-			if (!config.crossZoneJump()) return;
 			e.preventDefault();
 			const zone = getZone(target);
 			jumpTo(zone === 'source' ? 'target' : 'source');
@@ -113,7 +125,6 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
 			neighbor = findVisualNeighbor(target, all, e.key === 'ArrowDown' ? 'down' : 'up');
 			if (!neighbor) {
-				if (!config.crossZoneJump()) return;
 				const zone = getZone(target);
 				if (e.key === 'ArrowDown' && zone === 'source') jumpTo('target');
 				else if (e.key === 'ArrowUp' && zone === 'target') jumpTo('source');

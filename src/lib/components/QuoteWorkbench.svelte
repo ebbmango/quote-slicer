@@ -1,5 +1,6 @@
 <script lang="ts">
 	// version B
+	import { tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
@@ -8,7 +9,7 @@
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
 
-	const LINE_ITEM_SELECTOR = '.split-zone, .merge-zone, .ws-split, .ws-boundary';
+	const LINE_ITEM_SELECTOR = '.split-zone, .merge-zone, .ws-split';
 
 	let {
 		sourceText = $bindable(),
@@ -72,12 +73,21 @@
 		() => tokenContainer,
 		{
 			itemSelector: () => (mode.current === 'line' ? LINE_ITEM_SELECTOR : '[role="option"]'),
-			crossZoneJump: () => mode.current !== 'line',
 			getDefaultIndex: (zone: Zone) =>
 				mode.current === 'line' ? -1 : alignment.findDefaultTokenIndex(zone),
 			onActivate: (el, e) => {
 				if (mode.current === 'line') {
+					const zone = getZone(el);
+					const divisorIndex = el.dataset.divisorIndex;
 					el.click();
+					if (zone && divisorIndex !== undefined) {
+						tick().then(() => {
+							const next = tokenContainer?.querySelector<HTMLElement>(
+								`[data-zone="${zone}"] [data-divisor-index="${divisorIndex}"]`
+							);
+							next?.focus();
+						});
+					}
 					return;
 				}
 				const zone = getZone(el);

@@ -109,11 +109,6 @@
 				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
 				style={tokenStyle(i)}
 				onclick={(e) => handleClick(e, i)}
-				onkeydown={(e) => {
-					if (!isLinkMode || (e.key !== 'Enter' && e.key !== ' ')) return;
-					e.preventDefault();
-					alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
-				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;
 				}}
@@ -132,6 +127,7 @@
 					<button
 						class="merge-zone"
 						class:line-active={isLineMode}
+						data-divisor-index={i}
 						tabindex={isLineMode ? undefined : -1}
 						onclick={(e) => {
 							e.stopPropagation();
@@ -145,6 +141,7 @@
 					<button
 						class="split-zone"
 						class:line-active={isLineMode}
+						data-divisor-index={i}
 						tabindex={isLineMode ? undefined : -1}
 						onclick={(e) => {
 							e.stopPropagation();

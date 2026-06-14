@@ -97,6 +97,7 @@
 				data-flip-id="tgt-{i}"
 				class="merge-zone"
 				class:line-active={isLineMode}
+				data-divisor-index={i}
 				tabindex={isLineMode ? undefined : -1}
 				onclick={(e) => {
 					e.stopPropagation();
@@ -113,7 +114,8 @@
 				role="button"
 				class="ws-split"
 				class:line-active={isLineMode}
-				tabindex={isLineMode ? undefined : -1}
+				data-divisor-index={i}
+				tabindex={isLineMode ? 0 : -1}
 				onclick={(e) => {
 					e.stopPropagation();
 					if (isLineMode) handleSplit(i);
@@ -133,11 +135,6 @@
 				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
 				style={tokenStyle(i)}
 				onclick={() => handleClick(i)}
-				onkeydown={(e) => {
-					if (!isLinkMode || (e.key !== 'Enter' && e.key !== ' ')) return;
-					e.preventDefault();
-					alignment.toggleTarget(i);
-				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;
 				}}
