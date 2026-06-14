@@ -3,16 +3,17 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
-	import { createFlipTransition } from '$lib/animation/flipTransition.svelte';
 
 	let {
 		tokens,
 		onSplit,
-		onMerge
+		onMerge,
+		animating
 	}: {
 		tokens: SourceToken[];
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
+		animating: boolean;
 	} = $props();
 
 	let container: HTMLDivElement = $state()!;
@@ -23,14 +24,12 @@
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
 
-	const flip = createFlipTransition();
-
 	function handleSplit(globalIndex: number) {
-		flip.run(lineContainer, container, () => onSplit(globalIndex));
+		onSplit(globalIndex);
 	}
 
 	function handleMerge(lineN: number) {
-		flip.run(lineContainer, container, () => onMerge(lineN));
+		onMerge(lineN);
 	}
 
 	$effect(() => {
@@ -38,9 +37,9 @@
 		tokens;
 		// Leave the scroll box at `auto` height so it follows content in flow —
 		// including the line-separator height transitions that animate the mode
-		// change. flip.run owns an explicit pixel height while a split/merge tweens;
+		// change. lineEdit owns an explicit pixel height while a split/merge tweens;
 		// don't fight it.
-		if (!container || flip.animating) return;
+		if (!container || animating) return;
 		container.style.height = '';
 	});
 
@@ -84,7 +83,7 @@
      and their color/height transitions can animate instead of snapping. The
      line-mode split/merge buttons are always present (net-zero width / collapsed
      height) and only become interactive in line mode. -->
-<div bind:this={container} class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
+<div bind:this={container} data-scrollbox class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
 	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
 	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_tabindex -->
 	<div

@@ -2,15 +2,16 @@
 	import type { TargetToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { createFlipTransition } from '$lib/animation/flipTransition.svelte';
 	let {
 		tokens,
 		onSplit,
-		onMerge
+		onMerge,
+		animating
 	}: {
 		tokens: TargetToken[];
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
+		animating: boolean;
 	} = $props();
 
 	let lineContainer: HTMLDivElement = $state()!;
@@ -20,23 +21,21 @@
 	let isLineMode = $derived(mode.current === 'line');
 	let focusedIndex: number | null = $state(null);
 
-	const flip = createFlipTransition();
-
 	function handleSplit(globalIndex: number) {
-		flip.run(lineContainer, lineContainer, () => onSplit(globalIndex));
+		onSplit(globalIndex);
 	}
 
 	function handleMerge(lineN: number) {
-		flip.run(lineContainer, lineContainer, () => onMerge(lineN));
+		onMerge(lineN);
 	}
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens;
 		// Keep the scroll box at `auto` so it follows the separator height
-		// transitions that animate the mode change; flip.run owns the height
+		// transitions that animate the mode change; lineEdit owns the height
 		// during a split/merge tween.
-		if (!lineContainer || flip.animating) return;
+		if (!lineContainer || animating) return;
 		lineContainer.style.height = '';
 	});
 
@@ -81,6 +80,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	bind:this={lineContainer}
+	data-scrollbox
 	role={isLineMode ? undefined : 'listbox'}
 	tabindex={isLineMode ? undefined : -1}
 	aria-multiselectable={isLineMode ? undefined : true}

@@ -1,11 +1,9 @@
 <script lang="ts">
 	// version B
-	import { onMount, tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { tokenizeSource, tokenizeTarget, SOURCE_INPUT_RE } from '$lib/tokenize';
-	import type { SourceToken, TargetToken } from '$lib/tokenize';
-	import { splitAfterToken, mergeLines } from '$lib/line';
+	import { SOURCE_INPUT_RE } from '$lib/tokenize';
+	import { createLineEdit, type EditScope } from '$lib/animation/lineEdit.svelte';
 	import { createTokenGridNav, getZone, type Zone } from '$lib/navigation/tokenGridNav';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
@@ -24,22 +22,11 @@
 	let editing = $derived(mode.current === 'text');
 	const alignment = getAlignmentContext();
 
-	// Text-keyed caches: if text matches, use the cached (possibly split/merged) token array;
-	// otherwise fall through to fresh tokenization. This makes the final token arrays purely
-	// $derived while still allowing split/merge mutations to persist within an editing session.
-	let sourceTokensCache = $state<{ text: string; tokens: SourceToken[] } | null>(null);
-	let targetTokensCache = $state<{ text: string; tokens: TargetToken[] } | null>(null);
-
-	let sourceTokens = $derived(
-		sourceTokensCache !== null && sourceTokensCache.text === sourceText
-			? sourceTokensCache.tokens
-			: tokenizeSource(sourceText)
-	);
-	let targetTokens = $derived(
-		targetTokensCache !== null && targetTokensCache.text === targetText
-			? targetTokensCache.tokens
-			: tokenizeTarget(targetText)
-	);
+	// The line-edit module owns tokenization, the text-keyed split/merge cache, and
+	// the single unified Flip around each edit (see lineEdit.svelte.ts / CONTEXT.md).
+	const lineEdit = createLineEdit();
+	let sourceTokens = $derived(lineEdit.sourceTokens(sourceText));
+	let targetTokens = $derived(lineEdit.targetTokens(targetText));
 
 	$effect(() => {
 		alignment.setSourceTokens(sourceTokens);
@@ -54,63 +41,34 @@
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);
 	let authorshipEl: HTMLTextAreaElement | null = $state(null);
-	let gsap: (typeof import('gsap'))['gsap'] | null = $state(null);
 
-	onMount(async () => {
-		const { gsap: g } = await import('gsap');
-		gsap = g;
-	});
-
-	async function withShiftAnimation(els: HTMLElement[], mutate: () => void, lockEl?: HTMLElement | null) {
-		if (!gsap) {
-			mutate();
-			return;
-		}
-		const rects = els.map((el) => el.getBoundingClientRect());
-		mutate();
-		await tick();
-		// Lock lockEl to its post-mutation pixel height so any concurrent Flip animation
-		// using absolute:true can't collapse it and shift our GSAP targets mid-animation.
-		if (lockEl) lockEl.style.height = lockEl.getBoundingClientRect().height + 'px';
-		const animations: Promise<void>[] = [];
-		els.forEach((el, i) => {
-			if (!el.isConnected) return;
-			const dy = rects[i].top - el.getBoundingClientRect().top;
-			if (Math.abs(dy) < 0.5) return;
-			animations.push(new Promise<void>((resolve) => {
-				gsap!.fromTo(el, { y: dy }, { y: 0, duration: 0.35, ease: 'power2.inOut', clearProps: 'y', onComplete: resolve });
-			}));
-		});
-		await Promise.all(animations);
-		if (lockEl) lockEl.style.height = '';
+	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
+	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
+	// components; lineEdit height-tweens the edited one.
+	function editScope(): EditScope {
+		return {
+			sourceWrapperEl,
+			targetWrapperEl,
+			authorshipEl,
+			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null,
+			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null
+		};
 	}
 
+	// Source edits run on alignment's live tokens (which carry pinyin), not the raw
+	// derived array — on the first split the derived is fresh tokenize() output
+	// without pinyin. See Alignment.sourceTokenList.
 	function splitSource(afterIndex: number) {
-		// Operate on alignment's live tokens (which carry pinyin), not the raw
-		// derived array — on the first split the derived is fresh tokenize() output
-		// without pinyin. See Alignment.sourceTokenList.
-		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
-		withShiftAnimation(els, () => {
-			sourceTokensCache = { text: sourceText, tokens: splitAfterToken(alignment.sourceTokenList, afterIndex) };
-		});
+		lineEdit.split('source', sourceText, alignment.sourceTokenList, afterIndex, editScope());
 	}
 	function mergeSource(lineN: number) {
-		const els = [targetWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
-		withShiftAnimation(els, () => {
-			sourceTokensCache = { text: sourceText, tokens: mergeLines(alignment.sourceTokenList, lineN) };
-		});
+		lineEdit.merge('source', sourceText, alignment.sourceTokenList, lineN, editScope());
 	}
 	function splitTarget(afterIndex: number) {
-		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
-		withShiftAnimation(els, () => {
-			targetTokensCache = { text: targetText, tokens: splitAfterToken(targetTokens, afterIndex) };
-		}, targetWrapperEl);
+		lineEdit.split('target', targetText, targetTokens, afterIndex, editScope());
 	}
 	function mergeTarget(lineN: number) {
-		const els = [sourceWrapperEl, authorshipEl].filter((el): el is HTMLDivElement | HTMLTextAreaElement => el !== null);
-		withShiftAnimation(els, () => {
-			targetTokensCache = { text: targetText, tokens: mergeLines(targetTokens, lineN) };
-		}, targetWrapperEl);
+		lineEdit.merge('target', targetText, targetTokens, lineN, editScope());
 	}
 
 	let tokenContainer: HTMLDivElement = $state(null!);
@@ -197,11 +155,21 @@
 		onkeydown={tokenGridNav.handleKeydown}
 		onfocusin={tokenGridNav.handleFocusIn}
 	>
-		<div bind:this={sourceWrapperEl} data-zone="source">
-			<InteractiveSourceText tokens={sourceTokens} onSplit={splitSource} onMerge={mergeSource} />
+		<div bind:this={sourceWrapperEl} data-zone="source" data-flip-id="source-panel">
+			<InteractiveSourceText
+				tokens={sourceTokens}
+				onSplit={splitSource}
+				onMerge={mergeSource}
+				animating={lineEdit.animating}
+			/>
 		</div>
-		<div bind:this={targetWrapperEl} data-zone="target">
-			<InteractiveTargetText tokens={targetTokens} onSplit={splitTarget} onMerge={mergeTarget} />
+		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel">
+			<InteractiveTargetText
+				tokens={targetTokens}
+				onSplit={splitTarget}
+				onMerge={mergeTarget}
+				animating={lineEdit.animating}
+			/>
 		</div>
 	</div>
 {/if}
@@ -210,6 +178,7 @@
 	name="authorship"
 	bind:value={authorship}
 	bind:this={authorshipEl}
+	data-flip-id="authorship"
 	rows="1"
 	use:autosize
 	disabled={mode.current === 'view'}
