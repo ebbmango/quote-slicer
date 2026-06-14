@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import DataPanel from '$lib/components/DataPanel.svelte';
 	import DataModal from '$lib/components/DataModal.svelte';
+	import ModeToolbar from '$lib/components/ModeToolbar.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
@@ -96,18 +96,6 @@
 	}
 </script>
 
-{#snippet mapsIcon()}
-	<svg viewBox={icons['objects-column'].viewBox}>
-		<path d={icons['objects-column'].classic.light} />
-	</svg>
-{/snippet}
-
-{#snippet jsonIcon()}
-	<svg viewBox={icons['curly-brackets'].viewBox}>
-		<path d={icons['curly-brackets'].classic.light} />
-	</svg>
-{/snippet}
-
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
 		<!-- At minimal the modal owns the maps/json content, so the hidden
@@ -149,93 +137,12 @@
 					</svg>
 				</button>
 			{:else}
-				<div
-					id="tools"
-					class="flex h-full w-full flex-col items-center justify-center gap-2"
-					in:fade={{ duration: 300, delay: 250 }}
-				>
-					<!-- aside variant: tablet + medium toggle which view the left aside shows -->
-					<div class="subtools-aside gap-2">
-						<button
-							aria-label="maps"
-							data-testid="maps-aside"
-							tabindex={-1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={asideView !== 'maps'}
-							onclick={() => (asideView = 'maps')}
-						>
-							{@render mapsIcon()}
-						</button>
-						<button
-							aria-label="json"
-							data-testid="json-aside"
-							tabindex={-1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={asideView !== 'json'}
-							onclick={() => (asideView = 'json')}
-						>
-							{@render jsonIcon()}
-						</button>
-					</div>
-					<!-- modal variant: minimal viewport opens/toggles the data modal -->
-					<div class="subtools-modal gap-2">
-						<button
-							aria-label="maps"
-							data-testid="maps-modal"
-							tabindex={-1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={!(modalOpen && asideView === 'maps')}
-							onclick={() => (modalOpen && asideView === 'maps' ? dataModal?.closeModal() : dataModal?.openModal('maps'))}
-						>
-							{@render mapsIcon()}
-						</button>
-						<button
-							aria-label="json"
-							data-testid="json-modal"
-							tabindex={-1}
-							class="size-6 outline-0 duration-150"
-							class:opacity-20={!(modalOpen && asideView === 'json')}
-							onclick={() => (modalOpen && asideView === 'json' ? dataModal?.closeModal() : dataModal?.openModal('json'))}
-						>
-							{@render jsonIcon()}
-						</button>
-					</div>
-					<div class="flex gap-1.5">
-					<button
-						aria-label="link"
-						tabindex={1}
-						class="size-6 outline-0 duration-150"
-						class:opacity-20={modeCtx.current !== 'link'}
-						onclick={() => (modeCtx.current = 'link')}
-					>
-						<svg viewBox={icons.language.viewBox}>
-							<path d={icons.language.sharp.light} />
-						</svg>
-					</button>
-					<button
-						aria-label="line"
-						tabindex={2}
-						class="size-6 outline-0 duration-150"
-						class:opacity-20={modeCtx.current !== 'line'}
-						onclick={() => (modeCtx.current = 'line')}
-					>
-						<svg viewBox={icons.paragraph.viewBox}>
-							<path d={icons.paragraph.sharp.light} />
-						</svg>
-					</button>
-					<button
-						aria-label="view"
-						tabindex={3}
-						class="size-6 outline-0 duration-150"
-						class:opacity-20={modeCtx.current !== 'view'}
-						onclick={() => (modeCtx.current = 'view')}
-					>
-						<svg viewBox={icons.eye.viewBox}>
-							<path d={icons.eye.classic.light} />
-						</svg>
-					</button>
-					</div>
-				</div>
+				<ModeToolbar
+					bind:asideView
+					{modalOpen}
+					openModal={(view) => dataModal?.openModal(view)}
+					closeModal={() => dataModal?.closeModal()}
+				/>
 			{/if}
 		</div>
 	</main>
@@ -294,25 +201,6 @@
 
 	.arrow-exit .arrow-svg {
 		animation: arrow-launch 450ms forwards;
-	}
-
-	#tools button {
-		@apply duration-300;
-	}
-
-	#tools button.opacity-20:hover,
-	#tools button.opacity-20:focus-visible {
-		@apply opacity-60;
-	}
-
-	/* Two visually identical toggle pairs; exactly one is shown per breakpoint.
-	   minimal: modal variant. tablet + medium: aside variant. desktop: neither. */
-	.subtools-aside {
-		display: none;
-	}
-
-	.subtools-modal {
-		display: flex;
 	}
 
 	.layout {
@@ -393,14 +281,6 @@
 			display: block;
 			transform: translateY(calc(100% + var(--layout-spacing)));
 		}
-
-		.subtools-aside {
-			display: flex;
-		}
-
-		.subtools-modal {
-			display: none;
-		}
 	}
 
 	/* medium: one sidebar + main */
@@ -418,14 +298,6 @@
 		.sidebar-left {
 			display: block;
 		}
-
-		.subtools-aside {
-			display: flex;
-		}
-
-		.subtools-modal {
-			display: none;
-		}
 	}
 
 	/* desktop: sidebar + main + sidebar */
@@ -441,10 +313,6 @@
 
 		.sidebar-right {
 			display: block;
-		}
-
-		.subtools-aside {
-			display: none;
 		}
 	}
 
