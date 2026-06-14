@@ -30,7 +30,7 @@ function tokenPinyin(token: SourceToken | undefined): string {
 
 const ALIGNMENT_KEY = Symbol('alignment');
 
-class Alignment {
+export class Alignment {
 	activeMappingId: MappingId | null = $state(null);
 	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
