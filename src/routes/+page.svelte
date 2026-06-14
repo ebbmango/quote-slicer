@@ -7,6 +7,7 @@
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
 	import Mapping from '$lib/components/Mapping.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
+	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 	import { setTokenStoreContext } from '$lib/animation/tokenStore.svelte';
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
@@ -30,17 +31,11 @@
 	}
 
 	const modeCtx = setModeContext();
+	const breakpoints = setBreakpointContext();
 	const tokenStore = setTokenStoreContext();
 	const alignment = setAlignmentContext(tokenStore);
 
 	let asideView: 'maps' | 'json' = $state('maps');
-	let wide = $state(false);
-
-	// Minimal viewport = below medium AND not the tall-portrait tablet layout.
-	// Only here does the maps/json toggle open a modal instead of an aside.
-	let belowMedium = $state(false);
-	let tabletPortrait = $state(false);
-	const minimal = $derived(belowMedium && !tabletPortrait);
 
 	let modalOpen = $state(false);
 	// Set true only when leaving the minimal breakpoint, so that close skips the
@@ -72,7 +67,7 @@
 	// Leaving minimal force-closes the modal instantly (out:fly duration 0).
 	// forceClose stays set until the next openModal re-arms the animation.
 	$effect(() => {
-		if (!minimal && modalOpen) {
+		if (!breakpoints.minimal && modalOpen) {
 			forceClose = true;
 			closeModal();
 		}
@@ -85,23 +80,6 @@
 	const exportJson = $derived(formatExport(alignment.exportData));
 
 	onMount(() => {
-		const mq = window.matchMedia('(min-width: 1200px)');
-		wide = mq.matches;
-		const handleMqChange = (e: MediaQueryListEvent) => (wide = e.matches);
-		mq.addEventListener('change', handleMqChange);
-
-		// Keep these queries in sync with the @media blocks in <style>.
-		const mqBelowMedium = window.matchMedia('(max-width: 899px)');
-		const mqTablet = window.matchMedia(
-			'(orientation: portrait) and (min-height: 1000px) and (max-width: 899px)'
-		);
-		belowMedium = mqBelowMedium.matches;
-		tabletPortrait = mqTablet.matches;
-		const handleBelowMedium = (e: MediaQueryListEvent) => (belowMedium = e.matches);
-		const handleTablet = (e: MediaQueryListEvent) => (tabletPortrait = e.matches);
-		mqBelowMedium.addEventListener('change', handleBelowMedium);
-		mqTablet.addEventListener('change', handleTablet);
-
 		// Android/browser back button closes the modal (history already popped here).
 		const handlePopState = () => {
 			if (modalOpen) modalOpen = false;
@@ -132,9 +110,6 @@
 		document.addEventListener('keydown', handleDeleteKey);
 		document.addEventListener('click', handleDocumentClick);
 		return () => {
-			mq.removeEventListener('change', handleMqChange);
-			mqBelowMedium.removeEventListener('change', handleBelowMedium);
-			mqTablet.removeEventListener('change', handleTablet);
 			window.removeEventListener('popstate', handlePopState);
 			document.removeEventListener('keydown', handleDeleteKey);
 			document.removeEventListener('click', handleDocumentClick);
@@ -282,11 +257,11 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<!-- At minimal the modal owns the maps/json content (and the listEl bind),
-		     so the hidden aside renders nothing to avoid a duplicate binding. -->
-		{#if !minimal}
+		<!-- At minimal the modal owns the maps/json content, so the hidden
+		     aside renders nothing to avoid duplicate scroll-list bindings. -->
+		{#if !breakpoints.minimal}
 			<div class="fade-edges h-full w-full">
-				{#if wide || asideView === 'maps'}
+				{#if breakpoints.wide || asideView === 'maps'}
 					{@render mappingsList()}
 				{:else}
 					{@render jsonExport()}
