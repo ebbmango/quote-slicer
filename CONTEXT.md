@@ -11,9 +11,13 @@ _Avoid_: LinkContext, link state
 **Mapping** / **active mapping** / **token** / **source token** / **target token** / **whitespace bridging** / **boundary whitespace** / **token ID**:
 See `CLAUDE.md`'s domain vocabulary table — these terms are shared across the whole codebase, not specific to the Alignment module.
 
+**token store**:
+The single owner of the source/target token arrays. Tokenizes, holds the text-keyed split/merge cache, owns per-character pinyin as an id-keyed overlay applied on read, and runs the single unified Flip around each split/merge. `src/lib/animation/tokenStore.svelte.ts` (`createTokenStore` / `setTokenStoreContext`). The Alignment module derives its token view from this store keyed by the current text, rather than holding its own copy — so there is no second token owner to keep in sync, and split/merge can no longer be fed the "wrong" (pinyin-less) array.
+_Avoid_: lineEdit (former name), line manager, split service, token cache (the cache is only part of it)
+
 **line edit**:
-The module owning split/merge of line breaks, the single animation around the mutation, and the text-keyed token cache that keeps a split/merged array alive until the source text changes. `src/lib/animation/lineEdit.svelte.ts`.
-_Avoid_: line tool (that is the user-facing mode name), line manager, split service
+The operation — splitting or merging a line break, with its single animation — that the token store performs. The user-facing mode that triggers it is the **line tool** (mode key `'line'`).
+_Avoid_: naming a module "line edit"; the implementing module is the **token store**
 
 **edit scope**:
 The bundle of DOM refs a single line edit animates over — the token-grid root plus source wrapper, target wrapper, and authorship element, each carrying a `data-flip-id`. Passed into `split`/`merge` so one `Flip.getState` captures token reflow and panel shift together.

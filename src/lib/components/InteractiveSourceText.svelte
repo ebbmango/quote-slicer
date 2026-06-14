@@ -37,7 +37,7 @@
 		tokens;
 		// Leave the scroll box at `auto` height so it follows content in flow —
 		// including the line-separator height transitions that animate the mode
-		// change. lineEdit owns an explicit pixel height while a split/merge tweens;
+		// change. The token store owns an explicit pixel height while a split/merge tweens;
 		// don't fight it.
 		if (!container || animating) return;
 		container.style.height = '';

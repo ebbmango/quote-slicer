@@ -1,6 +1,7 @@
 import { getContext, setContext } from 'svelte';
 import { pinyin } from 'pinyin-pro';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
+import type { TokenAccess } from '$lib/animation/tokenStore.svelte';
 import {
 	buildTargetText,
 	deriveSourceTokenState,
@@ -33,9 +34,15 @@ class Alignment {
 	activeMappingId: MappingId | null = $state(null);
 	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
-	private sourceTokens: SourceToken[] = $state([]);
-	private targetTokens: TargetToken[] = $state([]);
 	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
+
+	// The token store is the single owner of the token arrays (with pinyin and the
+	// split/merge cache). Alignment reads them as live derivations of the store
+	// keyed by the current text — it no longer holds its own copy to keep in sync.
+	constructor(private store: TokenAccess) {}
+
+	private sourceTokens: SourceToken[] = $derived.by(() => this.store.sourceTokens(this.meta.sourceText));
+	private targetTokens: TargetToken[] = $derived.by(() => this.store.targetTokens(this.meta.targetText));
 
 	exportData: QuoteExport = $derived({
 		meta: {
@@ -103,11 +110,6 @@ class Alignment {
 		};
 	}
 
-	private setSourceTokenPinyin(tokenId: number, value: string | undefined): void {
-		const idx = this.sourceIdToIndex.get(tokenId);
-		if (idx !== undefined) this.sourceTokens[idx].pinyin = value;
-	}
-
 	private pruneActive(): void {
 		const m = this.activeMapping;
 		if (m && m.sourceTokenIds.length + m.targetTokenIds.length === 0) {
@@ -139,21 +141,6 @@ class Alignment {
 		return this.buildMappingView(this.mappings.find((x) => x.id === id)!);
 	}
 
-	// Live source tokens carrying pinyin. Pinyin is written into these reactive
-	// signals (not into QuoteWorkbench's raw tokenize() output), so split/merge
-	// must operate on this array to preserve it — see setSourceTokenPinyin.
-	get sourceTokenList(): SourceToken[] {
-		return this.sourceTokens;
-	}
-
-	setSourceTokens(tokens: SourceToken[]): void {
-		this.sourceTokens = tokens;
-	}
-
-	setTargetTokens(tokens: TargetToken[]): void {
-		this.targetTokens = tokens;
-	}
-
 	setMeta(meta: QuoteExportMeta): void {
 		this.meta = meta;
 	}
@@ -165,7 +152,7 @@ class Alignment {
 	setPinyin(id: MappingId, position: number, value: string): void {
 		const m = this.mappings.find((x) => x.id === id);
 		const tokenId = m?.sourceTokenIds[position];
-		if (tokenId !== undefined) this.setSourceTokenPinyin(tokenId, value);
+		if (tokenId !== undefined) this.store.setPinyin(tokenId, value);
 	}
 
 	findDefaultTokenIndex(zone: 'source' | 'target'): number {
@@ -189,7 +176,7 @@ class Alignment {
 		if (!claimed) return false;
 		if (claimed.id === this.activeMappingId) {
 			claimed[key] = claimed[key].filter((id) => id !== tokenId);
-			if (panel === 'source') this.setSourceTokenPinyin(tokenId, undefined);
+			if (panel === 'source') this.store.setPinyin(tokenId, undefined);
 			this.pruneActive();
 		} else {
 			this.activeMappingId = claimed.id;
@@ -214,7 +201,7 @@ class Alignment {
 			this.mappings = [...this.mappings, newM];
 			this.activeMappingId = newM.id;
 		}
-		this.setSourceTokenPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
+		this.store.setPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
 	}
 
 	toggleTarget(i: number): void {
@@ -263,8 +250,8 @@ class Alignment {
 	}
 }
 
-export function setAlignmentContext(): Alignment {
-	return setContext(ALIGNMENT_KEY, new Alignment());
+export function setAlignmentContext(store: TokenAccess): Alignment {
+	return setContext(ALIGNMENT_KEY, new Alignment(store));
 }
 
 export function getAlignmentContext(): Alignment {

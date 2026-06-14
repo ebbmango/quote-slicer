@@ -37,37 +37,40 @@ Each entry carries `globalIndex` — the token's position in the original flat a
 
 ## Text-keyed cache pattern
 
-Fresh tokenization discards any manual line splits because the tokenizer re-reads the raw text string. The **line edit** module (`src/lib/animation/lineEdit.svelte.ts`, see [CONTEXT.md](../CONTEXT.md)) prevents this with a text-keyed cache, owned internally:
+Fresh tokenization discards any manual line splits because the tokenizer re-reads the raw text string. The **token store** (`src/lib/animation/tokenStore.svelte.ts`, see [CONTEXT.md](../CONTEXT.md)) prevents this with a text-keyed cache, owned internally, and overlays per-character pinyin on read:
 
 ```ts
-// inside createLineEdit()
+// inside createTokenStore()
 let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
 
 function sourceTokens(text: string): SourceToken[] {
-  return sourceCache !== null && sourceCache.text === text
+  const base = sourceCache !== null && sourceCache.text === text
     ? sourceCache.tokens   // cache hit: text unchanged, use split/merged tokens
     : tokenizeSource(text); // cache miss: text changed, re-tokenize fresh
+  return applyPinyin(base); // id-keyed pinyin overlay reapplied either way
 }
 ```
 
-`QuoteWorkbench` derives its token arrays from this:
+The pinyin overlay is kept separate from the text-keyed cache because pinyin is annotated *before* any split exists to populate the cache — so a cache miss must still surface it. `setPinyin(id, value)` reassigns an id-keyed `Map`, and `applyPinyin` clones any token whose id is in it.
+
+`QuoteWorkbench` derives its render arrays from the store, and `Alignment` derives its own view from the same store keyed by `meta`:
 
 ```ts
-const lineEdit = createLineEdit();
-let sourceTokens = $derived(lineEdit.sourceTokens(sourceText));
+const store = getTokenStoreContext();
+let sourceTokens = $derived(store.sourceTokens(sourceText));
 ```
 
-`split`/`merge` write the cache after running the animation (see [Animation](#animation) below):
+`split`/`merge` write the cache after running the animation (see [Animation](#animation) below). Because the rendered `sourceTokens` already carry pinyin from the overlay, they can be passed straight in — no special "live" array:
 
 ```ts
 function splitSource(afterIndex: number) {
-  lineEdit.split('source', sourceText, alignment.sourceTokenList, afterIndex, editScope());
+  store.split('source', sourceText, sourceTokens, afterIndex, editScope());
 }
 ```
 
 When the user edits the raw text, `sourceText` changes → cache key mismatch → fresh tokenize → cache cleared implicitly. When the user only adjusts line breaks, `sourceText` stays the same → cache hit → line structure preserved across re-renders.
 
-The same pattern applies to target tokens via the module's `targetCache`.
+The same pattern applies to target tokens via the store's `targetCache`.
 
 ## Interaction model
 
@@ -106,7 +109,7 @@ Alt+Enter and the source↔target row-boundary jump are link-mode only (`crossZo
 
 ## Animation
 
-A split or merge calls into the **line edit** module (`lineEdit.split`/`lineEdit.merge`), which lazy-loads GSAP's `Flip` plugin and runs one **unified Flip** over an **edit scope** — the edited panel's tokens plus the other panel's wrapper and the authorship textarea, all carrying `data-flip-id`:
+A split or merge calls into the **token store** (`store.split`/`store.merge`), which lazy-loads GSAP's `Flip` plugin and runs one **unified Flip** over an **edit scope** — the edited panel's tokens plus the other panel's wrapper and the authorship textarea, all carrying `data-flip-id`:
 
 1. `Flip.getState(...)` over the edit scope's flip targets — captures positions before the mutation
 2. Lock the edited panel's scroll box (`[data-scrollbox]`) to its current pixel height
@@ -117,6 +120,6 @@ A split or merge calls into the **line edit** module (`lineEdit.split`/`lineEdit
 
 The flat `{#each tokens (i)}` loop in `InteractiveSourceText` (keyed by index, not token identity) keeps every span alive across mutations so Flip can track all elements. `InteractiveTargetText` is keyed by index in line mode for the same reason.
 
-Both `Interactive*Text` components receive `animating` as a prop from `lineEdit.animating` and use it to gate their own height-reset `$effect` — they leave the scroll box's height alone while the module's tween is in flight.
+Both `Interactive*Text` components receive `animating` as a prop from `store.animating` and use it to gate their own height-reset `$effect` — they leave the scroll box's height alone while the module's tween is in flight.
 
 `justify-center` on the workbench parent means all three panels shift together when total height changes — this is why the *other* panel and authorship are included as whole-wrapper flip targets even when only one panel's tokens change.

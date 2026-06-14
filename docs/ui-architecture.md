@@ -3,10 +3,10 @@
 ## Component tree
 
 ```
-+page.svelte                      root; sets ModeContext and Alignment
++page.svelte                      root; sets ModeContext, TokenStore, Alignment
 ├── <ol> mapping list             sidebar left; iterates sortedMappingViews
 │   └── Mapping.svelte (×N)       one card per mapping
-└── QuoteWorkbench.svelte         centre workbench; owns token caches
+└── QuoteWorkbench.svelte         centre workbench; consumes the token store
     ├── <textarea> source         text mode only
     ├── <textarea> target         text mode only
     ├── <div role="grid">         link + line mode: keyboard navigation container
@@ -19,7 +19,7 @@
 
 ### `+page.svelte`
 
-- Instantiates `ModeContext` and `Alignment` via `setModeContext()` / `setAlignmentContext()`
+- Instantiates `ModeContext`, the **token store**, and `Alignment` via `setModeContext()` / `setTokenStoreContext()` / `setAlignmentContext(store)` (in that order — `Alignment` takes the store)
 - Owns the three-column responsive grid layout and sidebar open/close animation
 - Manages the advance button (text → link) and mode toolbar (link / line / view)
 - Handles document-level keyboard shortcuts: Backspace/Delete to remove the focused or active mapping
@@ -29,20 +29,20 @@
 
 ### `QuoteWorkbench.svelte`
 
-- Instantiates `createLineEdit()` (`src/lib/animation/lineEdit.svelte.ts`) — derives `sourceTokens`/`targetTokens` from it, pushes them into `Alignment` via `$effect`
+- Consumes the **token store** via `getTokenStoreContext()` (`src/lib/animation/tokenStore.svelte.ts`) — derives `sourceTokens`/`targetTokens` from it for rendering. It does **not** push tokens into `Alignment`; `Alignment` reads the same store itself (see [Context wiring](#context-wiring)). The only push is `setMeta({sourceText,targetText,authorship})` via `$effect`
 - In text mode: renders source and target textareas with real-time Han-character filtering on the source field (including IME composition handling)
 - In link/line mode: renders the `role="grid"` keyboard navigation container
-- Builds the `editScope()` (DOM refs for the unified Flip — both wrappers, authorship, and each panel's `[data-scrollbox]`) and passes it to `lineEdit.split`/`lineEdit.merge`
-- Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks, passing `lineEdit.animating` down as a prop
+- Builds the `editScope()` (DOM refs for the unified Flip — both wrappers, authorship, and each panel's `[data-scrollbox]`) and passes it to `store.split`/`store.merge`
+- Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks, passing `store.animating` down as a prop
 - Instantiates `createTokenGridNav()` and wires its `handleKeydown`/`handleFocusIn` to the `role="grid"` container; supplies the mode-dependent config (see [TokenGridNav](#tokengridnav))
-- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` and `data-flip-id="source-panel"`/`"target-panel"` so `TokenGridNav` can resolve panels and `lineEdit`'s unified Flip can reposition them as units
+- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` and `data-flip-id="source-panel"`/`"target-panel"` so `TokenGridNav` can resolve panels and the token store's unified Flip can reposition them as units
 
 ### `InteractiveSourceText.svelte`
 
 - Renders source tokens as a flat flex-wrap layout in both link and line mode
 - **Link mode**: renders interactive `role="option"` spans for non-punctuation tokens; calls `alignment.toggleSource(i, { force })` on click (Cmd/Ctrl); `TokenGridNav` calls it on Alt+Space; uses `longpress` action for mobile multi-add
-- **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; `onSplit`/`onMerge` call straight into `lineEdit` (see [line-mode.md](line-mode.md#animation))
-- Marks its outer container `data-scrollbox`; leaves its height to `lineEdit` while `animating` is true (via `$effect`)
+- **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; `onSplit`/`onMerge` call straight into the token store (see [line-mode.md](line-mode.md#animation))
+- Marks its outer container `data-scrollbox`; leaves its height to the token store while `animating` is true (via `$effect`)
 - No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
 
 ### `InteractiveTargetText.svelte`
@@ -80,18 +80,19 @@ The visual row/column math (`findVisualNeighbor`) delegates to the pure function
 
 ## Context wiring
 
-Both contexts are set once at the root (`+page.svelte`) and accessed via `getContext` anywhere in the tree:
+All three contexts are set once at the root (`+page.svelte`) and accessed via `getContext` anywhere in the tree:
 
 - `ModeContext` — `setModeContext()` / `getModeContext()` (`src/lib/context/mode.svelte.ts`)
-- `Alignment` — `setAlignmentContext()` / `getAlignmentContext()` (`src/lib/context/alignment.svelte.ts`)
+- **token store** — `setTokenStoreContext()` / `getTokenStoreContext()` (`src/lib/animation/tokenStore.svelte.ts`)
+- `Alignment` — `setAlignmentContext(store)` / `getAlignmentContext()` (`src/lib/context/alignment.svelte.ts`)
 
-`QuoteWorkbench` syncs the derived token arrays into `Alignment` via two `$effect` calls (one per panel). This keeps `Alignment` as the single source of truth for mappings while token ownership stays in `lineEdit` (instantiated by `QuoteWorkbench`).
+The token store is the single owner of the token arrays. `QuoteWorkbench` no longer pushes tokens into `Alignment`; it only pushes the raw text via `setMeta`. `Alignment` derives its own token view from the store keyed by `meta` (getters `sourceTokens`/`targetTokens`), so there is exactly one token owner — no two-way `$effect` sync, and split/merge can't be handed a pinyin-less array.
 
 ## GSAP patterns
 
-GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time browser API calls (the app is statically prerendered). `+layout.svelte` registers GSAP plugins; `lineEdit.svelte.ts` lazy-loads `Flip` itself.
+GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time browser API calls (the app is statically prerendered). `+layout.svelte` registers GSAP plugins; `tokenStore.svelte.ts` lazy-loads `Flip` itself.
 
-### Unified Flip (lineEdit.svelte.ts)
+### Unified Flip (tokenStore.svelte.ts)
 
 A split or merge runs **one** `Flip` over an **edit scope** (see [line-mode.md](line-mode.md#animation) and [CONTEXT.md](../CONTEXT.md) for both terms) — the edited panel's tokens (per-token reflow) plus the other panel's wrapper and the authorship textarea (whole-unit repositioning):
 
@@ -103,4 +104,4 @@ A split or merge runs **one** `Flip` over an **edit scope** (see [line-mode.md](
 
 If `Flip`/`gsap` haven't loaded yet, `mutate()` runs with no animation.
 
-Every token span carries `data-flip-id`, as do `sourceWrapperEl`/`targetWrapperEl` (`data-flip-id="source-panel"`/`"target-panel"`) and the authorship textarea (`data-flip-id="authorship"`) — together these are the flip targets. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking. `Interactive*Text` read `lineEdit.animating` (passed as a prop) to gate their own height-reset `$effect` while the tween is in flight.
+Every token span carries `data-flip-id`, as do `sourceWrapperEl`/`targetWrapperEl` (`data-flip-id="source-panel"`/`"target-panel"`) and the authorship textarea (`data-flip-id="authorship"`) — together these are the flip targets. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking. `Interactive*Text` read `store.animating` (passed as a prop) to gate their own height-reset `$effect` while the tween is in flight.

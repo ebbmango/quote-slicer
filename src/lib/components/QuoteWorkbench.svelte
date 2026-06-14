@@ -3,7 +3,7 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
-	import { createLineEdit, type EditScope } from '$lib/animation/lineEdit.svelte';
+	import { getTokenStoreContext, type EditScope } from '$lib/animation/tokenStore.svelte';
 	import { createTokenGridNav, getZone, type Zone } from '$lib/navigation/tokenGridNav';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
@@ -22,18 +22,14 @@
 	let editing = $derived(mode.current === 'text');
 	const alignment = getAlignmentContext();
 
-	// The line-edit module owns tokenization, the text-keyed split/merge cache, and
-	// the single unified Flip around each edit (see lineEdit.svelte.ts / CONTEXT.md).
-	const lineEdit = createLineEdit();
-	let sourceTokens = $derived(lineEdit.sourceTokens(sourceText));
-	let targetTokens = $derived(lineEdit.targetTokens(targetText));
+	// The token store is the single owner of tokenization, the text-keyed split/merge
+	// cache, per-character pinyin, and the unified Flip around each edit (see
+	// tokenStore.svelte.ts / CONTEXT.md). Alignment derives its own token view from
+	// the same store keyed by meta — so there's no token array to push into it here.
+	const store = getTokenStoreContext();
+	let sourceTokens = $derived(store.sourceTokens(sourceText));
+	let targetTokens = $derived(store.targetTokens(targetText));
 
-	$effect(() => {
-		alignment.setSourceTokens(sourceTokens);
-	});
-	$effect(() => {
-		alignment.setTargetTokens(targetTokens);
-	});
 	$effect(() => {
 		alignment.setMeta({ sourceText, targetText, authorship });
 	});
@@ -44,7 +40,7 @@
 
 	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
 	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
-	// components; lineEdit height-tweens the edited one.
+	// components; the store height-tweens the edited one.
 	function editScope(): EditScope {
 		return {
 			sourceWrapperEl,
@@ -55,20 +51,19 @@
 		};
 	}
 
-	// Source edits run on alignment's live tokens (which carry pinyin), not the raw
-	// derived array — on the first split the derived is fresh tokenize() output
-	// without pinyin. See Alignment.sourceTokenList.
+	// sourceTokens/targetTokens already carry pinyin from the store's overlay, so
+	// split/merge no longer need a special "live" array — the store owns it.
 	function splitSource(afterIndex: number) {
-		lineEdit.split('source', sourceText, alignment.sourceTokenList, afterIndex, editScope());
+		store.split('source', sourceText, sourceTokens, afterIndex, editScope());
 	}
 	function mergeSource(lineN: number) {
-		lineEdit.merge('source', sourceText, alignment.sourceTokenList, lineN, editScope());
+		store.merge('source', sourceText, sourceTokens, lineN, editScope());
 	}
 	function splitTarget(afterIndex: number) {
-		lineEdit.split('target', targetText, targetTokens, afterIndex, editScope());
+		store.split('target', targetText, targetTokens, afterIndex, editScope());
 	}
 	function mergeTarget(lineN: number) {
-		lineEdit.merge('target', targetText, targetTokens, lineN, editScope());
+		store.merge('target', targetText, targetTokens, lineN, editScope());
 	}
 
 	let tokenContainer: HTMLDivElement = $state(null!);
@@ -160,7 +155,7 @@
 				tokens={sourceTokens}
 				onSplit={splitSource}
 				onMerge={mergeSource}
-				animating={lineEdit.animating}
+				animating={store.animating}
 			/>
 		</div>
 		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel">
@@ -168,7 +163,7 @@
 				tokens={targetTokens}
 				onSplit={splitTarget}
 				onMerge={mergeTarget}
-				animating={lineEdit.animating}
+				animating={store.animating}
 			/>
 		</div>
 	</div>

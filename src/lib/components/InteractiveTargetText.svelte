@@ -33,7 +33,7 @@
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens;
 		// Keep the scroll box at `auto` so it follows the separator height
-		// transitions that animate the mode change; lineEdit owns the height
+		// transitions that animate the mode change; the token store owns the height
 		// during a split/merge tween.
 		if (!lineContainer || animating) return;
 		lineContainer.style.height = '';

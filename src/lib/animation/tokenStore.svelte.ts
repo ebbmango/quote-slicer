@@ -1,4 +1,4 @@
-import { tick, onMount } from 'svelte';
+import { tick, onMount, getContext, setContext } from 'svelte';
 import 'gsap'; // pulls in ambient gsap.* type namespace used by Flip's vars types
 import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
@@ -7,6 +7,7 @@ import type { Zone } from '$lib/navigation/tokenGridNav';
 
 const DURATION = 0.35;
 const EASE = 'power2.inOut';
+const TOKEN_STORE_KEY = Symbol('tokenStore');
 
 // Everything a single line edit animates over. The edited panel's tokens reflow
 // individually (each carries data-flip-id) and its scroll box's height tweens so
@@ -21,12 +22,19 @@ export type EditScope = {
 	targetScrollEl: HTMLElement | null;
 };
 
-// The line-edit module (see CONTEXT.md). Owns split/merge of line breaks, the
-// text-keyed token cache that keeps a split/merged array alive until the text
-// changes, and the single unified Flip around the mutation. Replaces the former
-// arrangement of an intra-panel Flip (flipTransition) plus a separate cross-panel
-// Y-shift (QuoteWorkbench.withShiftAnimation) and their two competing height locks.
-export function createLineEdit() {
+// The token store (see CONTEXT.md "tokens"). The single owner of the
+// source/target token arrays: it tokenizes, holds the text-keyed split/merge
+// cache, owns per-character pinyin as an id-keyed overlay, and runs the unified
+// Flip around split/merge. Alignment derives mapping/colouring state from this
+// store rather than holding its own copy, so there is no second token owner to
+// keep in sync — split/merge can no longer be fed the "wrong" array.
+export type TokenStore = ReturnType<typeof createTokenStore>;
+
+// The read/annotate surface Alignment needs — excludes split/merge/animate/EditScope
+// so changes to the animation-only members of TokenStore don't ripple into Alignment.
+export type TokenAccess = Pick<TokenStore, 'sourceTokens' | 'targetTokens' | 'setPinyin'>;
+
+export function createTokenStore() {
 	let Flip: (typeof import('gsap/Flip'))['Flip'] | null = $state(null);
 	let gsap: (typeof import('gsap'))['gsap'] | null = $state(null);
 	let animating = $state(false);
@@ -34,24 +42,48 @@ export function createLineEdit() {
 	let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
 	let targetCache: { text: string; tokens: TargetToken[] } | null = $state(null);
 
+	// Pinyin overlay, keyed by stable token id. Kept separate from the text-keyed
+	// cache because pinyin is annotated before any split exists to populate the
+	// cache — a cache miss must still surface it. Applied on read; reassigned (not
+	// mutated in place) so dependent $derived recompute.
+	let pinyin: Map<number, string | undefined> = $state(new Map());
+
 	onMount(async () => {
 		const [{ Flip: F }, { gsap: g }] = await Promise.all([import('gsap/Flip'), import('gsap')]);
 		Flip = F;
 		gsap = g;
 	});
 
-	// Cache-or-tokenize: split/merge write a cache keyed by the text they ran
-	// against; once the text changes the cache is stale and we retokenize. Pinyin
-	// lives on the token objects in this cache and so survives a split/merge.
+	function applyPinyin(tokens: SourceToken[]): SourceToken[] {
+		return tokens.map((t) => {
+			if (pinyin.has(t.id)) return { ...t, pinyin: pinyin.get(t.id) };
+			if (t.pinyin !== undefined && t.pinyin !== null) return { ...t, pinyin: undefined };
+			return t;
+		});
+	}
+
+	// Cache-or-tokenize, then overlay pinyin: split/merge write a cache keyed by
+	// the text they ran against; once the text changes the cache is stale and we
+	// retokenize. Pinyin is reapplied from the id-keyed overlay either way.
 	function sourceTokens(text: string): SourceToken[] {
-		return sourceCache !== null && sourceCache.text === text
-			? sourceCache.tokens
-			: tokenizeSource(text);
+		const base =
+			sourceCache !== null && sourceCache.text === text
+				? sourceCache.tokens
+				: tokenizeSource(text);
+		return applyPinyin(base);
 	}
 	function targetTokens(text: string): TargetToken[] {
 		return targetCache !== null && targetCache.text === text
 			? targetCache.tokens
 			: tokenizeTarget(text);
+	}
+
+	// Annotate (or clear, with undefined) a source token's pinyin by stable id.
+	function setPinyin(tokenId: number, value: string | undefined): void {
+		const next = new Map(pinyin);
+		if (value === undefined) next.delete(tokenId);
+		else next.set(tokenId, value);
+		pinyin = next;
 	}
 
 	// Elements flipped for an edit in `zone`: the edited panel's tokens (reflow)
@@ -147,10 +179,19 @@ export function createLineEdit() {
 	return {
 		sourceTokens,
 		targetTokens,
+		setPinyin,
 		split,
 		merge,
 		get animating() {
 			return animating;
 		}
 	};
+}
+
+export function setTokenStoreContext(): TokenStore {
+	return setContext(TOKEN_STORE_KEY, createTokenStore());
+}
+
+export function getTokenStoreContext(): TokenStore {
+	return getContext<TokenStore>(TOKEN_STORE_KEY);
 }

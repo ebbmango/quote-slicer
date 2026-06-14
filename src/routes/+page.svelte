@@ -8,6 +8,7 @@
 	import Mapping from '$lib/components/Mapping.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
+	import { setTokenStoreContext } from '$lib/animation/tokenStore.svelte';
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
 	import { formatExport } from '$lib/exportFormat';
 	import { colors } from '$lib/constants/colors';
@@ -29,7 +30,8 @@
 	}
 
 	const modeCtx = setModeContext();
-	const alignment = setAlignmentContext();
+	const tokenStore = setTokenStoreContext();
+	const alignment = setAlignmentContext(tokenStore);
 
 	let asideView: 'maps' | 'json' = $state('maps');
 	let wide = $state(false);
