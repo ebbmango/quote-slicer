@@ -42,9 +42,6 @@
 
 	onMount(() => initAlignmentShortcuts(alignment));
 
-	// const hangex = /^[\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF]+$/u;
-
-	// const iconSun = icons['sun-bright'];
 	const iconArrow = icons['arrow-down'];
 
 	let arrowExiting = $state(false);
