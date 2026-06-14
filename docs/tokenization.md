@@ -1,59 +1,124 @@
 # Tokenization
 
-All tokenization lives in `src/lib/tokenize.ts`.
+## Why tokenization matters here
+
+Everything the user clicks is a **token**. The alignment is a relationship between
+*source tokens* and *target tokens*, so how the raw text is sliced determines exactly
+what can be mapped to what. The two sides have different needs — Chinese is mapped one
+character at a time, English one word at a time — so there are two tokenizers, both in
+`src/lib/tokenize.ts`.
+
+Both tokenizers assign each token a stable integer `id` (its position in the flat
+output array) as the very last step. See [Data Model](data-model.md#stable-token-ids)
+for why that ID matters.
 
 ## Source tokenizer
 
 `tokenizeSource(text: string): SourceToken[]`
 
-Splits Chinese source text one character per token. Newlines delimit lines and are consumed — not emitted as tokens. Each token's `.line` is the index of the newline-separated segment it belongs to.
+One Chinese character per token. Newlines delimit lines and are **consumed** (not
+emitted as tokens); each token's `.line` is the index of the newline-separated segment
+it came from.
 
-Token types: `'character'` (Han script), `'number'` (Unicode `\p{N}`), `'punctuation'` (`\p{P}` or `\p{S}`), `'symbol'` (everything else).
+Token types are assigned by Unicode class:
 
-The source input field filters out non-Han characters in real time using `SOURCE_INPUT_RE` (`tokenize.ts:2`), so in practice the tokenizer only sees Han characters, CJK punctuation, and numbers.
+| Type | Matches |
+|------|---------|
+| `'character'` | Han script (`\p{Script=Han}`) — these are the mappable units; `pinyin` starts `undefined` |
+| `'number'` | `\p{N}` — `pinyin: null` |
+| `'punctuation'` | `\p{P}` or `\p{S}` — `pinyin: null` |
+| `'symbol'` | anything else — `pinyin: null` |
+
+In practice the source rarely contains anything but Han characters, because the source
+input field filters input in real time against `SOURCE_INPUT_RE` (`tokenize.ts`),
+which only allows Han characters, CJK punctuation blocks, and newlines. (The filter is
+IME-aware — see [UI Architecture](ui-architecture.md).)
 
 ## Target tokenizer
 
-`tokenizeTarget(text: string): TargetToken[]` — used by `QuoteWorkbench.svelte`.
+`tokenizeTarget(text: string): TargetToken[]`
 
-Punctuation that **touches a word** (Latin letters or digits) is absorbed into that word's token. The regex `TARGET_RE` (`tokenize.ts`) matches in priority order: single Han character, word-with-flanking-punct, whitespace run, standalone punctuation run.
+The hard part is punctuation. The guiding rule: **punctuation that touches a word is
+absorbed into that word, but punctuation wedged *between* two word-characters splits
+out** so each piece stays individually mappable.
 
-Example: `There's nothing "simple" in programming.`
-→ `[There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]`
+A single regex, `TARGET_RE`, matches in priority order:
 
-### Merge rules
+1. a single Han character;
+2. a word (Latin letters / digits) with any *flanking* punctuation absorbed;
+3. a whitespace run (excluding newlines);
+4. a standalone punctuation run not adjacent to any word.
 
-- **Flanking punct absorbed** — leading and trailing punctuation merge into the word: `"simple"`, `programming.`, `(hello)`, `$5`, `5%`, `5.`
-- **Interior punct splits out** — punctuation flanked by word-chars on **both** sides is *not* absorbed, so the user can map each piece. Hyphens: `well-known` → `[well][-][known]`. Decimal/thousands separators: `3.14` → `[3][.][14]`, `$5,000.00` → `[$5][,][000][.][00]`.
-- **Contractions excepted** — a straight `'` or curly `’` apostrophe between word-chars stays merged: `don't`, `it’s`, `dogs'`. This is the one interior-punct case that does not split (regex group `(?:['’][A-Za-z0-9]+)*`, plus trailing-possessive absorbed as trailing punct).
-- **Standalone punct** — a punctuation run with no adjacent word stays its own `'punctuation'` token: `...`, em-dashes between words (`word—word` → `[word][—][word]`).
-- **Target hanzi untouched** — Han characters in target text remain single-char tokens; adjacent punctuation stays standalone (`你好!` → `[你][好][!]`).
+```
+There's nothing "simple" in programming.
+→ [There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]
+```
 
-The lookbehind/lookahead `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` enforce the interior-vs-flanking distinction.
+### The merge rules
+
+- **Flanking punct absorbed** — leading/trailing punctuation merges into the word:
+  `"simple"`, `programming.`, `(hello)`, `$5`, `5%`.
+- **Interior punct splits out** — punctuation flanked by word-chars on *both* sides is
+  not absorbed: `well-known` → `[well][-][known]`; `3.14` → `[3][.][14]`;
+  `$5,000.00` → `[$5][,][000][.][00]`. This is what makes hyphenated compounds and
+  numbers mappable piece by piece.
+- **Contractions excepted** — a straight `'` or curly `’` apostrophe between word-chars
+  stays merged: `don't`, `it’s`, `dogs'`. This is the one interior-punct case that does
+  *not* split (regex group `(?:['’][A-Za-z0-9]+)*`).
+- **Standalone punct** — a punctuation run with no adjacent word is its own token:
+  `...`, or an em-dash between words (`word—word` → `[word][—][word]`).
+- **Target hanzi untouched** — Han characters in target text stay single-char tokens;
+  adjacent punctuation stays standalone (`你好!` → `[你][好][!]`).
+
+The lookbehind/lookahead `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` are what enforce the
+interior-vs-flanking distinction. This behaviour is locked down by ~137 lines of cases
+in `src/lib/vitest-examples/tokenize.spec.ts`.
+
+> **History:** there used to be two target tokenizers (`tokenizeTargetSeparate` and
+> `tokenizeTargetCombined`). They were consolidated into this single `tokenizeTarget`
+> so the rest of the app only ever reasons about one shape of `TargetToken[]`.
 
 ### Token type
 
-`'whitespace'` for whitespace runs, `'hanzi'` for single Han chars, `'text'` for any token containing a letter or digit (so merged tokens like `$5` and `simple.` are `'text'` — mappable and alignable), `'punctuation'` for pure-symbol runs.
+| Type | When |
+|------|------|
+| `'whitespace'` | whitespace runs |
+| `'hanzi'` | a single Han character |
+| `'text'` | any token containing a letter or digit (`[\p{L}\p{N}]`) — so `$5` and `simple.` are `'text'` and therefore mappable |
+| `'punctuation'` | pure-symbol runs |
 
-## Line stamping
+## Line stamping and the boundary whitespace token
 
-The target tokenizer splits on `\n` and stamps each token with a `line` index matching its segment. Newlines are consumed, not emitted.
+The target tokenizer splits on `\n` and stamps each token with its segment's `line`
+index. Newlines are consumed, not emitted.
 
-After the tokens for each line segment, a synthetic boundary whitespace token is appended — except after the last line:
+After the tokens of each line segment — but **not** after the last line — a synthetic
+**boundary whitespace** token is appended:
 
 ```ts
 if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 ```
 
-This boundary token serves as the merge affordance in line mode: clicking it merges the two surrounding lines. See [Line Mode](line-mode.md).
+This token is the **merge affordance** in line mode: clicking it merges the two lines
+it sits between. See [Line Mode](line-mode.md#the-line-tool-affordances).
 
 ## Whitespace strategy
 
-Whitespace tokens (type `'whitespace'`) exist in the target token stream but are:
+Whitespace tokens (type `'whitespace'`) exist in the target stream but are treated
+specially:
 
-- **Not interactive in link mode** — `toggleTarget` returns early for whitespace (`alignment.svelte.ts:209`)
-- **Not directly mappable** — no mapping will ever store a whitespace token ID
-- **Bridged visually** — if a whitespace token is flanked on both sides by tokens from the same mapping, it inherits that mapping's color (`findBridgeMappingId()` in `tokenState.ts:35`)
-- **Bridged in text output** — `buildTargetText()` treats gaps of ≤ 5 tokens where all gap tokens are whitespace or punctuation as contiguous, so `"simple"` renders as a single phrase rather than split fragments
+- **Not interactive in link mode** — `Alignment.toggleTarget` early-returns for
+  whitespace (and punctuation), so they can't be added to a mapping.
+- **Never stored in a mapping** — no `Mapping` will ever hold a whitespace token ID.
+- **Bridged visually** — a whitespace token flanked on both sides by tokens from the
+  *same* mapping inherits that mapping's color, so a multi-word phrase reads as one
+  continuous highlight. The rule is `findBridgeMappingId()` in `tokenState.ts`; see
+  [Link Mode](link-mode.md#whitespace-bridging).
+- **Bridged in text output** — `buildTargetText()` treats short gaps (≤ 5 tokens, all
+  whitespace/punctuation) as contiguous, so a mapping's `targetText` renders as a
+  single phrase rather than comma-joined fragments.
+- **Copyable** — in line mode the whitespace tokens are rendered as
+  `<span role="button">` with `user-select: text`, not `<button>`, so selecting and
+  copying the target text preserves the spaces.
 
-Source tokens do not have a whitespace type — the source input field filters out spaces entirely.
+Source tokens have no whitespace type — the source input filter strips spaces entirely.

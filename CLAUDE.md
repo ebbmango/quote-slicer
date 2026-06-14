@@ -57,10 +57,18 @@ Mode held in `ModeContext` (`src/lib/context/mode.svelte.ts`).
 
 ## Docs
 
-- [`docs/overview.md`](docs/overview.md) — what the app does, modes, layout
-- [`docs/data-model.md`](docs/data-model.md) — token types, `Mapping`, stable IDs, `TokenState`, `MappingView`
+Start at [`docs/index.md`](docs/index.md). Pages:
+
+- [`docs/overview.md`](docs/overview.md) — what the app does, the four modes, layout
+- [`docs/data-model.md`](docs/data-model.md) — token types, `Mapping`, stable IDs, `TokenState`, `MappingView`, export types
 - [`docs/tokenization.md`](docs/tokenization.md) — tokenizers, line stamping, whitespace strategy
-- [`docs/link-mode.md`](docs/link-mode.md) — click state machine, `LinkContext`, mapping lifecycle, pinyin, keyboard scheme
-- [`docs/line-mode.md`](docs/line-mode.md) — split/merge, text-keyed cache, animation
-- [`docs/ui-architecture.md`](docs/ui-architecture.md) — component tree, responsibilities, GSAP patterns, context wiring
+- [`docs/token-store.md`](docs/token-store.md) — single token owner: text-keyed cache, pinyin overlay, unified Flip
+- [`docs/link-mode.md`](docs/link-mode.md) — `Alignment`, click state machine, mapping lifecycle, pinyin, bridging
+- [`docs/line-mode.md`](docs/line-mode.md) — split/merge functions, line-tool affordances, the edit animation
+- [`docs/mode-transitions.md`](docs/mode-transitions.md) — arrow launch, persistent-DOM crossfade, sidebar slide
+- [`docs/keyboard-navigation.md`](docs/keyboard-navigation.md) — `tokenGridNav`, visual-neighbour math, interaction-mode sensor
+- [`docs/export.md`](docs/export.md) — export data shape, JSON pretty-printer, Shiki recolor
+- [`docs/ui-architecture.md`](docs/ui-architecture.md) — component tree, context wiring, responsive layout, GSAP patterns
+- [`docs/build-and-deploy.md`](docs/build-and-deploy.md) — static prerender, base path, GitHub Pages, icons secret
 - [`docs/file-map.md`](docs/file-map.md) — every file and its responsibility
+- [`docs/implementation-notes/`](docs/implementation-notes/index.md) — running change log (parsed into the docs above; `old/` = already parsed)

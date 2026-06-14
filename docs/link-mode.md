@@ -1,84 +1,135 @@
 # Link Mode
 
-Link mode (`mode.current === 'link'`) is where users draw word-to-word alignments. The state machine lives in `Alignment` (`src/lib/context/alignment.svelte.ts`).
+Link mode (`mode.current === 'link'`) is where the user draws the alignment — clicking
+source characters and target words to bind them into colored mappings. All of the
+state and logic lives in **`Alignment`** (`src/lib/context/alignment.svelte.ts`).
 
-## Alignment
+## Alignment — the model
 
-`Alignment` is a Svelte 5 class instantiated once in `+page.svelte` via `setAlignmentContext()` and accessed anywhere in the tree via `getAlignmentContext()`. It owns:
+`Alignment` is a Svelte 5 class, instantiated once in `+page.svelte` via
+`setAlignmentContext(tokenStore)` and read anywhere via `getAlignmentContext()`.
 
-- `mappings: Mapping[]` — the full list of mappings (private `$state`)
-- `activeMappingId: MappingId | null` — the currently selected mapping (`$state`, public)
-- `sourceTokens` / `targetTokens` — shadow copies of the token arrays, set by `QuoteWorkbench` via `$effect` on every token change
-- `sourceIdToIndex` / `targetIdToIndex` — `$derived` maps from token ID to current array index
-- `sourceMappingIndex` / `targetMappingIndex` — `$derived` maps from array index to mapping ID, rebuilt from the ID maps on every token or mapping update
-- `sortedMappingViews: MappingView[]` — `$derived` array of display snapshots sorted by first source token position
+It is deliberately *not* the owner of the token arrays — the
+[token store](token-store.md) is. `Alignment` takes the store (as a narrowed
+`TokenAccess`) and **derives** its token views from it, keyed by the current text:
 
-## Click state machine
+```ts
+private sourceTokens = $derived.by(() => this.store.sourceTokens(this.meta.sourceText));
+private targetTokens = $derived.by(() => this.store.targetTokens(this.meta.targetText));
+```
+
+So there is exactly one token owner; `Alignment` never holds a synced copy. What it
+*does* own:
+
+| State | Kind | Purpose |
+|-------|------|---------|
+| `mappings` | private `$state` | the full list of mappings |
+| `activeMappingId` | public `$state` | the currently selected mapping (or `null`) |
+| `meta` | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()` |
+| `nextColorIndex` | private `$state` | monotonic counter for assigning mapping colors |
+
+And what it derives:
+
+- `sourceIdToIndex` / `targetIdToIndex` — token ID → current array index.
+- `sourceMappingIndex` / `targetMappingIndex` — array index → owning mapping ID.
+- `sortedMappingViews` — the display snapshots ([MappingView](data-model.md#mappingview--the-display-snapshot)),
+  sorted by each mapping's first source-token position.
+- `exportData` — the [export shape](export.md).
+
+## The click state machine
+
+Clicking a token routes to `toggleSource` or `toggleTarget`. Both first try a shared
+`tryRemoveOrSwitch()` helper: if the token already belongs to a mapping, either remove
+it (if that's the active mapping) or switch the active mapping to it (if it's another).
 
 ### `toggleSource(i, opts)`
 
-`i` is the current array index of the clicked source token. `opts.force` is `true` when Cmd/Ctrl is held (mouse), Alt+Shift+Space is pressed (keyboard), or on longpress (mobile). See `alignment.svelte.ts:191`.
+`i` is the clicked token's current array index. `opts.force` is `true` when Cmd/Ctrl
+is held (mouse), Alt+Shift+Space is pressed (keyboard), or on longpress (mobile).
 
 | Token state | force | Action |
-|---|---|---|
-| Belongs to active mapping | any | Remove token from mapping; prune if empty |
+|-------------|-------|--------|
+| Whitespace or punctuation | any | **No-op** (guarded — can't start a mapping from these) |
+| Belongs to active mapping | any | Remove from mapping; clear its pinyin; prune if empty |
 | Belongs to another mapping | any | Switch active mapping to that one |
-| No mapping; active mapping exists; active has no sources yet | any | Append to active mapping |
-| No mapping; active mapping exists; active already has a source | false | Create new mapping for this token |
-| No mapping; active mapping exists; active already has a source | true | Append to active mapping (force-add) |
-| No mapping; no active mapping | any | Create new mapping for this token |
+| Unmapped; active mapping exists, has no source yet | any | Append to active mapping |
+| Unmapped; active mapping exists, already has a source | `false` | Create a **new** mapping for this token |
+| Unmapped; active mapping exists, already has a source | `true` | Append to active mapping (force-add) |
+| Unmapped; no active mapping | any | Create a new mapping for this token |
 
-The "belongs to active mapping" and "belongs to another mapping" rows are handled by a shared `tryRemoveOrSwitch()` helper (`alignment.svelte.ts:177`), also used by `toggleTarget`.
-
-Punctuation source tokens are excluded from interaction (no `role="option"` in the DOM, no click handler).
+On any add, pinyin is auto-filled (see below).
 
 ### `toggleTarget(i)`
 
-`i` is the current array index of the clicked target token. See `alignment.svelte.ts:209`.
-
 | Token state | Action |
-|---|---|
-| Whitespace token | No-op |
-| Belongs to active mapping | Remove token; prune if empty |
+|-------------|--------|
+| Whitespace or punctuation | **No-op** (guarded) |
+| Belongs to active mapping | Remove from mapping; prune if empty |
 | Belongs to another mapping | Switch active mapping |
-| No mapping; active mapping exists | Append to active mapping |
-| No mapping; no active mapping | Create new mapping for this token |
+| Unmapped; active mapping exists | Append to active mapping |
+| Unmapped; no active mapping | Create a new mapping for this token |
 
-Target tokens have no force/multi-add path — any non-whitespace target token can be freely added to the active mapping.
+Target tokens have no force/multi-add distinction — any non-whitespace, non-punctuation
+target token can be freely added to the active mapping.
+
+> Both toggles guard `type === 'whitespace' || type === 'punctuation'` so a stray click
+> on a space or a comma can't spawn an empty mapping.
 
 ## Mapping lifecycle
 
-- **Create** — `createMapping()` (`alignment.svelte.ts:95`): UUID, next `colorIndex` from a monotonic counter, empty token ID arrays
-- **Prune** — `pruneActive()` (`alignment.svelte.ts:109`): deletes the active mapping if it has zero source + zero target tokens; called after every removal
-- **Deselect** — `deselect()`: sets `activeMappingId = null` without deleting
-- **Delete** — `deleteById(id)` or `deleteActive()`: removes by ID; clears `activeMappingId` if it matches
+- **Create** — `createMapping()`: a fresh UUID, the next `colorIndex` from the
+  monotonic counter, empty token-ID arrays.
+- **Prune** — `pruneActive()`: deletes the active mapping if it has zero source *and*
+  zero target tokens. Called after every removal, so emptying a mapping out cleans it up.
+- **Deselect** — `deselect()`: `activeMappingId = null`, without deleting.
+- **Delete** — `deleteById(id)` / `deleteActive()`: removes by ID; clears
+  `activeMappingId` if it matches.
 
-`colorIndex` is assigned at creation from a counter that never resets — it is decoupled from list position so reordering or deletion cannot reassign colors to existing cards.
+`colorIndex` comes from a counter that **never resets**. Color is therefore decoupled
+from list position — deleting or reordering mappings can never reassign an existing
+card's color.
 
 ## Pinyin auto-fill
 
-When a source token is added to a mapping, `tokenPinyin()` (`alignment.svelte.ts:24`) calls `pinyin-pro` to generate the initial romanisation. It uses `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result is written to `SourceToken.pinyin` via `setSourceTokenPinyin()` (`alignment.svelte.ts:104`), keyed by token ID — not stored on `Mapping`. Users can override it in the mapping card's pinyin input (`setPinyin()`, which resolves the mapping's source token at `position` and updates that token's `pinyin`).
+When a source `'character'` token joins a mapping, `tokenPinyin()` calls `pinyin-pro`
+with `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result
+is written via `this.store.setPinyin(tokenId, value)` — into the token store's id-keyed
+[pinyin overlay](token-store.md#the-pinyin-overlay), **not** onto the mapping.
 
-When a source token is removed from a mapping, its `pinyin` field is cleared back to `undefined`.
-
-Only `'character'` type source tokens get pinyin — punctuation, numbers, and symbols are never assigned one (`MappingView.sourceEntries[].pinyin` falls back to `''`).
+- Only `'character'` tokens get pinyin; `tokenPinyin()` returns `''` for anything else.
+- Removing a token from a mapping clears its pinyin (`setPinyin(tokenId, undefined)`).
+- The user can override pinyin in the mapping card's input; `Mapping.svelte` calls
+  `alignment.setPinyin(mappingId, position, value)`, which resolves the source token at
+  that position and writes the override through the same store path.
 
 ## Whitespace bridging
 
-A whitespace target token is not mappable but can display a color if both its nearest non-whitespace neighbors belong to the same mapping. `findBridgeMappingId()` (`tokenState.ts:35`) scans left and right past consecutive whitespace tokens, finds the nearest non-whitespace token on each side, and returns the mapping ID only if both sides resolve to the same mapping.
+A whitespace target token can't be mapped, but it can *display* a mapping's color when
+it sits between two tokens of the same mapping — so a multi-word phrase reads as one
+continuous highlight instead of striped gaps.
 
-The bridged token renders as `idle` or `active` depending on whether its neighbor mapping is the active one.
+`findBridgeMappingId()` (`tokenState.ts`) scans left and right past consecutive
+whitespace tokens, finds the nearest non-whitespace token on each side, and returns a
+mapping ID only if **both** sides resolve to the same mapping. The bridged token then
+renders `idle` or `active` depending on whether that mapping is the active one. See
+[Tokenization](tokenization.md#whitespace-strategy) for the companion text-output
+bridging in `buildTargetText()`.
 
 ## Keyboard scheme (link mode)
 
-Provided by `createTokenGridNav()` (`src/lib/navigation/tokenGridNav.ts`), wired up in `QuoteWorkbench.svelte`. Tokens are removed from the Tab order; navigation is via Alt+Arrow within the token workspace. See [TokenGridNav](ui-architecture.md#tokengridnav) for the shared mechanism — this table covers link mode's specific bindings.
+Token navigation is provided by the shared `createTokenGridNav()` instance (see
+[Keyboard & Navigation](keyboard-navigation.md) for the mechanism). Tokens are removed
+from the Tab order; you move between them with Alt+Arrow inside the token workspace.
 
 | Shortcut | Action |
-|---|---|
-| Alt+↑ / Alt+↓ | Move focus to visual row above/below; wraps from source bottom to target, and target top to source |
-| Alt+← / Alt+→ | Move focus to prev/next token in DOM order |
-| Alt+Enter | Toggle focus between source and target panels (remembers last focused token per panel) |
-| Alt+Space | Select/deselect token (calls `toggleSource` or `toggleTarget`) |
-| Alt+Shift+Space | Force-add source token to current mapping |
+|----------|--------|
+| Alt+↑ / Alt+↓ | Focus the token on the visual row above/below; wraps source↔target at the panel edges |
+| Alt+← / Alt+→ | Focus the prev/next token in DOM order |
+| Alt+Enter | Toggle focus between the source and target panels (remembers the last focused token per panel) |
+| Alt+Space | Select/deselect the focused token (`toggleSource`/`toggleTarget`) |
+| Alt+Shift+Space | Force-add the source token to the active mapping |
 | Escape | Blur the focused token, then deselect the active mapping |
-| Backspace / Delete | Delete focused mapping card (or active mapping if no card focused) |
+| Backspace / Delete | Delete the focused mapping card, or the active mapping if none is focused |
+
+Backspace/Delete is a document-level handler (`initAlignmentShortcuts`), not part of
+the grid nav — see [Keyboard & Navigation](keyboard-navigation.md#document-level-shortcuts).

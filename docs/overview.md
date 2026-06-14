@@ -1,30 +1,64 @@
 # Overview
 
-quote-slicer is a tool for scholars and translators working with Chinese texts. You paste a Chinese source passage and its English translation, then draw connections between individual source characters and their corresponding target words. The output is a structured alignment — a set of mappings that records exactly which characters correspond to which words, with pinyin romanisation for each source token.
+## What the app is for
+
+quote-slicer is a tool for scholars and translators working with Chinese texts. You
+paste a Chinese source passage and its English translation, then draw connections
+between individual source characters and their corresponding target words. The
+output is a structured **alignment** — a set of mappings recording exactly which
+characters correspond to which words, each with pinyin romanisation for the source
+side and a stable color.
+
+The underlying data structure (a many-to-many mapping between two token streams) is
+fiddly to build by hand. The whole point of the app is to make building it feel
+direct: you click characters and words, and the structure assembles itself behind
+the scenes.
 
 ## The four modes
 
-The app moves through four sequential modes. The current mode is held in `ModeContext` (`src/lib/context/mode.svelte.ts`).
+The app is organised around four modes. Only one is active at a time; the current
+mode lives in `ModeContext` (`src/lib/context/mode.svelte.ts`).
 
-| Mode | User-facing name | What the user does |
-|------|-----------------|-------------------|
-| `'text'` | Text entry | Paste or type the source (Chinese) and target (English) texts, plus an optional attribution line |
-| `'link'` | Link mode | Click tokens in both panels to create word-to-word mappings; edit pinyin; delete or reorder mappings |
-| `'line'` | Line tool | Adjust where line breaks fall in source and target independently — split a line into two or merge two lines into one |
-| `'view'` | View | Read-only display of the completed alignment (not yet built) |
+| Mode key | User-facing name | What the user does |
+|----------|------------------|--------------------|
+| `'text'` | Text entry | Paste/type the source (Chinese) and target (English) texts, plus an optional attribution line |
+| `'link'` | Link mode | Click tokens in both panels to create word-to-word mappings; edit pinyin; delete mappings |
+| `'line'` | Line tool | Adjust where line breaks fall in source and target *independently* — split one line into two, or merge two into one |
+| `'view'` | View | Read-only display of the alignment (tokens dimmed, authorship locked) |
 
-Clicking the advance arrow in `text` mode commits both texts and moves to `link` mode. The toolbar below the workbench switches freely between `link`, `line`, and `view`.
+The app **starts** in `text` mode. Clicking the advance arrow commits both texts and
+animates into `link` mode (see [Mode Transitions](mode-transitions.md)). From then
+on, the bottom toolbar switches freely between `link`, `line`, and `view`.
+
+> **Mode** (text/link/line/view) is distinct from **interaction mode**
+> (mouse vs keyboard input tracking). See
+> [Keyboard & Navigation](keyboard-navigation.md) and the domain table in
+> [`CLAUDE.md`](../CLAUDE.md).
 
 ## What a mapping is
 
-Each mapping links a set of source characters to a set of target words and carries:
+A **mapping** links a set of source characters to a set of target words. It carries:
 
-- a color, assigned from a fixed 9-color palette and stable for the lifetime of the mapping
-- pinyin for each source character, auto-filled from `pinyin-pro` (stored on the source token, editable in the sidebar card)
-- a display label (sequential number shown on the card)
+- a **color**, assigned at creation from a fixed 9-color palette and stable for the
+  mapping's lifetime (it never shifts when other mappings are added or removed);
+- **pinyin** for each source character, auto-filled from `pinyin-pro` and editable
+  in the mapping's sidebar card;
+- a **display label** — a sequential number shown on the card.
 
-Mappings are displayed in the left sidebar, sorted by the first source character's position in the text.
+Mappings appear in the sidebar as cards, sorted by the position of their first source
+character in the text. See [Link Mode](link-mode.md) for how they're built and
+[Data Model](data-model.md) for the exact shape.
 
 ## Layout
 
-The app uses a responsive three-column grid: left sidebar (mapping panel), centre (workbench with source + target), right sidebar (unused). Sidebars collapse to zero width in `text` mode and animate open when the user advances.
+The app is a responsive grid with a centre **workbench** (source + target + authorship)
+flanked by up to two side panels:
+
+- the **mappings list** (the cards), and
+- the **JSON export** (a live, syntax-highlighted dump of the alignment).
+
+How many side panels are visible depends on viewport width, and on the narrowest
+screens the side content moves into a slide-in modal instead. The full breakpoint
+behaviour — and how the same two views are routed into asides vs. a modal — is
+documented in [UI Architecture](ui-architecture.md#responsive-layout). The side
+panels collapse to zero width in `text` mode and animate open when the user advances.

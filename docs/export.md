@@ -1,0 +1,98 @@
+# Export
+
+The right side of the app shows a **live JSON export** of the alignment — the same data
+structure the app is built to produce, rendered as syntax-highlighted, column-aligned
+JSON. It updates as the user works. Three pieces make it: the export *data*, the
+*formatter*, and the *panel*.
+
+## The export data
+
+`Alignment.exportData` is a `$derived` [`QuoteExport`](data-model.md#export-types):
+
+```ts
+{
+  meta:        { sourceText, targetText, authorship },  // sanitised
+  sourceTokens, targetTokens,                            // the live token arrays
+  mappings,                                              // colorIndex stripped (ExportMapping)
+}
+```
+
+Two deliberate transforms:
+
+- **`meta` whitespace is sanitised.** The textareas can contain newlines, which would
+  leak into the export. `sourceText` has newlines removed entirely (Han text has no
+  inter-word spaces); `targetText` and `authorship` collapse newline runs to a single
+  space and `.trim()`. Without this, raw newlines would dump into the `meta` block.
+- **`colorIndex` is dropped** from each mapping — color is a UI concern, not alignment
+  data.
+
+## The formatter — `formatExport()`
+
+`src/lib/exportFormat.ts`. A recursive pretty-printer (`formatJson`) that is *almost*
+`JSON.stringify(v, null, 2)`, with two purpose-built differences that make the output
+readable:
+
+1. **Arrays of primitives stay on one line.** `"sourceTokenIds": [0, 1]` instead of one
+   element per line — so the ID lists don't dominate the output vertically.
+2. **Arrays of token objects render as a column-aligned table.** `isTokenObject()`
+   recognises a token by its keys (`id`, `text`, `line`, `type`, all primitive-valued).
+   `formatTokenBody()` then pads each field to the widest value across the array, so the
+   same field starts at the same column on every row:
+
+   ```
+   { "id": 0, "text": "知", "pinyin": "zhī",  "line": 0, "type": "character" }
+   { "id": 1, "text": "命", "pinyin": "mìng", "line": 0, "type": "character" }
+   ```
+
+   The `pinyin` column is **omitted entirely** when no token in the array carries it
+   (e.g. `targetTokens` never have pinyin).
+
+`formatValue()` renders `undefined` as the literal string `undefined` — not valid JSON,
+but intentional: an un-annotated source `pinyin` shows up visibly in the export rather
+than being silently dropped. (See the
+[`pinyin` semantics](data-model.md#why-pinyin-is-string--null--undefined).)
+
+This formatter has no component dependencies, so it's unit-tested directly in
+`exportFormat.spec.ts` (primitive one-lining, literal `undefined`, column alignment,
+and column omission).
+
+## The panel — `JsonExportPanel` + `HighlightedCode`
+
+`JsonExportPanel.svelte` derives `formatExport(alignment.exportData)` and feeds it to
+`HighlightedCode.svelte`, the generic Shiki-based highlighter.
+
+### Recoloring Shiki to the app palette
+
+By default the export would look like a generic code preview. To make it feel native,
+`HighlightedCode` takes an optional `colorReplacements` prop, forwarded straight to
+Shiki's `codeToTokens({ lang, theme, colorReplacements })`. The base theme is
+**dracula** (chosen because its token colors are well-known hex values, easy to
+target), and `JsonExportPanel` passes a map that swaps dracula's hexes for the app's
+mapping palette:
+
+| Role | dracula hex(es) | replaced with |
+|------|-----------------|---------------|
+| strings | `#f1fa8c`, `#e9f284` | `colors.compostella.base` |
+| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | flat `#A8A8A8` |
+| numbers | `#bd93f9` | `colors.azure.base` |
+| `undefined` literal | `#ff5555` | `colors.sugar.base` |
+
+This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
+alongside the index-keyed array — the recolor wants *specific* palette entries.
+
+> **Fragility:** the replacement is literal hex-string matching against a fixed theme.
+> If Shiki updates the dracula palette, or the base theme changes, these swaps silently
+> stop matching and the export reverts to dracula's raw colors. Some roles list two hex
+> variants because Shiki uses slightly different shades for different token types that
+> read as the same color.
+
+### Rendering details
+
+`HighlightedCode` lazy-imports `shiki` inside an `$effect` and tokenizes on every
+`code` change. The output is a `<pre>` with `width: max-content` so the box grows to the
+longest line — important because the panel's horizontal padding must sit *past* the
+longest line, not behind it, when content overflows. The markup is kept on as few
+source lines as possible (inside `<pre>`, every literal whitespace char would render).
+
+For where the panel appears at each breakpoint (aside vs. modal), see
+[UI Architecture](ui-architecture.md#responsive-layout).

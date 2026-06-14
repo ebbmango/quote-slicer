@@ -1,107 +1,225 @@
 # UI Architecture
 
+This page maps the component tree, who owns what, how the four contexts are wired, and
+how the responsive layout routes the same two side-views (mappings / JSON) into asides
+or a modal. Feature-specific behaviour is covered elsewhere and linked from here.
+
 ## Component tree
 
 ```
-+page.svelte                      root; sets ModeContext, TokenStore, Alignment
-├── <ol> mapping list             sidebar left; iterates sortedMappingViews
-│   └── Mapping.svelte (×N)       one card per mapping
-└── QuoteWorkbench.svelte         centre workbench; consumes the token store
-    ├── <textarea> source         text mode only
-    ├── <textarea> target         text mode only
-    ├── <div role="grid">         link + line mode: keyboard navigation container
-    │   ├── InteractiveSourceText.svelte
-    │   └── InteractiveTargetText.svelte
-    └── <textarea> authorship     always present
++page.svelte                       root: sets all 4 contexts, owns layout grid + text→link arrow
+├── DataPanel.svelte               sidebar-left   (one of two side surfaces)
+│   ├── MappingsList.svelte        └ view='maps'  → the mapping cards
+│   │   └── Mapping.svelte (×N)
+│   └── JsonExportPanel.svelte     └ view='json'  → live JSON export
+│       └── HighlightedCode.svelte
+├── main
+│   ├── theme toggle (placeholder)
+│   ├── QuoteWorkbench.svelte      the centre workbench
+│   │   ├── <textarea> source      text mode only (IME-filtered)
+│   │   ├── <textarea> target      text mode only
+│   │   ├── <div role="grid">      link/line/view: the token workspace
+│   │   │   ├── InteractiveSourceText.svelte
+│   │   │   └── InteractiveTargetText.svelte
+│   │   └── <textarea> authorship  always present (disabled in view mode)
+│   ├── DataModal.svelte           minimal viewport: slide-in over the workbench
+│   │   └── DataPanel.svelte
+│   └── tools: arrow (text) | ModeToolbar.svelte (otherwise)
+│       └── IconToggleButton.svelte (×N)
+└── DataPanel.svelte               sidebar-right  (always view='json', desktop only)
 ```
+
+`DataPanel` is the **shared rendering surface** for "maps or json" — the two asides and
+the modal all render through it, so the choice between `MappingsList` / `JsonExportPanel`
+and the edge-fade mask live in exactly one place and the copies can't drift.
 
 ## Component responsibilities
 
 ### `+page.svelte`
 
-- Instantiates `ModeContext`, the **token store**, and `Alignment` via `setModeContext()` / `setTokenStoreContext()` / `setAlignmentContext(store)` (in that order — `Alignment` takes the store)
-- Owns the three-column responsive grid layout and sidebar open/close animation
-- Manages the advance button (text → link) and mode toolbar (link / line / view)
-- Handles document-level keyboard shortcuts: Backspace/Delete to remove the focused or active mapping
-- Handles document-level click to deselect when clicking outside token and card zones
-- Manages sidebar scroll: `$effect` watches `activeMappingId` and calls `scrollCardIntoView`
-- Handles Tab navigation within the mapping list (`handleListTab`)
+The root shell — historically a 447-line file, now thin after extracting each
+self-contained piece into its own component/context. It:
+
+- sets up the four contexts (in order: `mode`, `breakpoints`, `tokenStore`,
+  `alignment` — `alignment` takes the store);
+- owns `sourceText` / `targetText` / `authorship`, and the `asideView` / `modalOpen`
+  state threaded into `DataModal` and `ModeToolbar`;
+- owns the responsive grid layout and the sidebar open/close animation
+  (see [Responsive layout](#responsive-layout) and
+  [Mode Transitions](mode-transitions.md#the-sidebar-slide-leaving-text-mode));
+- owns the text→link **arrow launch**
+  (see [Mode Transitions](mode-transitions.md#the-arrow-launch-text--link)) — the one
+  piece of bespoke per-page interaction left in the file;
+- calls `initAlignmentShortcuts(alignment)` once in `onMount`
+  (see [Keyboard & Navigation](keyboard-navigation.md#document-level-shortcuts)).
 
 ### `QuoteWorkbench.svelte`
 
-- Consumes the **token store** via `getTokenStoreContext()` (`src/lib/animation/tokenStore.svelte.ts`) — derives `sourceTokens`/`targetTokens` from it for rendering. It does **not** push tokens into `Alignment`; `Alignment` reads the same store itself (see [Context wiring](#context-wiring)). The only push is `setMeta({sourceText,targetText,authorship})` via `$effect`
-- In text mode: renders source and target textareas with real-time Han-character filtering on the source field (including IME composition handling)
-- In link/line mode: renders the `role="grid"` keyboard navigation container
-- Builds the `editScope()` (DOM refs for the unified Flip — both wrappers, authorship, and each panel's `[data-scrollbox]`) and passes it to `store.split`/`store.merge`
-- Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks, passing `store.animating` down as a prop
-- Instantiates `createTokenGridNav()` and wires its `handleKeydown`/`handleFocusIn` to the `role="grid"` container; supplies the mode-dependent config (see [TokenGridNav](#tokengridnav))
-- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` and `data-flip-id="source-panel"`/`"target-panel"` so `TokenGridNav` can resolve panels and the token store's unified Flip can reposition them as units
+- Consumes the [token store](token-store.md) and derives `sourceTokens` / `targetTokens`
+  for rendering. It does **not** push tokens into `Alignment` — `Alignment` reads the
+  same store itself. The *only* thing it pushes is the raw text, via
+  `alignment.setMeta({ sourceText, targetText, authorship })` in an `$effect`.
+- **Text mode:** renders the source/target textareas, with real-time Han-character
+  filtering on the source field (IME-composition-aware — it skips filtering while
+  `isComposing`, then re-filters on `compositionend`, preserving the caret).
+- **Link/line/view:** renders the `role="grid"` token workspace.
+- Builds `editScope()` (the DOM refs for the unified Flip) and forwards split/merge into
+  the store; passes `store.animating` down to the panels.
+- Creates the single `createTokenGridNav()` instance and wires it to the grid container
+  with a mode-dependent config (see [Keyboard & Navigation](keyboard-navigation.md)).
+- Tags each panel wrapper `data-zone` + `data-flip-id` so the navigator can resolve
+  panels and the store can reposition them as units.
 
-### `InteractiveSourceText.svelte`
+### `InteractiveSourceText.svelte` / `InteractiveTargetText.svelte`
 
-- Renders source tokens as a flat flex-wrap layout in both link and line mode
-- **Link mode**: renders interactive `role="option"` spans for non-punctuation tokens; calls `alignment.toggleSource(i, { force })` on click (Cmd/Ctrl); `TokenGridNav` calls it on Alt+Space; uses `longpress` action for mobile multi-add
-- **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; `onSplit`/`onMerge` call straight into the token store (see [line-mode.md](line-mode.md#animation))
-- Marks its outer container `data-scrollbox`; leaves its height to the token store while `animating` is true (via `$effect`)
-- No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
+Render the source/target tokens as a flat flex-wrap layout, using **one DOM tree for
+all modes** (see [Mode Transitions](mode-transitions.md#the-persistent-dom-crossfade-link--line--view)).
 
-### `InteractiveTargetText.svelte`
-
-- Same structure as `InteractiveSourceText` but for target tokens
-- **Link mode**: whitespace tokens are non-interactive (`toggleTarget` is a no-op for them)
-- **Line mode**: whitespace tokens are the split/merge affordance — interior whitespace → split button, boundary whitespace → merge button (the boundary token itself plus a full-width merge-zone below it)
-- Marks `lineContainer` `data-scrollbox`; same `animating`-gated height `$effect` as the source panel
-- No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
-
-## TokenGridNav
-
-`createTokenGridNav()` (`src/lib/navigation/tokenGridNav.ts`) is the single owner of the token-grid keyboard contract for **both** link and line mode. `QuoteWorkbench` creates one instance and wires `handleKeydown`/`handleFocusIn` to the `role="grid"` container's `onkeydown`/`onfocusin`.
-
-It takes a `getContainer()` accessor and a config object whose fields are getters/callbacks re-evaluated on every keystroke, so a single instance can serve both modes:
-
-- `itemSelector()` — CSS selector for the currently navigable elements: `[role="option"]` in link mode, `.split-zone, .merge-zone, .ws-split, .ws-boundary` in line mode
-- `crossZoneJump()` — `true` in link mode (enables Alt+Enter and the source↔target row-boundary jump), `false` in line mode
-- `getDefaultIndex(zone)` — link mode delegates to `alignment.findDefaultTokenIndex(zone)`; unused in line mode (`crossZoneJump` is `false`, so `jumpTo` never runs)
-- `onActivate(el, e)` — Alt+Space/Alt+Shift+Space: link mode resolves `el`'s zone via `data-zone` and `data-token-index` and calls `alignment.toggleSource`/`toggleTarget`; line mode calls `el.click()` to trigger the button's existing split/merge handler
-- `onEscape()` — link mode calls `alignment.deselect()`; line mode is a no-op (Escape still blurs the focused element first, in both modes)
-
-`getZone(el)` (exported alongside `createTokenGridNav`) resolves a zone by walking up to the nearest `[data-zone="source"|"target"]` ancestor — the wrapper divs `QuoteWorkbench` renders around each panel, present in both modes.
-
-The visual row/column math (`findVisualNeighbor`) delegates to the pure function `pickVisualNeighbor()` in `src/lib/navigation/visualNeighbor.ts`, which operates on plain `{ top, bottom, left, width }` rects and is unit-tested in `visualNeighbor.spec.ts`.
+- **Link mode:** interactive `role="option"` spans (source: non-punctuation only); click
+  → `toggleSource`/`toggleTarget`; the source panel also wires the `longpress` action for
+  mobile force-add.
+- **Line mode:** the split/merge affordances become active
+  (see [Line Mode](line-mode.md#the-line-tool-affordances)).
+- Both mark their scroll box `data-scrollbox` and gate a height `$effect` on the
+  `animating` prop. Neither owns Alt+Space or Escape — those route through the navigator.
+- A bare click on empty container space calls `alignment.deselect()` (the mouse half of
+  click-outside-to-deselect; Escape is the keyboard half).
 
 ### `Mapping.svelte`
 
-- Reads only `MappingView` — never touches raw `Mapping` state or token arrays
-- Renders a three-column card: hanzi column, pinyin input column, number badge + delete button column
-- Card height spans `r = floor(sourceEntries.length / 2) + 1` grid rows (quantized sizing that tiles cleanly in the CSS grid)
-- All colors resolved through a single `theme` derived object keyed by `isActive`; avoids repeating `isActive ? a : b` ternaries throughout the markup
-- Pinyin inputs are editable only when the card is active and not empty; calls `alignment.setPinyin(id, i, value)`
-- Delete button appears on hover or focus; calls `alignment.deleteById(id)`
+One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview--the-display-snapshot)
+— never raw `Mapping` state or token arrays.
+
+- Three columns: hanzi · pinyin input · number badge + delete button.
+- Card height spans `r = floor(rowCount / 2) + 1` grid rows (`rowCount` = number of
+  source entries, min 1) — a quantized size that tiles cleanly in the CSS grid.
+- All colors flow through a single `theme` derived object keyed by `isActive`, so the
+  markup reads `theme.cardBg` instead of repeating `isActive ? a : b` everywhere.
+- Pinyin inputs are editable only when the card is active and non-empty; calls
+  `alignment.setPinyin(id, position, value)`.
+- The delete button shows on hover/focus; calls `alignment.deleteById(id)`.
+- An empty mapping (no sources yet) renders a placeholder (`未定`, `- - - -`).
+
+### `MappingsList.svelte`
+
+The `<ol>` of cards, plus the list-level behaviour: a responsive grid (single column,
+two columns at the `tablet:` and `modal-wide:` breakpoints), an `$effect` that scrolls
+the active card into view, Tab handling within the list (`handleListTab`), and a
+**"No mappings." empty state**.
+
+> The list ref uses a `use:listRef` action rather than `bind:this`. Because a hidden
+> aside copy and the modal copy can briefly coexist during a breakpoint force-close, a
+> plain `bind:this` would let the *unmounting* copy null the ref the *surviving* copy
+> just claimed. The action only nulls `listEl` when it still owns the node, so the
+> survivor wins.
+
+### `DataPanel` / `JsonExportPanel` / `HighlightedCode`
+
+`DataPanel` picks `MappingsList` vs `JsonExportPanel` by a `view` prop and wraps both in
+the `.fade-edges` mask — a CSS mask gradient on all four edges (a hand-tuned smoothstep
+ramp, single `--fade` knob) that fades content near the container edges instead of
+hard-clipping it. Because the fade signals scrollability, the native scrollbars are
+hidden (`no-scrollbar`). `JsonExportPanel` / `HighlightedCode` are covered in
+[Export](export.md).
+
+### `ModeToolbar` / `IconToggleButton`
+
+`ModeToolbar` is the bottom toolbar shown in every non-text mode. It renders:
+
+- the **link / line / view** mode switcher;
+- two visually identical **maps / json** toggle pairs — `.subtools-aside` and
+  `.subtools-modal` — exactly one of which is shown per breakpoint, purely via CSS
+  `@media` (see below).
+
+`IconToggleButton` collapses what were six near-duplicate buttons into one component: a
+single `<button>` wrapping an SVG path from `icons.json`, with props
+`icon` / `label` / `active` / `onclick` / `testid` / `tabindex`.
+
+### `DataModal`
+
+The slide-in panel for the smallest viewports — see
+[Responsive layout](#responsive-layout).
 
 ## Context wiring
 
-All three contexts are set once at the root (`+page.svelte`) and accessed via `getContext` anywhere in the tree:
+Four contexts, all set once at the root and read via `getContext` anywhere:
 
-- `ModeContext` — `setModeContext()` / `getModeContext()` (`src/lib/context/mode.svelte.ts`)
-- **token store** — `setTokenStoreContext()` / `getTokenStoreContext()` (`src/lib/animation/tokenStore.svelte.ts`)
-- `Alignment` — `setAlignmentContext(store)` / `getAlignmentContext()` (`src/lib/context/alignment.svelte.ts`)
+| Context | Set / get | File |
+|---------|-----------|------|
+| `ModeContext` | `setModeContext` / `getModeContext` | `context/mode.svelte.ts` |
+| `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext` | `context/breakpoints.svelte.ts` |
+| token store | `setTokenStoreContext` / `getTokenStoreContext` | `animation/tokenStore.svelte.ts` |
+| `Alignment` | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts` |
 
-The token store is the single owner of the token arrays. `QuoteWorkbench` no longer pushes tokens into `Alignment`; it only pushes the raw text via `setMeta`. `Alignment` derives its own token view from the store keyed by `meta` (getters `sourceTokens`/`targetTokens`), so there is exactly one token owner — no two-way `$effect` sync, and split/merge can't be handed a pinyin-less array.
+The order matters: `Alignment`'s constructor takes the store, so the store is set first.
+The **token store is the single owner** of the token arrays — `QuoteWorkbench` does not
+push tokens into `Alignment`; `Alignment` derives its own view from the store keyed by
+`meta`. So there is exactly one token owner, no two-way `$effect` sync, and split/merge
+can never be handed a pinyin-less array. See [Token Store](token-store.md).
 
-## GSAP patterns
+> The interaction-mode sensor (`interactionMode.svelte.ts`) is **not** a context — it's a
+> global module singleton, because it works through a `data-` attribute on `<html>` that
+> CSS reads directly. See
+> [Keyboard & Navigation](keyboard-navigation.md#the-interaction-mode-sensor).
 
-GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time browser API calls (the app is statically prerendered). `+layout.svelte` registers GSAP plugins; `tokenStore.svelte.ts` lazy-loads `Flip` itself.
+## Responsive layout
 
-### Unified Flip (tokenStore.svelte.ts)
+The layout is a CSS grid in `+page.svelte`, with breakpoints mirrored in JS by
+`BreakpointContext` (so component logic — not just CSS — can branch on viewport).
 
-A split or merge runs **one** `Flip` over an **edit scope** (see [line-mode.md](line-mode.md#animation) and [CONTEXT.md](../CONTEXT.md) for both terms) — the edited panel's tokens (per-token reflow) plus the other panel's wrapper and the authorship textarea (whole-unit repositioning):
+| Viewport | Columns shown | maps/json lives in |
+|----------|---------------|--------------------|
+| **Cellphone** (default) | main only | a slide-in **modal** |
+| **Tablet** (tall portrait, `≤899px` & `≥1000px` tall) | main + one bottom sidebar | that **aside** (toggled) |
+| **Medium** (`≥900px`) | one sidebar + main | that **aside** (toggled) |
+| **Desktop** (`≥1200px`) | sidebar + main + sidebar | both asides at once (no toggle) |
 
-1. `Flip.getState(...)` over the scope's flip targets, before mutation
-2. Lock the edited panel's `[data-scrollbox]` to its current pixel height, set `animating = true`
-3. `mutate()` (writes the text-keyed cache) + `await tick()`
-4. Tween the scroll box height to its settled `scrollHeight`, then release to `auto`
-5. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false })`; `onComplete` clears `animating`
+`BreakpointContext` exposes `wide` (`≥1200px`), `belowMedium` (`≤899px`),
+`tabletPortrait`, and the derived **`minimal = belowMedium && !tabletPortrait`** — the
+one case with no aside to host the side content, where the modal is used instead.
 
-If `Flip`/`gsap` haven't loaded yet, `mutate()` runs with no animation.
+### How the toggle routes content
 
-Every token span carries `data-flip-id`, as do `sourceWrapperEl`/`targetWrapperEl` (`data-flip-id="source-panel"`/`"target-panel"`) and the authorship textarea (`data-flip-id="authorship"`) — together these are the flip targets. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking. `Interactive*Text` read `store.animating` (passed as a prop) to gate their own height-reset `$effect` while the tween is in flight.
+- The **left aside** renders `maps` when `wide || asideView === 'maps'`, else `json`.
+- The **right aside** always renders `json` (only visible when `wide`).
+- At `minimal`, the left aside renders **nothing** (`{#if !breakpoints.minimal}`) so its
+  `MappingsList` copy can't coexist with the modal's copy; the modal owns the content.
+- `ModeToolbar`'s two button pairs are gated purely by `@media`: the **aside** pair
+  (always one active) shows at tablet/medium; the **modal** pair (idle until the modal
+  opens) shows at minimal; desktop shows neither.
+
+> These thresholds are encoded in **three** places that must stay in sync:
+> `breakpoints.svelte.ts`'s `matchMedia` queries, `+page.svelte`'s `@media` blocks, and
+> `ModeToolbar`'s `@media` blocks (plus the `tablet:` / `modal-wide:` custom variants in
+> `layout.css`).
+
+### The data modal
+
+`DataModal.svelte` is the minimal-viewport home for the same two views. It is
+`position: absolute` over the workbench, filling the band between the theme toggle and
+the tools row.
+
+- **Open/close + history.** `openModal(view)` sets `asideView`, opens, and `pushState`s a
+  history entry (via `$app/navigation`) so the Android/browser **back** button closes it.
+  `closeModal()` clears `modalOpen` and, if our entry is still on top, calls
+  `history.back()` to unwind it. A `popstate` listener closes the modal on back-nav
+  (flipping `modalOpen` only, never calling `history.back()` itself, so a back-close
+  can't double-pop). SvelteKit's router APIs are used deliberately over raw
+  `history.*` (which the router intercepts/nests).
+- **Content swap without re-animating.** Calling `openModal` while already open just
+  reassigns `asideView` and returns early. Slide direction lives in `flyX` (`$derived`):
+  maps from the left, json from the right. Svelte reads transition params only at
+  transition *start*, so swapping views while open never replays the animation.
+- **Breakpoint-exit force-close.** An `$effect` watches `minimal` + `modalOpen`; leaving
+  minimal while open force-closes. A `forceClose` flag (`$state`) drives the `out:fly`
+  duration to `0` so that exit is instant; `openModal` resets it to re-arm the slide.
+
+## GSAP & lazy-loading
+
+The app is statically prerendered (`prerender = true`), so import-time browser API calls
+must be avoided. **GSAP and its plugins are lazy-loaded in `onMount`:** `+layout.svelte`
+registers `Draggable` + `Flip`; the token store separately lazy-loads `Flip` + `gsap`
+for the split/merge tween. The data modal's slide uses Svelte's built-in `fly` (not
+GSAP) — it needs only a fade+slide and stays self-contained. If GSAP hasn't loaded when
+a split/merge fires, the edit still happens, just without animation (see
+[Token Store](token-store.md#the-unified-flip-splitmerge-animation)).

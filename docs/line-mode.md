@@ -1,125 +1,125 @@
 # Line Mode
 
-Line mode (`mode.current === 'line'`) lets users adjust where line breaks fall in the source and target texts independently. Line edits do not change the raw text strings — they mutate the token array's `.line` fields and are preserved by the text-keyed cache.
+Line mode (`mode.current === 'line'`) lets the user adjust where line breaks fall in
+the source and target texts **independently**. A line edit never changes the raw text
+strings — it only rewrites the tokens' `.line` fields, and those edits are preserved by
+the token store's [text-keyed cache](token-store.md#the-text-keyed-cache).
 
-## Core functions
+## The core functions
 
-All three live in `src/lib/line.ts` as pure generics over `T extends { line: number }`.
+All three live in `src/lib/line.ts` as pure generics over `T extends { line: number }`,
+so they work on both `SourceToken` and `TargetToken` and are trivially testable.
 
 ### `splitAfterToken(tokens, afterIndex)`
 
-Inserts a line break after `tokens[afterIndex]`. Returns a new array — does not mutate. Logic:
+Inserts a line break *after* `tokens[afterIndex]`. Returns a new array (no mutation):
 
-- Tokens on lines **above** `splitLine` → unchanged
-- Tokens at index `afterIndex` and before on `splitLine` → unchanged
-- Tokens **after** `afterIndex` on `splitLine` → `line = splitLine + 1` (moved to new line)
-- Tokens on lines **below** `splitLine` → `line + 1` (shift down to make room)
-
-No tokens are added or removed. Token IDs are invariant.
+- tokens on lines **above** `splitLine` → unchanged;
+- tokens at/before `afterIndex` on `splitLine` → unchanged;
+- tokens **after** `afterIndex` on `splitLine` → `line = splitLine + 1` (the new line);
+- tokens on lines **below** `splitLine` → `line + 1` (shift down to make room).
 
 ### `mergeLines(tokens, lineN)`
 
-Merges line `lineN + 1` into line `lineN`. Returns a new array. Logic:
+Merges line `lineN + 1` up into line `lineN`. Returns a new array:
 
-- Tokens on `lineN + 1` → `line = lineN`
-- Tokens on lines above `lineN + 1` → `line - 1` (close the gap)
-- All other tokens → unchanged
+- tokens on `lineN + 1` → `line = lineN`;
+- tokens on lines below that → `line - 1` (close the gap);
+- everything else → unchanged.
+
+Neither function adds or removes tokens, so **token IDs are invariant** across line
+edits — this is the whole reason mappings (which store IDs) survive them. See
+[Data Model](data-model.md#stable-token-ids).
 
 ### `groupByLine(tokens)`
 
-Groups a flat token array into line buckets. Returns:
+Buckets a flat token array by line, preserving each token's original flat-array index
+as `globalIndex`:
 
 ```ts
 { lineNum: number; group: { token: T; globalIndex: number }[] }[]
 ```
 
-Each entry carries `globalIndex` — the token's position in the original flat array. Used as a `$derived` in `InteractiveSourceText` for rendering line rows.
+A utility for any consumer that needs to render or reason about lines as units.
 
-## Text-keyed cache pattern
+## The line-tool affordances
 
-Fresh tokenization discards any manual line splits because the tokenizer re-reads the raw text string. The **token store** (`src/lib/animation/tokenStore.svelte.ts`, see [CONTEXT.md](../CONTEXT.md)) prevents this with a text-keyed cache, owned internally, and overlays per-character pinyin on read:
+The source and target panels expose split/merge differently, because their token
+streams differ (source has no whitespace tokens; target does).
+
+### Source panel (`InteractiveSourceText`)
+
+Between every pair of adjacent tokens, a zero-width `<button>` is rendered:
+
+- **same line** → a `.split-zone` button; clicking it calls `onSplit(globalIndex)`.
+- **line boundary** (the next token is on a different line) → a `.merge-zone` button;
+  clicking it calls `onMerge(token.line)`.
+
+Each carries a hairline indicator (`.split-indicator` / `.merge-indicator`) that
+appears on hover/focus.
+
+### Target panel (`InteractiveTargetText`)
+
+The target panel reuses its **whitespace tokens** as the interaction surface:
+
+- **interior whitespace** → a `<span role="button" class="ws-split">`. Using a span
+  (not a `<button>`) with `user-select: text` keeps the space copyable when selecting
+  target text; the split click is wired via `onclick` + `role="button"`.
+- **boundary whitespace** (the synthetic token appended between lines during
+  tokenization) → a full-width `.merge-zone` button; clicking it merges the two lines.
+
+> Earlier there were *two* overlapping merge affordances on the target boundary (a
+> `.ws-boundary` text button plus a `.merge-zone`). The redundant `.ws-boundary` was
+> removed; the boundary token now renders as a single `.merge-zone` button.
+
+These callbacks bubble up to `QuoteWorkbench`, which forwards them into the token store:
 
 ```ts
-// inside createTokenStore()
-let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
-
-function sourceTokens(text: string): SourceToken[] {
-  const base = sourceCache !== null && sourceCache.text === text
-    ? sourceCache.tokens   // cache hit: text unchanged, use split/merged tokens
-    : tokenizeSource(text); // cache miss: text changed, re-tokenize fresh
-  return applyPinyin(base); // id-keyed pinyin overlay reapplied either way
-}
+function splitSource(afterIndex) { store.split('source', sourceText, sourceTokens, afterIndex, editScope()); }
+function mergeSource(lineN)      { store.merge('source', sourceText, sourceTokens, lineN, editScope()); }
+// …and splitTarget / mergeTarget for the target zone.
 ```
 
-The pinyin overlay is kept separate from the text-keyed cache because pinyin is annotated *before* any split exists to populate the cache — so a cache miss must still surface it. `setPinyin(id, value)` reassigns an id-keyed `Map`, and `applyPinyin` clones any token whose id is in it.
+Because the rendered `sourceTokens`/`targetTokens` already carry pinyin from the
+store's overlay, they are passed straight in — there is no special "live" array to fish
+out (a past source of pinyin-loss bugs, now eliminated by the
+[single-owner store](token-store.md#why-it-exists)).
 
-`QuoteWorkbench` derives its render arrays from the store, and `Alignment` derives its own view from the same store keyed by `meta`:
+## The split/merge animation
 
-```ts
-const store = getTokenStoreContext();
-let sourceTokens = $derived(store.sourceTokens(sourceText));
-```
+The actual height tween + token reflow is owned by the token store, not these
+components — it runs **one unified Flip** over the
+[edit scope](token-store.md#the-unified-flip-splitmerge-animation). The panel
+components contribute three things to make that work:
 
-`split`/`merge` write the cache after running the animation (see [Animation](#animation) below). Because the rendered `sourceTokens` already carry pinyin from the overlay, they can be passed straight in — no special "live" array:
+1. **An index-keyed `{#each tokens (i)}` loop.** Keying by index (not token identity)
+   keeps every span element *alive* across a mutation, so Flip can match old positions
+   to new ones. Each span carries a `data-flip-id`.
+2. **A `data-scrollbox` marker** on the panel's overflow container, so the store can
+   find the box whose height it must tween.
+3. **An `animating`-gated height `$effect`.** The store passes `store.animating` down
+   as a prop. While it's `true`, the panel leaves the scroll box's height alone (the
+   store owns it). While it's `false`, the panel keeps the box at `height: auto` so it
+   follows content in flow — including the mode-change separator transitions described
+   in [Mode Transitions](mode-transitions.md).
 
-```ts
-function splitSource(afterIndex: number) {
-  store.split('source', sourceText, sourceTokens, afterIndex, editScope());
-}
-```
-
-When the user edits the raw text, `sourceText` changes → cache key mismatch → fresh tokenize → cache cleared implicitly. When the user only adjusts line breaks, `sourceText` stays the same → cache hit → line structure preserved across re-renders.
-
-The same pattern applies to target tokens via the store's `targetCache`.
-
-## Interaction model
-
-### Source panel (InteractiveSourceText)
-
-In line mode the source panel renders a flat `{#each tokens}` loop with `data-flip-id="src-{i}"` on every token span. Between tokens, zero-width buttons appear:
-
-- **Between tokens on the same line** → split button (vertical hairline indicator on hover)
-- **At a line boundary** → merge button (horizontal hairline indicator on hover)
-
-Clicking a split button calls `onSplit(globalIndex)` which bubbles up to `QuoteWorkbench.splitSource`. Clicking a merge button calls `onMerge(lineN)` which bubbles to `QuoteWorkbench.mergeSource`.
-
-### Target panel (InteractiveTargetText)
-
-The target panel uses whitespace tokens as the interaction surface rather than zero-width buttons:
-
-- **Interior whitespace tokens** (not at a line boundary) → rendered as `<button class="ws-split">`, clicking triggers `handleSplit(i)`
-- **Boundary whitespace tokens** (the synthetic token appended between lines during tokenization) → rendered as `<button class="ws-boundary">` plus a merge-zone button below it, clicking either triggers `handleMerge(token.line)`
-
-Non-whitespace tokens and non-boundary whitespace tokens are plain spans.
+Because the workbench centres its three stacked panels, a height change in one panel
+shifts the others too — which is why the *other* panel's wrapper and the authorship
+field are also flip targets, repositioned as whole units.
 
 ## Keyboard scheme (line mode)
 
-Provided by the same `createTokenGridNav()` instance as link mode (`src/lib/navigation/tokenGridNav.ts`), wired up in `QuoteWorkbench.svelte`. See [TokenGridNav](ui-architecture.md#tokengridnav) for the shared mechanism.
-
-The navigable elements are the split/merge buttons (`.split-zone`, `.merge-zone`, `.ws-split`, `.ws-boundary`) — all real `<button>`s, so they're focusable without `data-token-index`.
+Same `createTokenGridNav()` instance as link mode, reconfigured per mode (see
+[Keyboard & Navigation](keyboard-navigation.md)). Here the navigable elements are the
+split/merge controls — the selector is `.split-zone, .merge-zone, .ws-split,
+.ws-boundary` — all focusable.
 
 | Shortcut | Action |
-|---|---|
-| Alt+↑ / Alt+↓ | Move focus to the split/merge button on the visual row above/below |
-| Alt+← / Alt+→ | Move focus to prev/next split/merge button in DOM order |
-| Alt+Space / Alt+Shift+Space | Activate the focused button — triggers its `click` handler (`handleSplit`/`handleMerge`) |
-| Escape | Blur the focused button |
+|----------|--------|
+| Alt+↑ / Alt+↓ | Focus the split/merge control on the visual row above/below |
+| Alt+← / Alt+→ | Focus the prev/next control in DOM order |
+| Alt+Space / Alt+Shift+Space | Activate the focused control (calls its `click` → `handleSplit`/`handleMerge`) |
+| Escape | Blur the focused control |
 
-Alt+Enter and the source↔target row-boundary jump are link-mode only (`crossZoneJump`); in line mode, reaching the top/bottom edge of a panel's buttons with Alt+↑/↓ does nothing.
-
-## Animation
-
-A split or merge calls into the **token store** (`store.split`/`store.merge`), which lazy-loads GSAP's `Flip` plugin and runs one **unified Flip** over an **edit scope** — the edited panel's tokens plus the other panel's wrapper and the authorship textarea, all carrying `data-flip-id`:
-
-1. `Flip.getState(...)` over the edit scope's flip targets — captures positions before the mutation
-2. Lock the edited panel's scroll box (`[data-scrollbox]`) to its current pixel height
-3. The mutation fires (writes the text-keyed cache → `sourceTokens` / `targetTokens` update reactively)
-4. `await tick()` lets Svelte apply the DOM changes
-5. Tween the scroll box from its locked height to its settled `scrollHeight`, then release to `auto`
-6. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false })` animates every flip target from its old position to its new one — per-token reflow inside the edited panel, whole-wrapper repositioning for the other panel and authorship
-
-The flat `{#each tokens (i)}` loop in `InteractiveSourceText` (keyed by index, not token identity) keeps every span alive across mutations so Flip can track all elements. `InteractiveTargetText` is keyed by index in line mode for the same reason.
-
-Both `Interactive*Text` components receive `animating` as a prop from `store.animating` and use it to gate their own height-reset `$effect` — they leave the scroll box's height alone while the module's tween is in flight.
-
-`justify-center` on the workbench parent means all three panels shift together when total height changes — this is why the *other* panel and authorship are included as whole-wrapper flip targets even when only one panel's tokens change.
+Alt+Enter and the source↔target edge jump are **link-mode only** (`crossZoneJump` is
+`false` in line mode), so at a panel edge Alt+↑/↓ simply does nothing.
