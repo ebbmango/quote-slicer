@@ -107,7 +107,6 @@
 				<span class="merge-indicator"></span>
 			</button>
 		{:else if token.type === 'whitespace'}
-			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<span
 				data-flip-id="tgt-{i}"

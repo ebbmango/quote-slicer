@@ -85,7 +85,7 @@
      height) and only become interactive in line mode. -->
 <div bind:this={container} data-scrollbox class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
 	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
-	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
 		bind:this={lineContainer}
 		role={isLineMode ? undefined : 'listbox'}

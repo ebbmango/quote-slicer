@@ -5,14 +5,11 @@
 	import { page } from '$app/state';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
-	import MappingsList from '$lib/components/MappingsList.svelte';
+	import DataPanel from '$lib/components/DataPanel.svelte';
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 	import { setTokenStoreContext } from '$lib/animation/tokenStore.svelte';
-	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
-	import { formatExport } from '$lib/exportFormat';
-	import { colors } from '$lib/constants/colors';
 
 	function autosize(node: HTMLTextAreaElement) {
 		const resize = () => {
@@ -76,8 +73,6 @@
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let authorship: string = $state('');
-
-	const exportJson = $derived(formatExport(alignment.exportData));
 
 	onMount(() => {
 		// Android/browser back button closes the modal (history already popped here).
@@ -143,31 +138,6 @@
 	}
 </script>
 
-{#snippet jsonExport()}
-	<div class="shiki-export h-full w-full overflow-auto p-6 text-xs no-scrollbar">
-		<HighlightedCode
-			code={exportJson}
-			colorReplacements={{
-				dracula: {
-					// strings
-					'#f1fa8c': colors.compostella.base,
-					'#e9f284': colors.compostella.base,
-					// properties
-					'#8be9fe': '#A8A8A8',
-					'#8be9fd': '#A8A8A8',
-					// colons & brackets
-					'#ff79c6': '#A8A8A8',
-					'#f8f8f2': '#A8A8A8',
-					// numbers
-					'#bd93f9': colors.azure.base,
-					// undefined
-					'#ff5555': colors.sugar.base
-				}
-			}}
-		/>
-	</div>
-{/snippet}
-
 {#snippet mapsIcon()}
 	<svg viewBox={icons['objects-column'].viewBox}>
 		<path d={icons['objects-column'].classic.light} />
@@ -185,13 +155,7 @@
 		<!-- At minimal the modal owns the maps/json content, so the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
 		{#if !breakpoints.minimal}
-			<div class="fade-edges h-full w-full">
-				{#if breakpoints.wide || asideView === 'maps'}
-					<MappingsList />
-				{:else}
-					{@render jsonExport()}
-				{/if}
-			</div>
+			<DataPanel view={breakpoints.wide || asideView === 'maps' ? 'maps' : 'json'} />
 		{/if}
 	</aside>
 	<main class="content flex flex-col justify-between">
@@ -214,13 +178,7 @@
 					in:fly={{ x: flyX, duration: 450 }}
 					out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
 				>
-					<div class="fade-edges h-full w-full">
-						{#if asideView === 'maps'}
-							<MappingsList />
-						{:else}
-							{@render jsonExport()}
-						{/if}
-					</div>
+					<DataPanel view={asideView} />
 				</div>
 			{/if}
 		</div>
@@ -329,46 +287,11 @@
 		</div>
 	</main>
 	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
-		<div class="fade-edges h-full w-full">
-			{@render jsonExport()}
-		</div>
+		<DataPanel view="json" />
 	</aside>
 </div>
 
 <style lang="postcss">
-	.shiki-export :global(pre) {
-		background: transparent !important;
-	}
-
-	.fade-edges {
-		--fade: 24px;
-		/* Smoothstep-eased ramp: alpha slope is 0 at both the transparent edge
-		   and the opaque junction, so neither end shows a visible kink. */
-		--ramp-y:
-			transparent 0,
-			rgba(0, 0, 0, 0.06) calc(var(--fade) * 0.15),
-			rgba(0, 0, 0, 0.22) calc(var(--fade) * 0.3),
-			rgba(0, 0, 0, 0.5) calc(var(--fade) * 0.5),
-			rgba(0, 0, 0, 0.78) calc(var(--fade) * 0.7),
-			rgba(0, 0, 0, 0.94) calc(var(--fade) * 0.85),
-			black var(--fade),
-			black calc(100% - var(--fade)),
-			rgba(0, 0, 0, 0.94) calc(100% - var(--fade) * 0.85),
-			rgba(0, 0, 0, 0.78) calc(100% - var(--fade) * 0.7),
-			rgba(0, 0, 0, 0.5) calc(100% - var(--fade) * 0.5),
-			rgba(0, 0, 0, 0.22) calc(100% - var(--fade) * 0.3),
-			rgba(0, 0, 0, 0.06) calc(100% - var(--fade) * 0.15),
-			transparent 100%;
-		mask-image:
-			linear-gradient(to bottom, var(--ramp-y)),
-			linear-gradient(to right, var(--ramp-y));
-		mask-composite: intersect;
-		-webkit-mask-image:
-			linear-gradient(to bottom, var(--ramp-y)),
-			linear-gradient(to right, var(--ramp-y));
-		-webkit-mask-composite: source-in;
-	}
-
 	/* Hover/focus nudges the arrow gently downward (subtle aim cue). The launch
 	   animation lives on the same element so, while it runs, it overrides this
 	   transition outright — the hover slide can never "finish" mid-shot. */
