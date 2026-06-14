@@ -37,29 +37,37 @@ Each entry carries `globalIndex` — the token's position in the original flat a
 
 ## Text-keyed cache pattern
 
-Fresh tokenization discards any manual line splits because the tokenizer re-reads the raw text string. `QuoteWorkbench.svelte` prevents this with a text-keyed cache:
+Fresh tokenization discards any manual line splits because the tokenizer re-reads the raw text string. The **line edit** module (`src/lib/animation/lineEdit.svelte.ts`, see [CONTEXT.md](../CONTEXT.md)) prevents this with a text-keyed cache, owned internally:
 
 ```ts
-let sourceTokensCache = $state<{ text: string; tokens: SourceToken[] } | null>(null);
+// inside createLineEdit()
+let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
 
-let sourceTokens = $derived(
-  sourceTokensCache !== null && sourceTokensCache.text === sourceText
-    ? sourceTokensCache.tokens    // cache hit: text unchanged, use split/merged tokens
-    : tokenizeSource(sourceText)  // cache miss: text changed, re-tokenize fresh
-);
+function sourceTokens(text: string): SourceToken[] {
+  return sourceCache !== null && sourceCache.text === text
+    ? sourceCache.tokens   // cache hit: text unchanged, use split/merged tokens
+    : tokenizeSource(text); // cache miss: text changed, re-tokenize fresh
+}
 ```
 
-Split and merge write to the cache:
+`QuoteWorkbench` derives its token arrays from this:
+
+```ts
+const lineEdit = createLineEdit();
+let sourceTokens = $derived(lineEdit.sourceTokens(sourceText));
+```
+
+`split`/`merge` write the cache after running the animation (see [Animation](#animation) below):
 
 ```ts
 function splitSource(afterIndex: number) {
-  sourceTokensCache = { text: sourceText, tokens: splitAfterToken(sourceTokens, afterIndex) };
+  lineEdit.split('source', sourceText, alignment.sourceTokenList, afterIndex, editScope());
 }
 ```
 
 When the user edits the raw text, `sourceText` changes → cache key mismatch → fresh tokenize → cache cleared implicitly. When the user only adjusts line breaks, `sourceText` stays the same → cache hit → line structure preserved across re-renders.
 
-The same pattern applies to target tokens via `targetTokensCache`.
+The same pattern applies to target tokens via the module's `targetCache`.
 
 ## Interaction model
 
@@ -98,27 +106,17 @@ Alt+Enter and the source↔target row-boundary jump are link-mode only (`crossZo
 
 ## Animation
 
-Both panels lazy-load GSAP's `Flip` plugin inside `onMount`. On split or merge:
+A split or merge calls into the **line edit** module (`lineEdit.split`/`lineEdit.merge`), which lazy-loads GSAP's `Flip` plugin and runs one **unified Flip** over an **edit scope** — the edited panel's tokens plus the other panel's wrapper and the authorship textarea, all carrying `data-flip-id`:
 
-1. `Flip.getState(querySelectorAll('[data-flip-id]'))` captures positions before the mutation
-2. The mutation fires (writes to cache → `sourceTokens` / `targetTokens` update reactively)
-3. `await tick()` lets Svelte apply the DOM changes
-4. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true })` animates each token from its old position to its new one
+1. `Flip.getState(...)` over the edit scope's flip targets — captures positions before the mutation
+2. Lock the edited panel's scroll box (`[data-scrollbox]`) to its current pixel height
+3. The mutation fires (writes the text-keyed cache → `sourceTokens` / `targetTokens` update reactively)
+4. `await tick()` lets Svelte apply the DOM changes
+5. Tween the scroll box from its locked height to its settled `scrollHeight`, then release to `auto`
+6. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false })` animates every flip target from its old position to its new one — per-token reflow inside the edited panel, whole-wrapper repositioning for the other panel and authorship
 
 The flat `{#each tokens (i)}` loop in `InteractiveSourceText` (keyed by index, not token identity) keeps every span alive across mutations so Flip can track all elements. `InteractiveTargetText` is keyed by index in line mode for the same reason.
 
-`InteractiveSourceText` sets an explicit pixel height on its outer container after every token change (`$effect` at `InteractiveSourceText.svelte:52`). This prevents Flip's `absolute: true` from collapsing the container while tokens are temporarily taken out of flow.
+Both `Interactive*Text` components receive `animating` as a prop from `lineEdit.animating` and use it to gate their own height-reset `$effect` — they leave the scroll box's height alone while the module's tween is in flight.
 
-### Cross-panel sibling shift
-
-When source splits or merges, the target panel (and authorship textarea) shift vertically. `QuoteWorkbench.withShiftAnimation()` handles this:
-
-1. Snapshot `getBoundingClientRect()` for each sibling element before the mutation
-2. Call `mutate()` (writes to cache), `await tick()`
-3. If a `lockEl` is provided, lock its pixel height to prevent any concurrent Flip animation from collapsing it mid-transition
-4. Animate each displaced sibling with `gsap.fromTo(el, { y: dy }, { y: 0, … })`
-5. Release the height lock after all animations complete
-
-`targetWrapperEl` is passed as `lockEl` when the target panel mutates, because Flip's `absolute: true` would otherwise collapse it. Source mutations don't need a lock because `InteractiveSourceText` manages its own height via the `$effect`.
-
-`justify-center` on the workbench parent means all three panels shift together when total height changes — source must be included in the sibling list even when only target mutates.
+`justify-center` on the workbench parent means all three panels shift together when total height changes — this is why the *other* panel and authorship are included as whole-wrapper flip targets even when only one panel's tokens change.

@@ -31,9 +31,9 @@ Quick reference: every source file and its responsibility.
 
 | File | Responsibility |
 |------|---------------|
-| `src/lib/components/QuoteWorkbench.svelte` | Text-keyed token caches; source/target textarea (text mode); `role="grid"` navigation container (link/line mode); `withShiftAnimation()` for cross-panel Y-shift; instantiates `createTokenGridNav()`; IME-aware Han input filtering |
-| `src/lib/components/InteractiveSourceText.svelte` | Source token display; link mode click interaction; line mode split/merge with GSAP Flip; container height lock via `$effect` |
-| `src/lib/components/InteractiveTargetText.svelte` | Target token display; link mode click; line mode split/merge using whitespace tokens as the split/merge affordance; GSAP Flip |
+| `src/lib/components/QuoteWorkbench.svelte` | Instantiates `createLineEdit()` for token derivation; source/target textarea (text mode); `role="grid"` navigation container (link/line mode); builds `editScope()` for line edits; instantiates `createTokenGridNav()`; IME-aware Han input filtering |
+| `src/lib/components/InteractiveSourceText.svelte` | Source token display; link mode click interaction; line mode split/merge (delegates to `lineEdit`); marks `data-scrollbox`, gates height `$effect` on `animating` prop |
+| `src/lib/components/InteractiveTargetText.svelte` | Target token display; link mode click; line mode split/merge using whitespace tokens as the split/merge affordance (delegates to `lineEdit`); marks `data-scrollbox`, gates height `$effect` on `animating` prop |
 | `src/lib/components/Mapping.svelte` | Single mapping card; reads `MappingView` only; quantized grid-row sizing; `theme` derived object; pinyin inputs; delete button |
 
 ## Actions
@@ -46,7 +46,7 @@ Quick reference: every source file and its responsibility.
 
 | File | Responsibility |
 |------|---------------|
-| `src/lib/animation/flipTransition.svelte.ts` | `createFlipTransition()` — lazy-loads GSAP's `Flip` plugin and runs a `[data-flip-id]` Flip animation around a mutation; shared by `InteractiveSourceText` and `InteractiveTargetText` |
+| `src/lib/animation/lineEdit.svelte.ts` | `createLineEdit()` — the **line edit** module (see `CONTEXT.md`); owns the text-keyed token cache, exposes `sourceTokens(text)`/`targetTokens(text)`, and runs a single unified `[data-flip-id]` Flip across an **edit scope** on `split`/`merge` |
 
 ## Navigation
 

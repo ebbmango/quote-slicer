@@ -29,21 +29,20 @@
 
 ### `QuoteWorkbench.svelte`
 
-- Owns `sourceTokensCache` and `targetTokensCache` (text-keyed cache pattern)
-- Derives `sourceTokens` and `targetTokens`; pushes them into `Alignment` via `$effect`
+- Instantiates `createLineEdit()` (`src/lib/animation/lineEdit.svelte.ts`) — derives `sourceTokens`/`targetTokens` from it, pushes them into `Alignment` via `$effect`
 - In text mode: renders source and target textareas with real-time Han-character filtering on the source field (including IME composition handling)
 - In link/line mode: renders the `role="grid"` keyboard navigation container
-- Implements `withShiftAnimation()` for cross-panel sibling Y-shift when a split/merge changes the height of one panel
-- Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks
+- Builds the `editScope()` (DOM refs for the unified Flip — both wrappers, authorship, and each panel's `[data-scrollbox]`) and passes it to `lineEdit.split`/`lineEdit.merge`
+- Delegates split/merge operations to `InteractiveSourceText` and `InteractiveTargetText` via `onSplit`/`onMerge` callbacks, passing `lineEdit.animating` down as a prop
 - Instantiates `createTokenGridNav()` and wires its `handleKeydown`/`handleFocusIn` to the `role="grid"` container; supplies the mode-dependent config (see [TokenGridNav](#tokengridnav))
-- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` so `TokenGridNav` can resolve which panel an element belongs to in either mode
+- Marks `sourceWrapperEl`/`targetWrapperEl` with `data-zone="source"`/`data-zone="target"` and `data-flip-id="source-panel"`/`"target-panel"` so `TokenGridNav` can resolve panels and `lineEdit`'s unified Flip can reposition them as units
 
 ### `InteractiveSourceText.svelte`
 
 - Renders source tokens as a flat flex-wrap layout in both link and line mode
 - **Link mode**: renders interactive `role="option"` spans for non-punctuation tokens; calls `alignment.toggleSource(i, { force })` on click (Cmd/Ctrl); `TokenGridNav` calls it on Alt+Space; uses `longpress` action for mobile multi-add
-- **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; applies GSAP Flip for per-panel token shuffle animation
-- Sets an explicit pixel height on its container after every token change (via `$effect`) to prevent Flip's `absolute: true` from collapsing the container
+- **Line mode**: renders the flat token list with zero-width split buttons between same-line tokens and merge buttons at line boundaries; `onSplit`/`onMerge` call straight into `lineEdit` (see [line-mode.md](line-mode.md#animation))
+- Marks its outer container `data-scrollbox`; leaves its height to `lineEdit` while `animating` is true (via `$effect`)
 - No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
 
 ### `InteractiveTargetText.svelte`
@@ -51,7 +50,7 @@
 - Same structure as `InteractiveSourceText` but for target tokens
 - **Link mode**: whitespace tokens are non-interactive (`toggleTarget` is a no-op for them)
 - **Line mode**: whitespace tokens are the split/merge affordance — interior whitespace → split button, boundary whitespace → merge button (the boundary token itself plus a full-width merge-zone below it)
-- No container height lock needed; `QuoteWorkbench` provides `lockEl` to `withShiftAnimation` instead
+- Marks `lineContainer` `data-scrollbox`; same `animating`-gated height `$effect` as the source panel
 - No longer owns Alt+Space or Escape handling — both route through `TokenGridNav`
 
 ## TokenGridNav
@@ -86,30 +85,22 @@ Both contexts are set once at the root (`+page.svelte`) and accessed via `getCon
 - `ModeContext` — `setModeContext()` / `getModeContext()` (`src/lib/context/mode.svelte.ts`)
 - `Alignment` — `setAlignmentContext()` / `getAlignmentContext()` (`src/lib/context/alignment.svelte.ts`)
 
-`QuoteWorkbench` syncs the derived token arrays into `Alignment` via two `$effect` calls (one per panel). This keeps `Alignment` as the single source of truth for mappings while token ownership stays in `QuoteWorkbench`.
+`QuoteWorkbench` syncs the derived token arrays into `Alignment` via two `$effect` calls (one per panel). This keeps `Alignment` as the single source of truth for mappings while token ownership stays in `lineEdit` (instantiated by `QuoteWorkbench`).
 
 ## GSAP patterns
 
-GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time browser API calls (the app is statically prerendered). `+layout.svelte` registers GSAP plugins; individual components import `Flip` themselves.
+GSAP and its plugins are **lazy-loaded inside `onMount`** to avoid import-time browser API calls (the app is statically prerendered). `+layout.svelte` registers GSAP plugins; `lineEdit.svelte.ts` lazy-loads `Flip` itself.
 
-### Internal Flip (InteractiveSourceText / InteractiveTargetText)
+### Unified Flip (lineEdit.svelte.ts)
 
-Used for per-panel token shuffle when a line splits or merges. Both components share `createFlipTransition()` (`src/lib/animation/flipTransition.svelte.ts`), which owns the lazy `Flip` import and exposes `run(container, mutate)`:
+A split or merge runs **one** `Flip` over an **edit scope** (see [line-mode.md](line-mode.md#animation) and [CONTEXT.md](../CONTEXT.md) for both terms) — the edited panel's tokens (per-token reflow) plus the other panel's wrapper and the authorship textarea (whole-unit repositioning):
 
-1. `Flip.getState(container.querySelectorAll('[data-flip-id]'))` before mutation
-2. `mutate()` + `await tick()`
-3. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: true })`
+1. `Flip.getState(...)` over the scope's flip targets, before mutation
+2. Lock the edited panel's `[data-scrollbox]` to its current pixel height, set `animating = true`
+3. `mutate()` (writes the text-keyed cache) + `await tick()`
+4. Tween the scroll box height to its settled `scrollHeight`, then release to `auto`
+5. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false })`; `onComplete` clears `animating`
 
-If `Flip` hasn't loaded yet (or `container` is null), `run()` just calls `mutate()` with no animation.
+If `Flip`/`gsap` haven't loaded yet, `mutate()` runs with no animation.
 
-Every token span carries `data-flip-id` so Flip can track it across DOM moves. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking.
-
-### Sibling shift (QuoteWorkbench.withShiftAnimation)
-
-Used for cross-panel Y-displacement when one panel's height changes.
-
-1. Snapshot `getBoundingClientRect()` for each sibling
-2. `mutate()` + `await tick()`
-3. Optionally lock `lockEl.style.height` to prevent Flip's `absolute: true` from collapsing `targetWrapperEl` during concurrent Flip animation
-4. `gsap.fromTo(el, { y: dy }, { y: 0, duration: 0.35, ease: 'power2.inOut', clearProps: 'y' })` per displaced sibling
-5. `await Promise.all(animations)`, then release height lock
+Every token span carries `data-flip-id`, as do `sourceWrapperEl`/`targetWrapperEl` (`data-flip-id="source-panel"`/`"target-panel"`) and the authorship textarea (`data-flip-id="authorship"`) — together these are the flip targets. The `{#each tokens (i)}` loop is keyed by index (not token object) to keep spans alive across mutations — required for Flip tracking. `Interactive*Text` read `lineEdit.animating` (passed as a prop) to gate their own height-reset `$effect` while the tween is in flight.
