@@ -97,9 +97,29 @@ export function redistributeRow(
 	}
 }
 
-/** Reset every token and divisor to its resting position. */
-export function clearRedistribute(container: HTMLElement | undefined): void {
+/**
+ * Reset every token and divisor to its resting position.
+ *
+ * `instant` snaps with the `transform` transition suppressed for one reflow —
+ * used before a split/merge so the divisor's live hover offset isn't baked into
+ * the GSAP Flip from-state (and doesn't ease back while Flip is mid-flight,
+ * which made the row wobble). The default eases back via the CSS transition,
+ * which is what we want on plain mouseleave/blur.
+ */
+export function clearRedistribute(
+	container: HTMLElement | undefined,
+	{ instant = false }: { instant?: boolean } = {}
+): void {
 	if (!container) return;
-	for (const el of container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split'))
-		el.style.removeProperty('--rd-x');
+	const els = Array.from(
+		container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split')
+	);
+	if (instant) {
+		for (const el of els) el.style.transition = 'none';
+		for (const el of els) el.style.removeProperty('--rd-x');
+		void container.offsetWidth; // flush the removal under transition:none
+		for (const el of els) el.style.removeProperty('transition');
+		return;
+	}
+	for (const el of els) el.style.removeProperty('--rd-x');
 }

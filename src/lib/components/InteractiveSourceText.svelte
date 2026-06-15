@@ -100,6 +100,7 @@
 		aria-label={isLineMode ? undefined : 'Source tokens'}
 		class="flex w-full flex-wrap content-start gap-[1px] justify-center bg-transparent font-wenkai text-3xl font-light"
 		class:select-none={isLinkMode}
+		class:flipping={animating}
 		onclick={handleContainerClick}
 	>
 		{#each tokens as token, i (i)}
@@ -137,7 +138,10 @@
 						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();
-							if (isLineMode) handleMerge(token.line);
+							if (isLineMode) {
+								clearRedistribute(lineContainer, { instant: true });
+								handleMerge(token.line);
+							}
 						}}
 						aria-label="Merge with next line"
 					>
@@ -151,7 +155,10 @@
 						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();
-							if (isLineMode) handleSplit(i);
+							if (isLineMode) {
+								clearRedistribute(lineContainer, { instant: true });
+								handleSplit(i);
+							}
 						}}
 						onmouseenter={() => {
 							if (isLineMode) redistributeRow(lineContainer, i, { max: 8, perGap: 2 });
@@ -182,6 +189,19 @@
 			color 280ms ease,
 			opacity 280ms ease,
 			transform 150ms ease;
+	}
+
+	/* During a split/merge GSAP Flip drives `transform` on the tokens (and, in the
+	   target panel, the divisors). The redistribution's own `transform` transition
+	   would ease toward each Flip frame, so the row chased its target and wobbled.
+	   Drop the transform transition for the duration of the Flip. */
+	.flipping .tok {
+		transition:
+			color 280ms ease,
+			opacity 280ms ease;
+	}
+	.flipping .split-zone {
+		transition: none;
 	}
 
 	.split-zone {
