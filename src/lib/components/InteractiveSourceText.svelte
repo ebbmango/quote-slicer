@@ -98,7 +98,7 @@
 		tabindex={isLineMode ? undefined : -1}
 		aria-multiselectable={isLineMode ? undefined : true}
 		aria-label={isLineMode ? undefined : 'Source tokens'}
-		class="flex w-full flex-wrap content-start leading-10 gap-[1px] justify-center bg-transparent font-wenkai text-3xl font-light"
+		class="flex w-full flex-wrap content-start leading-10 gap-px justify-center bg-transparent font-wenkai text-3xl font-light"
 		class:select-none={isLinkMode}
 		class:flipping={animating}
 		onclick={handleContainerClick}
