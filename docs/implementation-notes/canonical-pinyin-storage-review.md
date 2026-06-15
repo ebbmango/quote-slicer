@@ -158,11 +158,25 @@ wrong token, look there first.
 
 ## Open items (deferred to a later cleanup pass)
 
-- **Review #2 #4** — collapse `PinyinInput`'s `editing`+`buffer` into a single
-  `buffer: string | null` (`null` = not editing).
 - **Review #2 #5** — `PinyinInput` naming/abstraction is pinyin-specific
   (hardcoded placeholder, empty-state string, widths) — revisit when
-  Wade-Giles/Zhuyin display variants land.
+  Wade-Giles/Zhuyin display variants land. Skipped: single consumer today,
+  premature to generalize.
 - **Review #1 #5** — `toDisplay()` runs unmemoized per source entry in
   `buildMappingView`. Defer until measured (commits now happen on blur, not
   per-keystroke, so the cost is far lower).
+
+## Session 4 — final cleanup + extra fix
+
+- **Review #2 #4 (editing+buffer collapse) — SOLVED.** `PinyinInput.svelte`
+  now uses a single `buffer: string | null` (`null` = not editing); `shown =
+  buffer ?? value`. Verified live (`zhi1` → `zhī` on blur, no console errors).
+- **Extra fix (not from prior reviews) — blank pinyin now clears to
+  `undefined`.** `setPinyin` ([alignment.svelte.ts:162](../../src/lib/context/alignment.svelte.ts))
+  trims input; empty → `store.setPinyin(tokenId, undefined)` instead of `""`,
+  so export omits the field again (`"pinyin": undefined`) rather than showing
+  `"pinyin": ""`. Verified live via JSON export panel.
+- `/code-review` (medium effort, 7-angle) on the full diff: no new findings.
+- `tsc --noEmit` clean (only the pre-existing unrelated error, now at
+  `alignment.svelte.ts:202`).
+- Committed as `96ada2f`.

@@ -45,6 +45,14 @@ export class Alignment {
 	private sourceTokens: SourceToken[] = $derived.by(() => this.store.sourceTokens(this.meta.sourceText));
 	private targetTokens: TargetToken[] = $derived.by(() => this.store.targetTokens(this.meta.targetText));
 
+	// Diacritic pinyin for display, parallel to `sourceTokens`. Memoized here so
+	// `toDisplay()` (regex + pinyin-pro convert) only re-runs when the tokens
+	// themselves change — not on every `sortedMappingViews` recompute, which fires
+	// on broad mapping add/remove/select churn unrelated to pinyin.
+	private sourceDisplayPinyin: string[] = $derived(
+		this.sourceTokens.map((t) => toDisplay(t.pinyin ?? ''))
+	);
+
 	exportData: QuoteExport = $derived({
 		meta: {
 			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
@@ -132,7 +140,7 @@ export class Alignment {
 					tokenId,
 					tokenIndex: idx,
 					text: this.sourceTokens[idx]?.text ?? '',
-					pinyin: toDisplay(this.sourceTokens[idx]?.pinyin ?? ''),
+					pinyin: this.sourceDisplayPinyin[idx] ?? '',
 				};
 			}),
 			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens),
