@@ -1,5 +1,6 @@
 import { getContext, setContext } from 'svelte';
 import { pinyin } from 'pinyin-pro';
+import { toCanonical, toDisplay } from '$lib/pinyinConvert';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 import type { TokenAccess } from '$lib/animation/tokenStore.svelte';
 import {
@@ -18,14 +19,14 @@ export type { Mapping, MappingId, QuoteExport, QuoteExportMeta, TokenState };
 export type MappingView = {
 	id: MappingId;
 	colorIndex: number;
-	sourceEntries: { tokenIndex: number; text: string; pinyin: string }[];
+	sourceEntries: { tokenId: number; tokenIndex: number; text: string; pinyin: string }[];
 	targetText: string;
 };
 
 function tokenPinyin(token: SourceToken | undefined): string {
 	if (!token || token.type !== 'character') return '';
 	const { text } = token;
-	return pinyin(text, { toneType: 'symbol', separator: ' ' });
+	return pinyin(text, { toneType: 'num' });
 }
 
 const ALIGNMENT_KEY = Symbol('alignment');
@@ -128,9 +129,10 @@ export class Alignment {
 			sourceEntries: m.sourceTokenIds.map((tokenId) => {
 				const idx = this.sourceIdToIndex.get(tokenId) ?? -1;
 				return {
+					tokenId,
 					tokenIndex: idx,
 					text: this.sourceTokens[idx]?.text ?? '',
-					pinyin: this.sourceTokens[idx]?.pinyin ?? '',
+					pinyin: toDisplay(this.sourceTokens[idx]?.pinyin ?? ''),
 				};
 			}),
 			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens),
@@ -149,10 +151,21 @@ export class Alignment {
 		this.activeMappingId = id;
 	}
 
+	// `value` is the raw text the user typed (diacritic or numbered); the store
+	// owns the canonicalization so the conversion lives here, not in the UI
+	// component (single token owner — see docs/token-store.md). Unparseable text
+	// is stored as-is, preserving free-text notes. Blank input clears the
+	// annotation back to `undefined` so export omits it (vs. an empty string).
+	//
+	// `position` indexes into `sourceTokenIds`. This could instead take the stable
+	// `tokenId` directly (more robust against reorder/split/merge) — if pinyin
+	// edits ever commit to the wrong token, look here first.
 	setPinyin(id: MappingId, position: number, value: string): void {
 		const m = this.mappings.find((x) => x.id === id);
 		const tokenId = m?.sourceTokenIds[position];
-		if (tokenId !== undefined) this.store.setPinyin(tokenId, value);
+		if (tokenId === undefined) return;
+		const trimmed = value.trim();
+		this.store.setPinyin(tokenId, trimmed ? (toCanonical(trimmed) ?? trimmed) : undefined);
 	}
 
 	findDefaultTokenIndex(zone: 'source' | 'target'): number {

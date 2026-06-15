@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getAlignmentContext, type MappingView } from '$lib/context/alignment.svelte';
+	import PinyinInput from './PinyinInput.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
 	import icons from '$lib/assets/icons.json';
 
@@ -88,7 +89,7 @@
 		class="relative grid flex-1 w-full rounded-t-md transition-colors duration-200"
 		style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat({rowCount}, 1fr); background: {theme.cardBg};"
 	>
-		{#each isEmpty ? EMPTY_ROW : mappingView.sourceEntries as entry, i (entry?.tokenIndex ?? 'empty')}
+		{#each isEmpty ? EMPTY_ROW : mappingView.sourceEntries as entry, i (entry?.tokenId ?? 'empty')}
 			{#if i > 0}
 				<!-- divisory line -->
 				<div
@@ -108,19 +109,15 @@
 
 			<!-- Pinyin cell -->
 			<div class="flex items-center justify-center">
-				<input
+				<PinyinInput
 					disabled={isEmpty}
 					tabindex={isActive && !isEmpty ? 0 : -1}
-					class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
-					style="color: {theme.pinyinText}; opacity: {pinyinOpacity};"
-					placeholder="Empty"
+					color={theme.pinyinText}
+					opacity={pinyinOpacity}
 					value={isEmpty ? '- - - -' : (entry?.pinyin ?? '')}
-					oninput={isEmpty
+					onCommit={isEmpty
 						? undefined
-						: (e) => {
-								alignment.setPinyin(mappingView.id, i, e.currentTarget.value);
-							}}
-					onclick={isEmpty ? undefined : (e) => e.stopPropagation()}
+						: (raw) => alignment.setPinyin(mappingView.id, i, raw)}
 				/>
 			</div>
 

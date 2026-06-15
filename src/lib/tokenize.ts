@@ -6,7 +6,7 @@ export type SourceToken = {
 	text: string;
 	line: number;
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
-	pinyin?: string | null; // undefined: character not yet annotated; null: not applicable
+	pinyin?: string | null; // canonical numbered pinyin ("zhi1") when parseable, raw text otherwise; undefined: character not yet annotated; null: not applicable
 };
 
 export type TargetToken = {
