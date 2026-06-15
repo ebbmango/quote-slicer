@@ -1,4 +1,5 @@
 import { pickVisualNeighbor } from './visualNeighbor';
+import { interactionMode } from '$lib/context/interactionMode.svelte';
 
 export type Zone = 'source' | 'target';
 
@@ -88,6 +89,12 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 			}
 			return;
 		}
+
+		// From here on it's an Alt-gated keyboard nav action. The global tracker only
+		// flips to keyboard on Tab, so without this Alt+Arrow nav would leave
+		// `data-interaction='mouse'` and the keyboard-gated divisor :focus indicators
+		// (split/merge/ws) would never light while navigating.
+		interactionMode.set('keyboard');
 
 		if (e.key === ' ') {
 			if (!target.matches(config.itemSelector())) return;

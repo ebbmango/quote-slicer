@@ -197,6 +197,10 @@
 		border: none;
 		cursor: pointer;
 		outline: none;
+		/* Slides with its neighbours so the indicator stays centred in the gap
+		   during the line-mode hover redistribution (see actions/redistribute.ts). */
+		transform: translateX(var(--rd-x, 0));
+		transition: transform 150ms ease;
 	}
 
 	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
@@ -215,7 +219,7 @@
 
 	:global(html[data-interaction='mouse']) .split-zone.line-active:hover .split-indicator,
 	:global(html[data-interaction='keyboard'])
-		.split-zone.line-active:focus-visible
+		.split-zone.line-active:focus
 		.split-indicator {
 		opacity: var(--line-tool-opacity-hover);
 	}
@@ -269,7 +273,7 @@
 
 	:global(html[data-interaction='mouse']) .merge-zone.line-active:hover .merge-indicator,
 	:global(html[data-interaction='keyboard'])
-		.merge-zone.line-active:focus-visible
+		.merge-zone.line-active:focus
 		.merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
 		width: 30%;

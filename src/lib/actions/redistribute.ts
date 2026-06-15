@@ -64,17 +64,42 @@ export function redistributeRow(
 	const delta = m === 2 ? perGap : Math.min(max, perGap * (m - 2));
 	const other = m > 2 ? -delta / (m - 2) : 0; // each non-hovered gap shrinks by this
 
-	for (let j = 0; j < m; j++) {
-		// offset(j) = Σ of gap-deltas strictly left of token j.
-		// Ends land on 0 (Σ all deltas = delta + (m-2)·other = 0), so the row's
-		// outer edges never move — only the interior redistributes.
-		const off = m === 2 ? (j === 0 ? -delta / 2 : delta / 2) : j * other + (p < j ? delta - other : 0);
-		row[j].el.style.setProperty('--rd-x', off.toFixed(2) + 'px');
+	// offset(j) = Σ of gap-deltas strictly left of token j.
+	// Ends land on 0 (Σ all deltas = delta + (m-2)·other = 0), so the row's
+	// outer edges never move — only the interior redistributes.
+	const off = row.map((_, j) =>
+		m === 2 ? (j === 0 ? -delta / 2 : delta / 2) : j * other + (p < j ? delta - other : 0)
+	);
+	for (let j = 0; j < m; j++) row[j].el.style.setProperty('--rd-x', off[j].toFixed(2) + 'px');
+
+	// Slide each divisor by the mean of its two flanking tokens so its indicator
+	// stays centred in the (re-sized) gap instead of drifting toward one side.
+	// A divisor's `data-divisor-index` is the token index it sits *after*: that's
+	// the left token's own index for source split-zones, but the whitespace
+	// token's index (strictly between the two words) for target ws-splits — so we
+	// resolve its flanks by index comparison rather than an exact key match.
+	const idxOff = new Map(row.map((r, j) => [r.idx, off[j]]));
+	const minIdx = row[0].idx;
+	const maxIdx = row[m - 1].idx;
+	for (const dv of container.querySelectorAll<HTMLElement>('.split-zone, .ws-split')) {
+		const d = Number(dv.dataset.divisorIndex);
+		if (!(d >= minIdx && d < maxIdx)) continue; // not an interior gap of this row
+		let lIdx = -Infinity;
+		let rIdx = Infinity;
+		for (const r of row) {
+			if (r.idx <= d && r.idx > lIdx) lIdx = r.idx;
+			if (r.idx > d && r.idx < rIdx) rIdx = r.idx;
+		}
+		const lo = idxOff.get(lIdx);
+		const ro = idxOff.get(rIdx);
+		if (lo === undefined || ro === undefined) continue;
+		dv.style.setProperty('--rd-x', ((lo + ro) / 2).toFixed(2) + 'px');
 	}
 }
 
-/** Reset every token to its resting position. */
+/** Reset every token and divisor to its resting position. */
 export function clearRedistribute(container: HTMLElement | undefined): void {
 	if (!container) return;
-	for (const el of container.querySelectorAll<HTMLElement>('.tok')) el.style.removeProperty('--rd-x');
+	for (const el of container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split'))
+		el.style.removeProperty('--rd-x');
 }

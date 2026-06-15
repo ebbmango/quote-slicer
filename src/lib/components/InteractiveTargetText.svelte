@@ -189,6 +189,10 @@
 		opacity: 0.7;
 		user-select: text;
 		-webkit-user-select: text;
+		/* Slides with its neighbours so the indicator stays centred in the gap
+		   during the line-mode hover redistribution (see actions/redistribute.ts). */
+		transform: translateX(var(--rd-x, 0));
+		transition: transform 150ms ease;
 	}
 
 	.ws-split:not(.line-active) {
@@ -211,7 +215,7 @@
 	/* Gate hover vs focus-visible by interaction mode so a mouse-hovered zone and
 	   a Tab-focused zone never light up at once (see interactionMode.svelte.ts). */
 	:global(html[data-interaction='mouse']) .ws-split.line-active:hover::after,
-	:global(html[data-interaction='keyboard']) .ws-split.line-active:focus-visible::after {
+	:global(html[data-interaction='keyboard']) .ws-split.line-active:focus::after {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
@@ -262,7 +266,7 @@
 
 	:global(html[data-interaction='mouse']) .merge-zone.line-active:hover .merge-indicator,
 	:global(html[data-interaction='keyboard'])
-		.merge-zone.line-active:focus-visible
+		.merge-zone.line-active:focus
 		.merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
 		width: 30%;
