@@ -188,6 +188,7 @@
 	/* Persistent token spans crossfade color/opacity when the mode changes
 	   instead of snapping (only possible because the element is never swapped). */
 	.tok {
+		cursor: default;
 		/* --rd-x: per-token offset for the line-mode divisor-hover redistribution
 		   (see actions/redistribute.ts). Resting value is 0. */
 		transform: translateX(var(--rd-x, 0));
@@ -206,7 +207,10 @@
 			color 280ms ease,
 			opacity 280ms ease;
 	}
-	.flipping .split-zone {
+	/* Snap the indicator back instantly when the redistribution is cleared just
+	   before a Flip (clearRedistribute({ instant: true })) so its `--rd-x` ease
+	   doesn't run alongside the Flip. */
+	:global(.rd-instant) .split-indicator {
 		transition: none;
 	}
 
@@ -214,8 +218,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 8px;
-		margin: 0 -4px;
+		/* Hit target spans roughly a full character so the whole inter-word gap is
+		   hoverable, not just a narrow band over the indicator. `margin: -width/2`
+		   keeps the layout contribution net-zero (zones overlap into the flanking
+		   glyphs but don't reflow them); z-index:1 keeps them on top for the hit. */
+		width: 1em;
+		margin: 0 -0.5em;
 		z-index: 1;
 		align-self: stretch;
 		padding: 0;
@@ -223,10 +231,6 @@
 		border: none;
 		cursor: pointer;
 		outline: none;
-		/* Slides with its neighbours so the indicator stays centred in the gap
-		   during the line-mode hover redistribution (see actions/redistribute.ts). */
-		transform: translateX(var(--rd-x, 0));
-		transition: transform 150ms ease;
 	}
 
 	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
@@ -240,7 +244,14 @@
 		height: 0.85em;
 		background: var(--line-tool-color);
 		opacity: var(--line-tool-opacity-idle);
-		transition: opacity 150ms;
+		/* The hit-zone stays anchored under the pointer; only the indicator slides
+		   to stay centred in the resized gap during the hover redistribution. This
+		   prevents the divisor "dancing" out from under a stationary pointer (the
+		   8px zone moving triggered leave/enter flicker). See actions/redistribute.ts. */
+		transform: translateX(var(--rd-x, 0));
+		transition:
+			opacity 150ms,
+			transform 150ms ease;
 	}
 
 	:global(html[data-interaction='mouse']) .split-zone.line-active:hover .split-indicator,
@@ -264,7 +275,6 @@
 		overflow: hidden;
 		background: none;
 		border: none;
-		cursor: pointer;
 		outline: none;
 		transition: height 350ms ease;
 	}
@@ -276,6 +286,10 @@
 	   InteractiveTargetText's matching rule) and re-check the close transition. */
 	.merge-zone.line-active {
 		height: 1.5rem;
+		/* The full-width band is only here to force the flex wrap (the line break).
+		   Hover/click belong to the dashed line itself, not the empty span beside it —
+		   so the band takes no pointer events; the indicator re-enables them. */
+		pointer-events: none;
 	}
 
 	.merge-zone:not(.line-active) {
@@ -286,6 +300,12 @@
 		display: block;
 		width: 2.5rem;
 		height: var(--line-tool-width);
+		/* Vertical padding gives the thin line a hittable height without thickening
+		   it — the dashes are clipped to the content box, so the padding stays
+		   invisible. `box-sizing: content-box` keeps the line height exact. */
+		box-sizing: content-box;
+		padding: 0.45rem 0;
+		background-clip: content-box;
 		background-image: linear-gradient(
 			to right,
 			var(--line-tool-color) 0 50%,
@@ -297,7 +317,17 @@
 		transition: opacity 340ms, width 340ms ease, background-size 340ms ease;
 	}
 
-	:global(html[data-interaction='mouse']) .merge-zone.line-active:hover .merge-indicator,
+	/* The line itself is the only interactive part of the band (see .merge-zone).
+	   Raise it above the flanking tokens, whose tall (leading-10) line-boxes spill
+	   into the gap and would otherwise capture the hit. */
+	.merge-zone.line-active .merge-indicator {
+		pointer-events: auto;
+		cursor: pointer;
+		position: relative;
+		z-index: 2;
+	}
+
+	:global(html[data-interaction='mouse']) .merge-zone.line-active .merge-indicator:hover,
 	:global(html[data-interaction='keyboard'])
 		.merge-zone.line-active:focus
 		.merge-indicator {

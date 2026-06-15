@@ -115,10 +115,16 @@ export function clearRedistribute(
 		container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split')
 	);
 	if (instant) {
+		// The indicators consume `--rd-x` via inheritance (the value is written to
+		// the zone; the indicator — a child span, or a `::after` pseudo in the target
+		// panel — reads it). The pseudo can't be selected from JS, so suppress every
+		// indicator's transition with a container class the panels' CSS gates on.
+		container.classList.add('rd-instant');
 		for (const el of els) el.style.transition = 'none';
 		for (const el of els) el.style.removeProperty('--rd-x');
 		void container.offsetWidth; // flush the removal under transition:none
 		for (const el of els) el.style.removeProperty('transition');
+		container.classList.remove('rd-instant');
 		return;
 	}
 	for (const el of els) el.style.removeProperty('--rd-x');
