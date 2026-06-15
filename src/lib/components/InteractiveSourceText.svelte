@@ -4,6 +4,11 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
+	import { divisorColor, type MappingColor } from '$lib/constants/colors';
+
+	// Palette field the divisor indicators draw from. Swap to give source vs
+	// target (or vertical vs horizontal) divisors a different hue later.
+	const DIVISOR_FIELD: keyof MappingColor = 'base';
 
 	let {
 		tokens,
@@ -152,6 +157,7 @@
 						class="split-zone"
 						class:line-active={isLineMode}
 						data-divisor-index={i}
+						style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
 						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();

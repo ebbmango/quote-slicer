@@ -3,17 +3,39 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
+	import { divisorColor, type MappingColor } from '$lib/constants/colors';
 	let {
 		tokens,
 		onSplit,
 		onMerge,
-		animating
+		animating,
+		divisorOffset = 0
 	}: {
 		tokens: TargetToken[];
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
 		animating: boolean;
+		// Running divisor count from the source panel, so the palette continues
+		// here instead of restarting (see divisorColor).
+		divisorOffset?: number;
 	} = $props();
+
+	// Palette field the divisor indicators draw from. Swap to give source vs
+	// target (or vertical vs horizontal) divisors a different hue later.
+	const DIVISOR_FIELD: keyof MappingColor = 'base';
+
+	// Map each whitespace token's index → its running divisor ordinal. Every
+	// whitespace token is a divisor (ws-split or, at a line break, merge-zone);
+	// both consume an ordinal so enabling horizontal coloring later won't shift
+	// the vertical colors.
+	let divisorOrdinal = $derived.by(() => {
+		const m = new Map<number, number>();
+		let n = 0;
+		tokens.forEach((t, i) => {
+			if (t.type === 'whitespace') m.set(i, divisorOffset + n++);
+		});
+		return m;
+	});
 
 	let lineContainer: HTMLDivElement = $state()!;
 	let mode = getModeContext();
@@ -125,6 +147,7 @@
 				class="ws-split"
 				class:line-active={isLineMode}
 				data-divisor-index={i}
+				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
 				tabindex={-1}
 				onclick={(e) => {
 					e.stopPropagation();

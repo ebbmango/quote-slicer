@@ -170,3 +170,16 @@ export const MAPPING_COLORS: MappingColor[] = [
 export const colors: Record<MappingColorName, MappingColor> = Object.fromEntries(
 	MAPPING_COLOR_NAMES.map((name, i) => [name, MAPPING_COLORS[i]])
 ) as Record<MappingColorName, MappingColor>;
+
+/**
+ * Color for a line-mode divisor by its running ordinal. Source-panel divisors
+ * take ordinals 0..N-1; target-panel divisors continue from N (see
+ * `divisorOffset` in InteractiveTargetText) so the palette sweeps unbroken
+ * across both panels — last source divisor `seabreeze` → first target `azure`.
+ * `field` lets source/target (or vertical/horizontal) divisors draw from
+ * different shades later; defaults to `base`. Wraps after 9.
+ */
+export function divisorColor(ordinal: number, field: keyof MappingColor = 'base'): string {
+	const n = MAPPING_COLORS.length;
+	return MAPPING_COLORS[((ordinal % n) + n) % n][field];
+}

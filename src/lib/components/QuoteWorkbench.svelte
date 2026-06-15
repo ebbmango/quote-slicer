@@ -174,6 +174,7 @@
 				onSplit={splitTarget}
 				onMerge={mergeTarget}
 				animating={store.animating}
+				divisorOffset={Math.max(0, sourceTokens.length - 1)}
 			/>
 		</div>
 	</div>
