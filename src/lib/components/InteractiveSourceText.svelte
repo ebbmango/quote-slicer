@@ -128,7 +128,7 @@
 						class="merge-zone"
 						class:line-active={isLineMode}
 						data-divisor-index={i}
-						tabindex={isLineMode ? undefined : -1}
+						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();
 							if (isLineMode) handleMerge(token.line);
@@ -142,7 +142,7 @@
 						class="split-zone"
 						class:line-active={isLineMode}
 						data-divisor-index={i}
-						tabindex={isLineMode ? undefined : -1}
+						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();
 							if (isLineMode) handleSplit(i);
