@@ -1,0 +1,80 @@
+// Line-mode divisor hover feedback: open the hovered gap by translating the
+// row's tokens apart, while *closing* every other gap on that row by an equal
+// share — so the row's visual width stays constant (anchored at both ends).
+//
+// Why constant-width: the previous feedback grew the divisor's `width` (a layout
+// property), which reflowed everything to its right. Hovering divisors in quick
+// succession made the whole line expand/contract — the eyesore this replaces.
+//
+// All movement is `transform: translateX` written to the `--rd-x` custom property
+// on each `.tok`, transitioned by the `.tok` rule. Transforms never participate in
+// layout, so this can never re-wrap the text, in any mode. The row is measured
+// lazily on each hover-enter (a handful of `offsetTop` reads) — always fresh, so
+// resize / font-load / edits need no invalidation. Cleared on leave/blur.
+
+const reducedMotion = () =>
+	typeof window !== 'undefined' &&
+	window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export type RedistributeOpts = {
+	/** Largest gap-opening, in px, for a roomy/long row. */
+	max: number;
+	/** Opening contributed per borrow-able neighbour gap; also the m===2 fallback. */
+	perGap: number;
+};
+
+/**
+ * Open the gap at `divisorIndex` (the global token index the divisor sits *after*)
+ * on its visual row, keeping the row's outer width constant.
+ */
+export function redistributeRow(
+	container: HTMLElement | undefined,
+	divisorIndex: number,
+	{ max, perGap }: RedistributeOpts
+): void {
+	if (!container || reducedMotion()) return;
+
+	const toks = Array.from(container.querySelectorAll<HTMLElement>('.tok'));
+	if (!toks.length) return;
+
+	// Batch all layout reads first (no interleaved writes → one reflow at most).
+	const data = toks.map((el) => ({
+		el,
+		idx: Number(el.dataset.tokenIndex),
+		top: el.offsetTop
+	}));
+
+	// The divisor's row is the row of its left-flank token: highest-index tok at
+	// or before the divisor.
+	let anchor: (typeof data)[number] | null = null;
+	for (const d of data) if (d.idx <= divisorIndex && (!anchor || d.idx > anchor.idx)) anchor = d;
+	if (!anchor) return;
+
+	const rowTop = anchor.top;
+	const row = data.filter((d) => Math.abs(d.top - rowTop) < 4).sort((a, b) => a.idx - b.idx);
+	const m = row.length;
+	if (m < 2) return;
+
+	// Local split position p: index in the row of the last tok at/before the divisor.
+	// Everything ≤ p is the left group; the gap to open is between p and p+1.
+	let p = 0;
+	for (let k = 0; k < m; k++) if (row[k].idx <= divisorIndex) p = k;
+	if (p >= m - 1) return; // divisor's right side wrapped to the next row — nothing to open here
+
+	const delta = m === 2 ? perGap : Math.min(max, perGap * (m - 2));
+	const other = m > 2 ? -delta / (m - 2) : 0; // each non-hovered gap shrinks by this
+
+	for (let j = 0; j < m; j++) {
+		// offset(j) = Σ of gap-deltas strictly left of token j.
+		// Ends land on 0 (Σ all deltas = delta + (m-2)·other = 0), so the row's
+		// outer edges never move — only the interior redistributes.
+		const off = m === 2 ? (j === 0 ? -delta / 2 : delta / 2) : j * other + (p < j ? delta - other : 0);
+		row[j].el.style.setProperty('--rd-x', off.toFixed(2) + 'px');
+	}
+}
+
+/** Reset every token to its resting position. */
+export function clearRedistribute(container: HTMLElement | undefined): void {
+	if (!container) return;
+	for (const el of container.querySelectorAll<HTMLElement>('.tok')) el.style.removeProperty('--rd-x');
+}

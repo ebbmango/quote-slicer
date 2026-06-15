@@ -3,6 +3,7 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
+	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
 
 	let {
 		tokens,
@@ -31,6 +32,11 @@
 	function handleMerge(lineN: number) {
 		onMerge(lineN);
 	}
+
+	// Clear any lingering divisor-hover redistribution when leaving line mode.
+	$effect(() => {
+		if (!isLineMode) clearRedistribute(lineContainer);
+	});
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -92,7 +98,7 @@
 		tabindex={isLineMode ? undefined : -1}
 		aria-multiselectable={isLineMode ? undefined : true}
 		aria-label={isLineMode ? undefined : 'Source tokens'}
-		class="flex w-full flex-wrap content-start justify-center bg-transparent font-wenkai text-3xl font-light"
+		class="flex w-full flex-wrap content-start gap-[1px] justify-center bg-transparent font-wenkai text-3xl font-light"
 		class:select-none={isLinkMode}
 		onclick={handleContainerClick}
 	>
@@ -147,6 +153,14 @@
 							e.stopPropagation();
 							if (isLineMode) handleSplit(i);
 						}}
+						onmouseenter={() => {
+							if (isLineMode) redistributeRow(lineContainer, i, { max: 8, perGap: 2 });
+						}}
+						onmouseleave={() => clearRedistribute(lineContainer)}
+						onfocus={() => {
+							if (isLineMode) redistributeRow(lineContainer, i, { max: 8, perGap: 2 });
+						}}
+						onblur={() => clearRedistribute(lineContainer)}
 						aria-label="Split line here"
 					>
 						<span class="split-indicator"></span>
@@ -161,9 +175,13 @@
 	/* Persistent token spans crossfade color/opacity when the mode changes
 	   instead of snapping (only possible because the element is never swapped). */
 	.tok {
+		/* --rd-x: per-token offset for the line-mode divisor-hover redistribution
+		   (see actions/redistribute.ts). Resting value is 0. */
+		transform: translateX(var(--rd-x, 0));
 		transition:
 			color 280ms ease,
-			opacity 280ms ease;
+			opacity 280ms ease,
+			transform 150ms ease;
 	}
 
 	.split-zone {
@@ -179,14 +197,6 @@
 		border: none;
 		cursor: pointer;
 		outline: none;
-		transition: width 150ms ease;
-	}
-
-	/* Gate hover vs focus-visible by interaction mode so a mouse-hovered zone and
-	   a Tab-focused zone never light up at once (see interactionMode.svelte.ts). */
-	:global(html[data-interaction='mouse']) .split-zone.line-active:hover,
-	:global(html[data-interaction='keyboard']) .split-zone.line-active:focus-visible {
-		width: 12px;
 	}
 
 	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */

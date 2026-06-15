@@ -2,6 +2,7 @@
 	import type { TargetToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
+	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
 	let {
 		tokens,
 		onSplit,
@@ -28,6 +29,11 @@
 	function handleMerge(lineN: number) {
 		onMerge(lineN);
 	}
+
+	// Clear any lingering divisor-hover redistribution when leaving line mode.
+	$effect(() => {
+		if (!isLineMode) clearRedistribute(lineContainer);
+	});
 
 	$effect(() => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -120,6 +126,14 @@
 					e.stopPropagation();
 					if (isLineMode) handleSplit(i);
 				}}
+				onmouseenter={() => {
+					if (isLineMode) redistributeRow(lineContainer, i, { max: 6, perGap: 3 });
+				}}
+				onmouseleave={() => clearRedistribute(lineContainer)}
+				onfocus={() => {
+					if (isLineMode) redistributeRow(lineContainer, i, { max: 6, perGap: 3 });
+				}}
+				onblur={() => clearRedistribute(lineContainer)}
 				aria-label="Split line here">{token.text}</span
 			>
 		{:else}
@@ -148,10 +162,14 @@
 
 <style>
 	.tok {
+		/* --rd-x: per-token offset for the line-mode divisor-hover redistribution
+		   (see actions/redistribute.ts). Resting value is 0. */
+		transform: translateX(var(--rd-x, 0));
 		transition:
 			color 280ms ease,
 			opacity 280ms ease,
-			font-weight 280ms ease;
+			font-weight 280ms ease,
+			transform 150ms ease;
 	}
 
 	.ws-split {
