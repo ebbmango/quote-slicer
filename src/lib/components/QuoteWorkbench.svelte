@@ -132,6 +132,14 @@
      over scrolling only once the panels bottom out. -->
 <div class="flex w-full min-h-0 max-h-full flex-col items-center">
 	{#if editing}
+	<!-- Text mode mirrors the view-mode grid + panel box metrics (same px-1 grid,
+	     px-2 py-3 padding, fade, text styling) so switching modes keeps every line
+	     in place — the input boxes seamlessly become the quote workbench. The
+	     textareas are direct flex-col children here (not wrapped like the view
+	     panels): autosize puts an inline height on them, so they must sit on the
+	     column's main axis for flex-shrink + min-h-0 + overflow-y-auto to bound and
+	     scroll them instead of spilling over each other. Keep in sync with {:else}. -->
+	<div class="flex min-h-0 w-full flex-col px-1">
 	<textarea
 		id="source-text"
 		name="source-text"
@@ -165,7 +173,7 @@
 				el.setSelectionRange(start - removed, end - removed);
 			}
 		}}
-		class="max-h-[40vh] min-h-0 w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing
+		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center leading-10 text-3xl font-light opacity-30 outline-none {composing
 			? 'font-ss4'
 			: 'font-wenkai'}"
 		placeholder="空"
@@ -176,9 +184,10 @@
 		bind:value={targetText}
 		rows="1"
 		use:autosize
-		class="max-h-[25vh] min-h-0 w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
+		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
 		placeholder="Use this box to enter your translated text."
 	></textarea>
+	</div>
 	{:else}
 	<div
 		bind:this={tokenContainer}

@@ -101,8 +101,11 @@
 				minimal={breakpoints.minimal}
 			/>
 		</div>
-		<!-- Tools Area -->
-		<div class="flex w-full flex-col items-center justify-center">
+		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every mode so the
+		     text-mode arrow and the view-mode ModeToolbar occupy the same footprint.
+		     Keeps the flex-1 band height constant, so the quote block sits in the
+		     exact same place when text mode swaps to the workbench. -->
+		<div class="flex min-h-14 w-full flex-col items-center justify-center">
 			{#if modeCtx.current === 'text'}
 				<button
 					aria-label="next"
