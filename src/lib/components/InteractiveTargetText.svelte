@@ -22,7 +22,7 @@
 
 	// Palette field the divisor indicators draw from. Swap to give source vs
 	// target (or vertical vs horizontal) divisors a different hue later.
-	const DIVISOR_FIELD: keyof MappingColor = 'base';
+	const DIVISOR_FIELD: keyof MappingColor = 'target';
 
 	// Map each whitespace token's index → its running divisor ordinal. Every
 	// whitespace token is a divisor (ws-split or, at a line break, merge-zone);
@@ -242,7 +242,7 @@
 		cursor: pointer;
 		outline: none;
 		white-space: pre;
-		opacity: 0.7;
+		opacity: 0.9;
 		user-select: text;
 		-webkit-user-select: text;
 	}

@@ -8,7 +8,7 @@
 
 	// Palette field the divisor indicators draw from. Swap to give source vs
 	// target (or vertical vs horizontal) divisors a different hue later.
-	const DIVISOR_FIELD: keyof MappingColor = 'base';
+	const DIVISOR_FIELD: keyof MappingColor = 'source';
 
 	let {
 		tokens,
