@@ -84,7 +84,7 @@
 			</button>
 		</div>
 		<!-- Quote Workbench Area -->
-		<div class="relative min-h-0 w-full flex-1">
+		<div class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[20px]">
 			<!-- Scroll layer: centers the quote (safe center) when it fits, and is the
 			     only thing that scrolls if even floored panels overflow (<~400px tall).
 			     The DataModal is a SIBLING absolute layer, positioned by the band — so

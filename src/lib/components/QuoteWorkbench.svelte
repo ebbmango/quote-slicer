@@ -232,7 +232,7 @@
 		rows="1"
 		use:autosize
 		disabled={mode.current === 'view'}
-		class="fade-y max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
+		class="fade-y max-h-[10vh] no-scrollbar min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
 		placeholder="Source"
 	></textarea>
 </div>

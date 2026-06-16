@@ -71,12 +71,12 @@
 {/if}
 
 <style lang="postcss">
-	/* Fills the workbench band between the sun icon and the tools row, keeping
-	   --layout-spacing from each; flush to the content box horizontally (already
-	   --layout-spacing from the screen edges, matching the icons). */
+	/* Fills the entire workbench band (flex-1 sibling of sun icon and toolbar).
+	   The gap-6 on the parent flex column already separates it from those rows —
+	   no extra vertical inset needed; flush horizontally too. */
 	.data-modal {
 		position: absolute;
-		inset: var(--layout-spacing) 0;
+		inset: 0;
 		border-radius: 20px;
 		overflow: hidden;
 		z-index: 2;
