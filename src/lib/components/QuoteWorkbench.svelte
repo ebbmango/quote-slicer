@@ -84,6 +84,13 @@
 		if (mode.current !== 'line') touchedDivisor = null;
 	});
 
+	// Drop any lit view-mode hover highlight when leaving view mode, and on unmount
+	// (cancels pending light/grace timers so they don't fire on a detached instance).
+	$effect(() => {
+		if (mode.current !== 'view') alignment.clearHighlight();
+		return () => alignment.clearHighlight();
+	});
+
 	let tokenContainer: HTMLDivElement = $state(null!);
 
 	const tokenGridNav = createTokenGridNav(

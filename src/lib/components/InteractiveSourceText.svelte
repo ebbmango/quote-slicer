@@ -4,7 +4,7 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
-	import { divisorColor, type MappingColor } from '$lib/constants/colors';
+	import { divisorColor, HIGHLIGHT_COLOR, type MappingColor } from '$lib/constants/colors';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
 
 	// Row-spread params for this panel's split zones (see redistribute.ts).
@@ -44,7 +44,10 @@
 	let alignment = getAlignmentContext();
 	let isLinkMode = $derived(mode.current === 'link');
 	let isLineMode = $derived(mode.current === 'line');
+	let isViewMode = $derived(!isLinkMode && !isLineMode);
 	let isTouch = $derived(interactionMode.current === 'touch');
+	// Hover-highlight reset on view-mode exit/unmount lives in QuoteWorkbench (one
+	// owner) — see its clearHighlight $effect.
 	let focusedIndex: number | null = $state(null);
 
 	function handleSplit(globalIndex: number) {
@@ -107,6 +110,8 @@
 		if (!isLinkMode) {
 			// Tapping a token in line mode clears any touch highlight.
 			if (isLineMode) onClearTouchDivisor();
+			// View mode: tap-to-highlight on touch (mouse uses hover).
+			else if (isTouch) alignment.tapSource(i);
 			return;
 		}
 		alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
@@ -116,10 +121,14 @@
 		if (e.target === e.currentTarget) {
 			onClearTouchDivisor();
 			alignment.deselect();
+			// View mode: tapping empty space clears the highlight.
+			if (isViewMode && isTouch) alignment.clearHighlight();
 		}
 	}
 
 	function tokenStyle(i: number): string {
+		// View mode: hovered mapping lights up in the flat highlight color.
+		if (isViewMode) return alignment.isSourceHighlighted(i) ? `color: ${HIGHLIGHT_COLOR};` : '';
 		// Color only in link mode; leaving link mode unsets color so the span
 		// transitions back to the default text color (see the `.tok` transition).
 		if (!isLinkMode) return '';
@@ -135,6 +144,8 @@
 
 	function tokenOpacity(i: number): string {
 		if (isLineMode) return 'opacity-70';
+		// view: hovered mapping pops to full opacity, rest stays at the flat resting level
+		if (isViewMode) return alignment.isSourceHighlighted(i) ? 'opacity-100' : VIEW_TOKEN_OPACITY;
 		if (!isLinkMode) return VIEW_TOKEN_OPACITY; // view
 		const token = tokens[i];
 		if (token.type === 'punctuation') return 'opacity-30';
@@ -163,6 +174,9 @@
 		class:select-none={isLinkMode}
 		class:flipping={animating}
 		onclick={handleContainerClick}
+		onmouseleave={() => {
+			if (isViewMode && !isTouch) alignment.hoverOut();
+		}}
 	>
 		{#each tokens as token, i (i)}
 			{@const interactive = isLinkMode && token.type !== 'punctuation'}
@@ -177,6 +191,9 @@
 				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
 				style={tokenStyle(i)}
 				onclick={(e) => handleClick(e, i)}
+				onmouseenter={() => {
+					if (isViewMode && !isTouch) alignment.hoverSource(i);
+				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;
 				}}

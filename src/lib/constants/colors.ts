@@ -15,6 +15,12 @@ export type MappingColor = {
 	bgFocusInactive: string; // card backdrop, focused but not active
 };
 
+/**
+ * View-mode hover-highlight color. Flat for now — the same red lights up a
+ * hovered mapping in both panels, ignoring each mapping's own palette entry.
+ */
+export const HIGHLIGHT_COLOR = 'rgb(255, 0, 55)';
+
 export const MAPPING_COLOR_NAMES = [
 	'applesour',
 	'lush',
