@@ -4,12 +4,23 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
 	import { divisorColor, type MappingColor } from '$lib/constants/colors';
+	import { interactionMode } from '$lib/context/interactionMode.svelte';
+
+	// Row-spread params for this panel's split zones (see redistribute.ts).
+	const SPREAD = { max: 6, perGap: 3 } as const;
+
+	// Token opacity in view mode. Options: 'opacity-100' | 'opacity-70' | 'opacity-30'
+	const VIEW_TOKEN_OPACITY = 'opacity-85';
+
 	let {
 		tokens,
 		onSplit,
 		onMerge,
 		animating,
-		divisorOffset = 0
+		divisorOffset = 0,
+		touchedDivisorIndex = null,
+		onTouchDivisor = () => {},
+		onClearTouchDivisor = () => {}
 	}: {
 		tokens: TargetToken[];
 		onSplit: (afterIndex: number) => void;
@@ -18,6 +29,12 @@
 		// Running divisor count from the source panel, so the palette continues
 		// here instead of restarting (see divisorColor).
 		divisorOffset?: number;
+		// Touch line mode: the divisor index currently highlighted in THIS panel
+		// (null if none / the other panel owns the highlight). First tap highlights,
+		// second tap on the same index activates.
+		touchedDivisorIndex?: number | null;
+		onTouchDivisor?: (index: number) => void;
+		onClearTouchDivisor?: () => void;
 	} = $props();
 
 	// Palette field the divisor indicators draw from. Swap to give source vs
@@ -42,6 +59,7 @@
 	let alignment = getAlignmentContext();
 	let isLinkMode = $derived(mode.current === 'link');
 	let isLineMode = $derived(mode.current === 'line');
+	let isTouch = $derived(interactionMode.current === 'touch');
 	let focusedIndex: number | null = $state(null);
 
 	function handleSplit(globalIndex: number) {
@@ -52,9 +70,41 @@
 		onMerge(lineN);
 	}
 
+	// Touch divisor tap: first tap highlights (+ spread, split zones only); second
+	// tap on the same divisor activates. Mouse/keyboard activate immediately.
+	function handleDivisorClick(
+		e: MouseEvent,
+		index: number,
+		kind: 'split' | 'merge',
+		activate: () => void
+	) {
+		e.stopPropagation();
+		if (!isLineMode) return;
+		if (!isTouch) {
+			activate();
+			return;
+		}
+		if (touchedDivisorIndex === index) {
+			// activate() runs clearRedistribute({ instant: true }) before the edit, so
+			// any first-tap spread snaps back exactly as the line splits/merges.
+			onClearTouchDivisor();
+			activate();
+		} else {
+			onTouchDivisor(index);
+			if (kind === 'split') redistributeRow(lineContainer, index, SPREAD);
+		}
+	}
+
 	// Clear any lingering divisor-hover redistribution when leaving line mode.
 	$effect(() => {
 		if (!isLineMode) clearRedistribute(lineContainer);
+	});
+
+	// Touch: whenever this panel holds no highlight, collapse any spread it left.
+	// Covers tap-elsewhere, cross-panel switch, and post-activate. Skipped while a
+	// Flip runs so it never fights the instant clear that precedes the edit.
+	$effect(() => {
+		if (isTouch && touchedDivisorIndex === null && !animating) clearRedistribute(lineContainer);
 	});
 
 	$effect(() => {
@@ -68,12 +118,19 @@
 	});
 
 	function handleClick(i: number) {
-		if (!isLinkMode) return;
+		if (!isLinkMode) {
+			// Tapping a token in line mode clears any touch highlight.
+			if (isLineMode) onClearTouchDivisor();
+			return;
+		}
 		alignment.toggleTarget(i);
 	}
 
 	function handleContainerClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) alignment.deselect();
+		if (e.target === e.currentTarget) {
+			onClearTouchDivisor();
+			alignment.deselect();
+		}
 	}
 
 	function tokenStyle(i: number): string {
@@ -91,7 +148,7 @@
 
 	function tokenOpacity(i: number): string {
 		if (isLineMode) return 'opacity-70';
-		if (!isLinkMode) return 'opacity-30'; // view
+		if (!isLinkMode) return VIEW_TOKEN_OPACITY; // view
 		const s = alignment.stateOfTarget(i);
 		const focused = focusedIndex === i;
 		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
@@ -126,16 +183,15 @@
 				data-flip-id="tgt-{i}"
 				class="merge-zone"
 				class:line-active={isLineMode}
+				class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 				data-divisor-index={i}
 				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
 				tabindex={-1}
-				onclick={(e) => {
-					e.stopPropagation();
-					if (isLineMode) {
+				onclick={(e) =>
+					handleDivisorClick(e, i, 'merge', () => {
 						clearRedistribute(lineContainer, { instant: true });
 						handleMerge(token.line);
-					}
-				}}
+					})}
 				aria-label="Merge with next line"
 			>
 				<span class="merge-indicator"></span>
@@ -147,24 +203,27 @@
 				role="button"
 				class="ws-split"
 				class:line-active={isLineMode}
+				class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 				data-divisor-index={i}
 				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
 				tabindex={-1}
-				onclick={(e) => {
-					e.stopPropagation();
-					if (isLineMode) {
+				onclick={(e) =>
+					handleDivisorClick(e, i, 'split', () => {
 						clearRedistribute(lineContainer, { instant: true });
 						handleSplit(i);
-					}
-				}}
+					})}
 				onmouseenter={() => {
-					if (isLineMode) redistributeRow(lineContainer, i, { max: 6, perGap: 3 });
+					if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
 				}}
-				onmouseleave={() => clearRedistribute(lineContainer)}
+				onmouseleave={() => {
+					if (!isTouch) clearRedistribute(lineContainer);
+				}}
 				onfocus={() => {
-					if (isLineMode) redistributeRow(lineContainer, i, { max: 6, perGap: 3 });
+					if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
 				}}
-				onblur={() => clearRedistribute(lineContainer)}
+				onblur={() => {
+					if (!isTouch) clearRedistribute(lineContainer);
+				}}
 				aria-label="Split line here">{token.text}</span
 			>
 		{:else}
@@ -221,6 +280,13 @@
 		transition: none;
 	}
 
+	/* While GSAP Flip runs, kill pointer events on divisors — prevents hover
+	   activation, opacity flash, and spread animations mid-animation. */
+	.flipping .ws-split,
+	.flipping .merge-zone.line-active .merge-indicator {
+		pointer-events: none;
+	}
+
 	.ws-split {
 		display: inline-block;
 		position: relative;
@@ -274,6 +340,12 @@
 	   a Tab-focused zone never light up at once (see interactionMode.svelte.ts). */
 	:global(html[data-interaction='mouse']) .ws-split.line-active:hover::after,
 	:global(html[data-interaction='keyboard']) .ws-split.line-active:focus::after {
+		opacity: var(--line-tool-opacity-hover);
+	}
+
+	/* Touch-highlighted split divisor — same visual as hover/focus. No media gate:
+	   touch-lit is only set when interactionMode === 'touch'. */
+	.ws-split.touch-lit::after {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
@@ -349,6 +421,13 @@
 	:global(html[data-interaction='keyboard'])
 		.merge-zone.line-active:focus
 		.merge-indicator {
+		opacity: var(--line-tool-opacity-hover);
+		width: 30%;
+		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;
+	}
+
+	/* Touch-highlighted merge divisor — same visual as hover/focus. */
+	.merge-zone.touch-lit .merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
 		width: 30%;
 		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;

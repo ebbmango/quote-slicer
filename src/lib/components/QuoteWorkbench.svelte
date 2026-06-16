@@ -67,6 +67,23 @@
 		store.merge('target', targetText, targetTokens, lineN, editScope());
 	}
 
+	// Touch line mode: which divisor is "highlighted" (first tap). Shared across
+	// panels so only one is lit at a time; second tap on the same one activates.
+	type TouchedDivisor = { panel: 'source' | 'target'; index: number } | null;
+	let touchedDivisor: TouchedDivisor = $state(null);
+
+	function onTouchDivisor(panel: 'source' | 'target', index: number) {
+		touchedDivisor = { panel, index };
+	}
+	function clearTouchDivisor() {
+		touchedDivisor = null;
+	}
+
+	// Drop any highlight when leaving line mode.
+	$effect(() => {
+		if (mode.current !== 'line') touchedDivisor = null;
+	});
+
 	let tokenContainer: HTMLDivElement = $state(null!);
 
 	const tokenGridNav = createTokenGridNav(
@@ -166,6 +183,9 @@
 				onSplit={splitSource}
 				onMerge={mergeSource}
 				animating={store.animating}
+				touchedDivisorIndex={touchedDivisor?.panel === 'source' ? touchedDivisor.index : null}
+				onTouchDivisor={(i) => onTouchDivisor('source', i)}
+				onClearTouchDivisor={clearTouchDivisor}
 			/>
 		</div>
 		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel">
@@ -175,6 +195,9 @@
 				onMerge={mergeTarget}
 				animating={store.animating}
 				divisorOffset={Math.max(0, sourceTokens.length - 1)}
+				touchedDivisorIndex={touchedDivisor?.panel === 'target' ? touchedDivisor.index : null}
+				onTouchDivisor={(i) => onTouchDivisor('target', i)}
+				onClearTouchDivisor={clearTouchDivisor}
 			/>
 		</div>
 	</div>

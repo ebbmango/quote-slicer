@@ -1,19 +1,20 @@
 /**
- * Tracks current input mode ("mouse" or "keyboard") to improve UI feedback.
+ * Tracks current input mode ("mouse", "keyboard", or "touch") to improve UI feedback.
  * Prevents overlapping styles (e.g. mouse hover + tab focus) when both inputs are active.
- * Last input wins: any mousemove → "mouse"; a Tab keydown → "keyboard".
+ * Last input wins: any mousemove → "mouse"; a Tab keydown → "keyboard"; a touchstart → "touch".
  *
  * Global module singleton (app-wide, not tree-scoped). Call `initModeTracking()`
  * once at app startup and run the returned cleanup on teardown.
  */
 
-export type ActionMode = 'mouse' | 'keyboard';
+export type ActionMode = 'mouse' | 'keyboard' | 'touch';
 
 type InteractionModeState = {
 	current: ActionMode;
 	set: (newMode: ActionMode) => void;
 	isMouse: boolean;
 	isKeyboard: boolean;
+	isTouch: boolean;
 };
 
 export const interactionMode: InteractionModeState = $state({
@@ -27,6 +28,9 @@ export const interactionMode: InteractionModeState = $state({
 	},
 	get isKeyboard() {
 		return interactionMode.current === 'keyboard';
+	},
+	get isTouch() {
+		return interactionMode.current === 'touch';
 	}
 });
 
@@ -39,7 +43,13 @@ export function initModeTracking() {
 
 	document.documentElement.dataset.interaction = interactionMode.current;
 
+	// Touch fires synthetic mousemove/mouseenter right after touchstart. Ignore
+	// those for a short window so a tap doesn't flip us back to 'mouse'.
+	let lastTouchTime = 0;
+	const TOUCH_GUARD_MS = 500;
+
 	function handleMouseMove() {
+		if (Date.now() - lastTouchTime <= TOUCH_GUARD_MS) return;
 		interactionMode.set('mouse');
 	}
 
@@ -50,12 +60,19 @@ export function initModeTracking() {
 		}
 	}
 
+	function handleTouchStart() {
+		lastTouchTime = Date.now();
+		interactionMode.set('touch');
+	}
+
 	document.addEventListener('mousemove', handleMouseMove);
 	document.addEventListener('keydown', handleKeyDown);
+	document.addEventListener('touchstart', handleTouchStart, { passive: true });
 
 	return () => {
 		document.removeEventListener('mousemove', handleMouseMove);
 		document.removeEventListener('keydown', handleKeyDown);
+		document.removeEventListener('touchstart', handleTouchStart);
 		initialized = false;
 	};
 }
