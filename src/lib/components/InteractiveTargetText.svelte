@@ -310,6 +310,10 @@
 		pointer-events: none;
 	}
 
+	.merge-zone:not(.line-active) .merge-indicator {
+		opacity: 0;
+	}
+
 	.merge-indicator {
 		display: block;
 		width: 2.5rem;
