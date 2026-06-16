@@ -140,6 +140,7 @@
 						class="merge-zone"
 						class:line-active={isLineMode}
 						data-divisor-index={i}
+						style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
 						tabindex={-1}
 						onclick={(e) => {
 							e.stopPropagation();
@@ -248,7 +249,7 @@
 		   to stay centred in the resized gap during the hover redistribution. This
 		   prevents the divisor "dancing" out from under a stationary pointer (the
 		   8px zone moving triggered leave/enter flicker). See actions/redistribute.ts. */
-		transform: translateX(var(--rd-x, 0));
+		transform: translateX(var(--rd-x, 0)) skewX(-10deg);
 		transition:
 			opacity 150ms,
 			transform 150ms ease;

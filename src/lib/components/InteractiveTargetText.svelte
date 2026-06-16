@@ -127,6 +127,7 @@
 				class="merge-zone"
 				class:line-active={isLineMode}
 				data-divisor-index={i}
+				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
 				tabindex={-1}
 				onclick={(e) => {
 					e.stopPropagation();
