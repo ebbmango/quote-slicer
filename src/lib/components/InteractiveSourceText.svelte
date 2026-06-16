@@ -161,7 +161,7 @@
      and their color/height transitions can animate instead of snapping. The
      line-mode split/merge buttons are always present (net-zero width / collapsed
      height) and only become interactive in line mode. -->
-<div bind:this={container} data-scrollbox class="relative max-h-[40vh] w-full overflow-y-auto px-2 no-scrollbar">
+<div bind:this={container} data-scrollbox class="fade-y relative min-h-0 w-full overflow-y-auto px-2 py-3 no-scrollbar">
 	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
@@ -261,6 +261,28 @@
 </div>
 
 <style>
+	/* Soft top/bottom fade on the scroll area instead of a hard cutoff. The 0.75rem
+	   fade matches the scroll box's 0.75rem (py-3) padding, so at either scroll
+	   extreme the first/last line sits past the fade and reads at full opacity —
+	   only mid-scroll content dims. mask = transparency, so it works over the page
+	   background and the modal's #f9f9f9 alike. */
+	.fade-y {
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.75rem,
+			#000 calc(100% - 0.75rem),
+			transparent 100%
+		);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.75rem,
+			#000 calc(100% - 0.75rem),
+			transparent 100%
+		);
+	}
+
 	/* Persistent token spans crossfade color/opacity when the mode changes
 	   instead of snapping (only possible because the element is never swapped). */
 	.tok {

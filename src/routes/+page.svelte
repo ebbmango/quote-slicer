@@ -74,7 +74,7 @@
 			<DataPanel view={breakpoints.wide || asideView === 'maps' ? 'maps' : 'json'} />
 		{/if}
 	</aside>
-	<main class="content flex flex-col justify-between">
+	<main class="content flex flex-col justify-between gap-6">
 		<!-- Placeholder for the Light Switch Area -->
 		<div class="flex w-full justify-center opacity-20 hocus:opacity-100 duration-200">
 			<button aria-label="theme-toggle" class="size-6">
@@ -84,8 +84,16 @@
 			</button>
 		</div>
 		<!-- Quote Workbench Area -->
-		<div class="relative flex h-full w-full flex-col items-center justify-center gap-3">
-			<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
+		<div class="relative min-h-0 w-full flex-1">
+			<!-- Scroll layer: centers the quote (safe center) when it fits, and is the
+			     only thing that scrolls if even floored panels overflow (<~400px tall).
+			     The DataModal is a SIBLING absolute layer, positioned by the band — so
+			     it stays put and never rides this scroll. -->
+			<div
+				class="absolute inset-0 flex flex-col items-center overflow-y-auto [justify-content:safe_center]"
+			>
+				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
+			</div>
 			<DataModal
 				bind:this={dataModal}
 				bind:asideView

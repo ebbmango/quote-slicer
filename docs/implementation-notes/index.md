@@ -21,6 +21,9 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-16 | [View-mode mapping highlight](./26-06-16-view-mode-mapping-highlight.md) | `793e0d6` | Hover/tap highlights full mapping group across both panels; cold/warm delay kills flicker; touch tap-toggles; QuoteWorkbench owns reset + timer cleanup |
+| 2026-06-16 | [Line-mode two-tap touch](./26-06-16-line-mode-two-tap-touch.md) | `a35bf6e` | Two-tap touch model for split/merge zones; first tap highlights + spreads, second activates; single shared state in QuoteWorkbench prevents cross-panel conflicts |
+| 2026-06-16 | [Line-mode divisor visual affordances](./26-06-16-line-mode-divisor-styling.md) | `87d3622` … `55425cc` | Running-palette coloring across both panels, slanted source glyphs, ~1em hit zones, indicator-only slide animation, fade-out on mode exit |
 | 2026-06-15 | [Line-mode divisor hover redistribution](./26-06-15-line-mode-divisor-redistribution.md) | `df21f7a` … `dba9d7f` | Hover feedback on split/merge divisors moved from width-grow to pure-transform gap redistribution; fixes wobble against GSAP Flip |
 | 2026-06-15 | [Canonical pinyin storage](./26-06-15-canonical-pinyin-storage.md) | `96ada2f`, `2c98dae` | Pinyin stored as canonical numbered form, displayed as diacritic, via new `pinyinConvert.ts` and `PinyinInput.svelte` |
 | 2026-06-15 | [Cross-zone nav scoping fix](./26-06-15-cross-zone-nav-scoping.md) | `5271beb` | Fixes `findDefaultEl` zone-scoping bug for comma-separated selectors; unifies cross-zone Alt+Enter/Arrow jumps across modes |

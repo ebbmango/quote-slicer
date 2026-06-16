@@ -181,7 +181,7 @@
 	tabindex={isLineMode ? undefined : -1}
 	aria-multiselectable={isLineMode ? undefined : true}
 	aria-label={isLineMode ? undefined : 'Target tokens'}
-	class="relative no-scrollbar flex max-h-[40vh] w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 font-ss4 text-base font-[350] italic"
+	class="fade-y relative no-scrollbar flex min-h-0 w-full flex-wrap content-start justify-center overflow-y-auto bg-transparent px-2 py-3 font-ss4 text-base font-[350] italic"
 	class:select-none={isLinkMode}
 	class:flipping={animating}
 	onclick={handleContainerClick}
@@ -268,6 +268,28 @@
 </div>
 
 <style>
+	/* Soft top/bottom fade on the scroll area instead of a hard cutoff. The 0.75rem
+	   fade matches the scroll box's 0.75rem (py-3) padding, so at either scroll
+	   extreme the first/last line sits past the fade and reads at full opacity —
+	   only mid-scroll content dims. mask = transparency, so it works over the page
+	   background and the modal's #f9f9f9 alike. */
+	.fade-y {
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.75rem,
+			#000 calc(100% - 0.75rem),
+			transparent 100%
+		);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.75rem,
+			#000 calc(100% - 0.75rem),
+			transparent 100%
+		);
+	}
+
 	.tok {
 		cursor: default;
 		/* --rd-x: per-token offset for the line-mode divisor-hover redistribution

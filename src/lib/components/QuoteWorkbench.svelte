@@ -126,7 +126,12 @@
 	);
 </script>
 
-{#if editing}
+<!-- Quote stack: source/target/authorship as one rhythm (uniform gap). Capped at
+     the band height (max-h-full) so when it's too tall the panels shrink to their
+     floor and scroll internally; the scroll layer (in +page) centers it and takes
+     over scrolling only once the panels bottom out. -->
+<div class="flex w-full min-h-0 max-h-full flex-col items-center">
+	{#if editing}
 	<textarea
 		id="source-text"
 		name="source-text"
@@ -160,7 +165,7 @@
 				el.setSelectionRange(start - removed, end - removed);
 			}
 		}}
-		class="max-h-[40vh] w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing
+		class="max-h-[40vh] min-h-0 w-full resize-none overflow-y-auto bg-transparent text-center text-3xl font-light opacity-30 outline-none {composing
 			? 'font-ss4'
 			: 'font-wenkai'}"
 		placeholder="空"
@@ -171,20 +176,20 @@
 		bind:value={targetText}
 		rows="1"
 		use:autosize
-		class="max-h-[25vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
+		class="max-h-[25vh] min-h-0 w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
 		placeholder="Use this box to enter your translated text."
 	></textarea>
-{:else}
+	{:else}
 	<div
 		bind:this={tokenContainer}
 		role="grid"
 		aria-label="Token workspace"
-		class="flex flex-col gap-3 rounded-xl px-1 py-4 outline-0 duration-200 focus:bg-blue-50"
+		class="flex min-h-0 w-full flex-col rounded-xl px-1 outline-0 duration-200 focus:bg-blue-50"
 		tabindex="0"
 		onkeydown={tokenGridNav.handleKeydown}
 		onfocusin={tokenGridNav.handleFocusIn}
 	>
-		<div bind:this={sourceWrapperEl} data-zone="source" data-flip-id="source-panel">
+		<div bind:this={sourceWrapperEl} data-zone="source" data-flip-id="source-panel" class="flex min-h-0 w-full">
 			<InteractiveSourceText
 				tokens={sourceTokens}
 				onSplit={splitSource}
@@ -195,7 +200,7 @@
 				onClearTouchDivisor={clearTouchDivisor}
 			/>
 		</div>
-		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel">
+		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel" class="flex min-h-0 w-full">
 			<InteractiveTargetText
 				tokens={targetTokens}
 				onSplit={splitTarget}
@@ -208,16 +213,39 @@
 			/>
 		</div>
 	</div>
-{/if}
-<textarea
-	id="authorship"
-	name="authorship"
-	bind:value={authorship}
-	bind:this={authorshipEl}
-	data-flip-id="authorship"
-	rows="1"
-	use:autosize
-	disabled={mode.current === 'view'}
-	class="max-h-[10vh] w-full resize-none overflow-y-auto bg-transparent text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
-	placeholder="Source"
-></textarea>
+	{/if}
+	<textarea
+		id="authorship"
+		name="authorship"
+		bind:value={authorship}
+		bind:this={authorshipEl}
+		data-flip-id="authorship"
+		rows="1"
+		use:autosize
+		disabled={mode.current === 'view'}
+		class="fade-y max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
+		placeholder="Source"
+	></textarea>
+</div>
+
+<style>
+	/* Small soft edge-fade on the authorship line, matching the source/target
+	   panels (theirs is 0.75rem; authorship is smaller text so a touch less). The
+	   py-3 padding lets the line clear the fade at rest and when it scrolls. */
+	.fade-y {
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.5rem,
+			#000 calc(100% - 0.5rem),
+			transparent 100%
+		);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			#000 0.5rem,
+			#000 calc(100% - 0.5rem),
+			transparent 100%
+		);
+	}
+</style>
