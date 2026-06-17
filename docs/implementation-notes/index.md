@@ -21,6 +21,9 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-17 | [Authorship browser restoration fix](./26-06-17-authorship-browser-restoration.md) | `4670950` | `autocomplete="off"` on authorship textarea suppresses browser form restoration; intentional fix for DOM-lifecycle asymmetry between persistent and conditionally-mounted textareas |
+| 2026-06-17 | [Seamless text→token handoff](./26-06-17-text-token-seamless-handoff.md) | `4921932`, `62c5de3` | Textareas pre-match token-mode geometry and colour during the 450ms arrow launch so the DOM swap lands with nothing left to snap; per-field morph strategies avoid compounding opacity multipliers |
+| 2026-06-17 | [Source token punctuation grouping](./26-06-17-source-punctuation-grouping.md) | `1523814` | `groupSourceTokens()` glues punctuation to its base token using Unicode property classes; `.tok-group` inline-flex wrapper prevents orphan wraps without affecting token IDs, mapping, or divisor logic |
 | 2026-06-16 | [Viewport-height layout overhaul](./26-06-16-viewport-height-layout-overhaul.md) | `e501cb5`, `6841fe1`, `38386ff` | Replaced vh-clamp caps with flex min-h-0 chain; safe-center scroll layer; DataModal as band sibling; CSS fade-y on panels; text-mode textareas aligned to view-mode metrics |
 | 2026-06-16 | [View-mode mapping highlight](./26-06-16-view-mode-mapping-highlight.md) | `793e0d6` | Hover/tap highlights full mapping group across both panels; cold/warm delay kills flicker; touch tap-toggles; QuoteWorkbench owns reset + timer cleanup |
 | 2026-06-16 | [Line-mode two-tap touch](./26-06-16-line-mode-two-tap-touch.md) | `a35bf6e` | Two-tap touch model for split/merge zones; first tap highlights + spreads, second activates; single shared state in QuoteWorkbench prevents cross-panel conflicts |
