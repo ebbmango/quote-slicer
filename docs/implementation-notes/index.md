@@ -21,6 +21,7 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-16 | [Viewport-height layout overhaul](./26-06-16-viewport-height-layout-overhaul.md) | `e501cb5`, `6841fe1`, `38386ff` | Replaced vh-clamp caps with flex min-h-0 chain; safe-center scroll layer; DataModal as band sibling; CSS fade-y on panels; text-mode textareas aligned to view-mode metrics |
 | 2026-06-16 | [View-mode mapping highlight](./26-06-16-view-mode-mapping-highlight.md) | `793e0d6` | Hover/tap highlights full mapping group across both panels; cold/warm delay kills flicker; touch tap-toggles; QuoteWorkbench owns reset + timer cleanup |
 | 2026-06-16 | [Line-mode two-tap touch](./26-06-16-line-mode-two-tap-touch.md) | `a35bf6e` | Two-tap touch model for split/merge zones; first tap highlights + spreads, second activates; single shared state in QuoteWorkbench prevents cross-panel conflicts |
 | 2026-06-16 | [Line-mode divisor visual affordances](./26-06-16-line-mode-divisor-styling.md) | `87d3622` … `55425cc` | Running-palette coloring across both panels, slanted source glyphs, ~1em hit zones, indicator-only slide animation, fade-out on mode exit |
