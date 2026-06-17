@@ -35,6 +35,75 @@ export function tokenizeSource(text: string): SourceToken[] {
 	).map((t, id) => ({ ...t, id }));
 }
 
+// Leading punctuation — opening brackets (`\p{Ps}`: 「『《【（) and initial quotes
+// (`\p{Pi}`: “‘«). These bind to the token that FOLLOWS them; every other
+// punctuation (closing brackets, terminal marks like 。，！？) binds to the token
+// that PRECEDES it. Lets the grouper decide each punct's side from the character
+// itself rather than a hand-kept list.
+const LEADING_PUNCT_RE = /^[\p{Ps}\p{Pi}]/u;
+
+const isPunct = (t: SourceToken) => t.type === 'punctuation';
+const isLeading = (t: SourceToken) => isPunct(t) && LEADING_PUNCT_RE.test(t.text);
+
+/**
+ * Groups source tokens so punctuation never wraps apart from the base token
+ * (character / number / symbol) it belongs to. Returns arrays of token indices —
+ * each group is one base token plus its glued leading/trailing punctuation, or a
+ * standalone punctuation run with no base to bind to.
+ *
+ * Grouping never crosses a `.line` boundary: a punct on a different line than its
+ * would-be base splits off into its own group, so a line-mode split between a
+ * char and its punctuation separates them naturally (they fall onto different
+ * lines → different groups).
+ */
+export function groupSourceTokens(tokens: SourceToken[]): number[][] {
+	const groups: number[][] = [];
+	let cur: number[] | null = null; // open group anchored by a base token
+	let pending: number[] = []; // buffered leading puncts awaiting their base
+
+	const flushPending = () => {
+		if (pending.length) groups.push(pending);
+		pending = [];
+	};
+	const flushCur = () => {
+		if (cur) groups.push(cur);
+		cur = null;
+	};
+
+	for (let i = 0; i < tokens.length; i++) {
+		const t = tokens[i];
+		if (isLeading(t)) {
+			// Binds to the NEXT base → buffer it. A line change orphans any earlier
+			// buffered leading puncts into their own group.
+			if (pending.length && tokens[pending[0]].line !== t.line) flushPending();
+			flushCur();
+			pending.push(i);
+		} else if (isPunct(t)) {
+			// Trailing punct: binds to the PREVIOUS base on the same line, if any.
+			if (cur && tokens[cur[0]].line === t.line) {
+				cur.push(i);
+			} else {
+				flushCur();
+				flushPending();
+				groups.push([i]); // stray trailing punct with no base to its left
+			}
+		} else {
+			// Base token: absorb same-line leading puncts buffered ahead of it.
+			flushCur();
+			if (pending.length && tokens[pending[0]].line === t.line) {
+				cur = [...pending, i];
+				pending = [];
+			} else {
+				flushPending();
+				cur = [i];
+			}
+		}
+	}
+	flushCur();
+	flushPending();
+	return groups;
+}
+
 // ── Target ────────────────────────────────────────────────────────────────────
 
 // Matches, in priority order:

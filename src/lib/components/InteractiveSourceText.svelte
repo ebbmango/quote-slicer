@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SourceToken } from '$lib/tokenize';
+	import { groupSourceTokens, type SourceToken } from '$lib/tokenize';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
@@ -49,6 +49,12 @@
 	// Hover-highlight reset on view-mode exit/unmount lives in QuoteWorkbench (one
 	// owner) — see its clearHighlight $effect.
 	let focusedIndex: number | null = $state(null);
+
+	// Punctuation glued to its base token so it never wraps onto its own line.
+	// Each group renders inside one inline-flex wrapper (an atomic flex item of the
+	// row); divisors between same-group tokens stay inside it, divisors between
+	// groups stay direct children of the row container. See groupSourceTokens.
+	let groups = $derived(groupSourceTokens(tokens));
 
 	function handleSplit(globalIndex: number) {
 		onSplit(globalIndex);
@@ -170,6 +176,7 @@
 		tabindex={isLineMode ? undefined : -1}
 		aria-multiselectable={isLineMode ? undefined : true}
 		aria-label={isLineMode ? undefined : 'Source tokens'}
+		// change text to 1.75rem
 		class="flex w-full flex-wrap content-start leading-10 gap-px justify-center bg-transparent font-wenkai text-3xl font-light"
 		class:select-none={isLinkMode}
 		class:flipping={animating}
@@ -178,7 +185,58 @@
 			if (isViewMode && !isTouch) alignment.hoverOut();
 		}}
 	>
-		{#each tokens as token, i (i)}
+		{#snippet divisor(i)}
+			{#if tokens[i + 1].line !== tokens[i].line}
+				<button
+					class="merge-zone"
+					class:line-active={isLineMode}
+					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
+					data-divisor-index={i}
+					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
+					tabindex={-1}
+					onclick={(e) =>
+						handleDivisorClick(e, i, 'merge', () => {
+							clearRedistribute(lineContainer, { instant: true });
+							handleMerge(tokens[i].line);
+						})}
+					aria-label="Merge with next line"
+				>
+					<span class="merge-indicator"></span>
+				</button>
+			{:else}
+				<button
+					class="split-zone"
+					class:line-active={isLineMode}
+					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
+					data-divisor-index={i}
+					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
+					tabindex={-1}
+					onclick={(e) =>
+						handleDivisorClick(e, i, 'split', () => {
+							clearRedistribute(lineContainer, { instant: true });
+							handleSplit(i);
+						})}
+					onmouseenter={() => {
+						if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
+					}}
+					onmouseleave={() => {
+						if (!isTouch) clearRedistribute(lineContainer);
+					}}
+					onfocus={() => {
+						if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
+					}}
+					onblur={() => {
+						if (!isTouch) clearRedistribute(lineContainer);
+					}}
+					aria-label="Split line here"
+				>
+					<span class="split-indicator"></span>
+				</button>
+			{/if}
+		{/snippet}
+
+		{#snippet tokenSpan(i)}
+			{@const token = tokens[i]}
 			{@const interactive = isLinkMode && token.type !== 'punctuation'}
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<span
@@ -207,54 +265,23 @@
 					}
 				}}>{token.text}</span
 			>
-			{#if i < tokens.length - 1}
-				{#if tokens[i + 1].line !== token.line}
-					<button
-						class="merge-zone"
-						class:line-active={isLineMode}
-						class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
-						data-divisor-index={i}
-						style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
-						tabindex={-1}
-						onclick={(e) =>
-							handleDivisorClick(e, i, 'merge', () => {
-								clearRedistribute(lineContainer, { instant: true });
-								handleMerge(token.line);
-							})}
-						aria-label="Merge with next line"
-					>
-						<span class="merge-indicator"></span>
-					</button>
-				{:else}
-					<button
-						class="split-zone"
-						class:line-active={isLineMode}
-						class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
-						data-divisor-index={i}
-						style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
-						tabindex={-1}
-						onclick={(e) =>
-							handleDivisorClick(e, i, 'split', () => {
-								clearRedistribute(lineContainer, { instant: true });
-								handleSplit(i);
-							})}
-						onmouseenter={() => {
-							if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
-						}}
-						onmouseleave={() => {
-							if (!isTouch) clearRedistribute(lineContainer);
-						}}
-						onfocus={() => {
-							if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
-						}}
-						onblur={() => {
-							if (!isTouch) clearRedistribute(lineContainer);
-						}}
-						aria-label="Split line here"
-					>
-						<span class="split-indicator"></span>
-					</button>
-				{/if}
+		{/snippet}
+
+		{#each groups as group (group[0])}
+			<!-- inline-flex wrapper: never wraps internally (so glued punctuation stays
+			     with its base), yet acts as a single atomic flex item of the row — and
+			     keeps its tokens/divisors in a flex row so every divisor rule still
+			     resolves (align-self: stretch, net-zero margins). -->
+			<span class="tok-group">
+				{#each group as i, gi (i)}
+					{@render tokenSpan(i)}
+					{#if gi < group.length - 1}
+						{@render divisor(i)}
+					{/if}
+				{/each}
+			</span>
+			{#if group[group.length - 1] < tokens.length - 1}
+				{@render divisor(group[group.length - 1])}
 			{/if}
 		{/each}
 	</div>
@@ -281,6 +308,17 @@
 			#000 calc(100% - 0.75rem),
 			transparent 100%
 		);
+	}
+
+	/* Glued punctuation wrapper: one atomic flex item of the row that itself lays
+	   its tokens + intra-group split-zones out in a non-wrapping flex row, so the
+	   divisors keep the exact flex-item context their rules assume (align-self:
+	   stretch, the -0.5em net-zero margins). `align-items: stretch` matches the
+	   row's default so zones still fill the line-box height. */
+	.tok-group {
+		display: inline-flex;
+		flex-wrap: nowrap;
+		align-items: stretch;
 	}
 
 	/* Persistent token spans crossfade color/opacity when the mode changes
