@@ -30,6 +30,22 @@ jobs:
       - name: Restore proprietary icons
         run: echo "${{ secrets.ICONS_JSON_B64 }}" | base64 -d > src/lib/assets/icons.json
 
+      - name: Validate icons
+        run: |
+          node -e "
+            const icons = require('./src/lib/assets/icons.json');
+            const required = [
+              'arrow-down', 'curly-brackets', 'delete-left', 'objects-column',
+              'sun-bright', 'eye', 'language', 'paragraph'
+            ];
+            const missing = required.filter(k => !icons[k]?.viewBox);
+            if (missing.length) {
+              console.error('Missing icons in ICONS_JSON_B64 secret:', missing.join(', '));
+              process.exit(1);
+            }
+            console.log('All', required.length, 'icons present with viewBox.');
+          "
+
       - name: Install dependencies
         run: npm ci
 
