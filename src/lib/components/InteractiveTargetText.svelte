@@ -268,6 +268,18 @@
 </div>
 
 <style>
+	/* Register --rd-x so it always resolves to a concrete length (0px) instead of a
+	   var() fallback. Transitions on transform: translateX(var(--rd-x)) only ease
+	   when both ends are explicit values; an unset/fallback end snaps. Registering
+	   keeps every redistribution explicit→explicit, so collapsing a previously-spread
+	   row and opening a new one both animate (cross-visual-row, where a token touches
+	   the rest state for the first/last time). See actions/redistribute.ts. */
+	@property --rd-x {
+		syntax: '<length>';
+		initial-value: 0px;
+		inherits: true; /* indicators read it via inheritance from their zone */
+	}
+
 	/* Soft top/bottom fade on the scroll area instead of a hard cutoff. The 0.75rem
 	   fade matches the scroll box's 0.75rem (py-3) padding, so at either scroll
 	   extreme the first/last line sits past the fade and reads at full opacity —
