@@ -91,7 +91,12 @@
 		@apply duration-300;
 	}
 
-	#tools :global(button.opacity-20:hover),
+	@media (hover: hover) {
+		#tools :global(button.opacity-20:hover) {
+			@apply opacity-60;
+		}
+	}
+
 	#tools :global(button.opacity-20:focus-visible) {
 		@apply opacity-60;
 	}
