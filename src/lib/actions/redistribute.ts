@@ -34,6 +34,10 @@ export function redistributeRow(
 ): void {
 	if (!container || reducedMotion()) return;
 
+	// Clear any redistribution left on a previously spread row before applying the new one.
+	for (const el of container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split'))
+		el.style.removeProperty('--rd-x');
+
 	const toks = Array.from(container.querySelectorAll<HTMLElement>('.tok'));
 	if (!toks.length) return;
 
