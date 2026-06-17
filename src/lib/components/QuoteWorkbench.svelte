@@ -238,6 +238,7 @@
 	<textarea
 		id="authorship"
 		name="authorship"
+		autocomplete="off"
 		bind:value={authorship}
 		bind:this={authorshipEl}
 		data-flip-id="authorship"
