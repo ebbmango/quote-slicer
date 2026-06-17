@@ -101,7 +101,7 @@
 			<!-- Hanzi cell -->
 			<div class="flex items-center justify-center">
 				<span
-					class="font-wenkai text-[28px] font-[320] transition-colors duration-200"
+					class="font-wenkai text-[1.75rem] font-[320] transition-colors duration-200"
 					style="color: {theme.hanziText}; opacity: {hanziOpacity};"
 					>{isEmpty ? '未定' : (entry?.text ?? '?')}</span
 				>

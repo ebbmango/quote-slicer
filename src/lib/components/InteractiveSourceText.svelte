@@ -177,7 +177,7 @@
 		aria-multiselectable={isLineMode ? undefined : true}
 		aria-label={isLineMode ? undefined : 'Source tokens'}
 		// change text to 1.75rem
-		class="flex w-full flex-wrap content-start leading-10 gap-px justify-center bg-transparent font-wenkai text-3xl font-light"
+		class="flex w-full flex-wrap content-start leading-10 gap-px justify-center bg-transparent font-wenkai text-[1.75rem] font-light"
 		class:select-none={isLinkMode}
 		class:flipping={animating}
 		onclick={handleContainerClick}

@@ -173,7 +173,7 @@
 				el.setSelectionRange(start - removed, end - removed);
 			}
 		}}
-		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center leading-10 text-3xl font-light opacity-30 outline-none {composing
+		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center leading-10 text-[1.75rem] font-light opacity-30 outline-none {composing
 			? 'font-ss4'
 			: 'font-wenkai'}"
 		placeholder="空"
