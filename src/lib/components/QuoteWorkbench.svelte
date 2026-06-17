@@ -15,6 +15,7 @@
 		sourceText = $bindable(),
 		targetText = $bindable(),
 		authorship = $bindable(),
+		arrowExiting = false,
 		autosize
 	} = $props();
 	let composing = $state(false);
@@ -138,7 +139,16 @@
 	     textareas are direct flex-col children here (not wrapped like the view
 	     panels): autosize puts an inline height on them, so they must sit on the
 	     column's main axis for flex-shrink + min-h-0 + overflow-y-auto to bound and
-	     scroll them instead of spilling over each other. Keep in sync with {:else}. -->
+	     scroll them instead of spilling over each other. Keep in sync with {:else}.
+
+	     Seamless text→token handoff (no crossfade): the source text is tracked to
+	     2px (tracking-[2px]) so its inter-glyph spacing already equals the token
+	     row's effective per-pair gap (gap-px counts twice — a zero-width divisor
+	     button sits between each token pair), plus translate-x-[1px] to cancel the
+	     trailing letter-spacing that otherwise centres the glyph block 1px left of
+	     the trailing-free token row; the text colours morph toward their token-mode
+	     values during the 450ms arrow launch (.morph-* rules in <style>), so by the
+	     time the DOM swaps nothing is left to snap. -->
 	<div class="flex min-h-0 w-full flex-col px-1">
 	<textarea
 		id="source-text"
@@ -173,9 +183,9 @@
 				el.setSelectionRange(start - removed, end - removed);
 			}
 		}}
-		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center leading-10 text-[1.75rem] font-light opacity-30 outline-none {composing
+		class="morph-source fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center leading-10 tracking-[2px] translate-x-[1px] text-[1.75rem] font-light opacity-30 outline-none {composing
 			? 'font-ss4'
-			: 'font-wenkai'}"
+			: 'font-wenkai'} {arrowExiting ? 'exiting' : ''}"
 		placeholder="空"
 	></textarea>
 	<textarea
@@ -184,7 +194,9 @@
 		bind:value={targetText}
 		rows="1"
 		use:autosize
-		class="fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center font-ss4 text-base font-[350] italic outline-none"
+		class="morph-target fade-y relative min-h-0 w-full resize-none overflow-y-auto px-2 py-3 no-scrollbar bg-transparent text-center font-ss4 text-base font-[350] italic outline-none {arrowExiting
+			? 'exiting'
+			: ''}"
 		placeholder="Use this box to enter your translated text."
 	></textarea>
 	</div>
@@ -232,12 +244,81 @@
 		rows="1"
 		use:autosize
 		disabled={mode.current === 'view'}
-		class="fade-y max-h-[10vh] no-scrollbar min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default"
+		class="morph-author fade-y max-h-[10vh] no-scrollbar min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default {arrowExiting
+			? 'exiting'
+			: ''}"
 		placeholder="Source"
 	></textarea>
 </div>
 
 <style>
+	/* Seamless text→token handoff (no crossfade). Instead of dissolving two DOM
+	   trees, each textarea PRE-MATCHES its token-mode appearance during the 450ms
+	   arrow launch (.exiting === arrowExiting), so the DOM swap at 450ms has nothing
+	   left to snap. Each field's TEXT (real or placeholder) is morphed to the exact
+	   colour its token shows: currentColor × the field's resting element opacity.
+
+	   Crucially the morph animates ONE multiplier per field (colour alpha) and leaves
+	   the element opacity fixed at its resting value, so the placeholder's effective
+	   opacity moves monotonically. (An earlier version faded the target's *element*
+	   opacity 1→0.3 AND its placeholder colour 0.5→1 at once; the product overshot
+	   brighter at the start before settling — the "up then down" flicker.)
+
+	   - source: element stays opacity-30 (== source token). Filled text is already at
+	     the token level; only the empty placeholder's colour rises 0.5 → full.
+	   - authorship: element stays opacity-40 (== seeded value). Same: placeholder
+	     colour rises 0.5 → full.
+	   - target: element stays full; instead its text AND placeholder colour fade to
+	     currentColor @ 30% (== target token's currentColor × opacity-30). No element
+	     fade, so nothing compounds.
+	   400ms ease-out settles flat just before the swap; resting look is untouched. */
+
+	/* source + authorship: only the placeholder colour rises to full currentColor;
+	   the element's own opacity (0.3 / 0.4) already provides the token dimming. */
+	.morph-source::placeholder,
+	.morph-author::placeholder {
+		transition: color 400ms ease-out;
+	}
+	.morph-source.exiting::placeholder,
+	.morph-author.exiting::placeholder {
+		color: currentColor;
+	}
+
+	/* target text: element opacity stays at 1, so the dimming is carried by the text
+	   colour fading to currentColor @ 30% (== target token's currentColor × 0.3).
+	   currentColor here resolves to the stable inherited colour, so the typed text
+	   dims monotonically. */
+	.morph-target {
+		transition: color 400ms ease-out;
+	}
+	.morph-target.exiting {
+		color: color-mix(in oklab, currentColor 30%, transparent);
+	}
+	/* target placeholder: driven by a FIXED black alpha, NOT currentColor. The
+	   element's own colour is animating (above); a currentColor-based placeholder
+	   would reference that moving value and compound, dipping its effective opacity
+	   below the target before settling. Tokens render at solid black, so black @ 0.5
+	   (resting, == Tailwind's default placeholder tint) → black @ 0.3 (== token) is
+	   the exact, monotonic path. */
+	.morph-target::placeholder {
+		color: rgb(0 0 0 / 0.5);
+		transition: color 400ms ease-out;
+	}
+	.morph-target.exiting::placeholder {
+		color: rgb(0 0 0 / 0.3);
+	}
+
+	/* Reduced motion: keep the pre-match (so the swap is still seamless) but drop the
+	   easing — the .exiting state applies instantly at click instead of animating. */
+	@media (prefers-reduced-motion: reduce) {
+		.morph-source::placeholder,
+		.morph-author::placeholder,
+		.morph-target,
+		.morph-target::placeholder {
+			transition: none;
+		}
+	}
+
 	/* Small soft edge-fade on the authorship line, matching the source/target
 	   panels (theirs is 0.75rem; authorship is smaller text so a touch less). The
 	   py-3 padding lets the line clear the fade at rest and when it scrolls. */

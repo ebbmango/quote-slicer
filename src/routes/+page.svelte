@@ -44,6 +44,9 @@
 
 	const iconArrow = icons['arrow-down'];
 
+	// Drives the arrow launch keyframes AND the workbench's text→token pre-match: the
+	// textareas morph toward their token-mode opacity/placeholder colour over this
+	// 450ms window so the DOM swap below lands seamlessly (see QuoteWorkbench .morph-*).
 	let arrowExiting = $state(false);
 
 	function advanceToLinkMode() {
@@ -92,7 +95,7 @@
 			<div
 				class="absolute inset-0 flex flex-col items-center overflow-y-auto [justify-content:safe_center]"
 			>
-				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {autosize} />
+				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} {autosize} />
 			</div>
 			<DataModal
 				bind:this={dataModal}
