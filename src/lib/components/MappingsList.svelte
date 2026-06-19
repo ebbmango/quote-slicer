@@ -301,9 +301,17 @@
 		runAdd(id, state);
 	});
 
+	// Keep alignment.listAnimating in sync with in-flight animation state. Only runs
+	// while this component is mounted (= the maps panel is visible), so the guard in
+	// toggleSource/toggleTarget/delete* is automatically inactive when the panel is hidden.
+	$effect(() => {
+		alignment.listAnimating = outroing > 0 || closing > 0;
+	});
+
 	onDestroy(() => {
 		killAdd();
 		killClose();
+		alignment.listAnimating = false;
 	});
 
 	function scrollCardIntoView(card: Element) {

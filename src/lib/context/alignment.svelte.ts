@@ -42,6 +42,10 @@ const HL_WARMTH_GRACE = 500;
 
 export class Alignment {
 	activeMappingId: MappingId | null = $state(null);
+	// True while the MappingsList panel is animating (card entering or exiting). Written
+	// by MappingsList via $effect when it is mounted; false when the panel is hidden/unmounted.
+	// Checked by toggleSource/toggleTarget/delete* to throttle mutations during animation.
+	listAnimating: boolean = $state(false);
 	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
 	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
@@ -215,6 +219,7 @@ export class Alignment {
 	}
 
 	toggleSource(i: number, opts: { force?: boolean } = {}): void {
+		if (this.listAnimating) return;
 		const type = this.sourceTokens[i]?.type;
 		if (type === 'whitespace' || type === 'punctuation') return;
 		const tokenId = this.sourceTokens[i].id;
@@ -235,6 +240,7 @@ export class Alignment {
 	}
 
 	toggleTarget(i: number): void {
+		if (this.listAnimating) return;
 		const type = this.targetTokens[i]?.type;
 		if (type === 'whitespace' || type === 'punctuation') return;
 		const tokenId = this.targetTokens[i].id;
@@ -255,12 +261,14 @@ export class Alignment {
 	}
 
 	deleteActive(): void {
+		if (this.listAnimating) return;
 		if (this.activeMappingId === null) return;
 		this.mappings = this.mappings.filter((m) => m.id !== this.activeMappingId);
 		this.activeMappingId = null;
 	}
 
 	deleteById(id: MappingId): void {
+		if (this.listAnimating) return;
 		this.mappings = this.mappings.filter((m) => m.id !== id);
 		if (this.activeMappingId === id) this.activeMappingId = null;
 	}
