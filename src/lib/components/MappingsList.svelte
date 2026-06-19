@@ -247,12 +247,20 @@
 			absolute: false,
 			stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, survivors.length - 1)) },
 			onComplete: () => {
-				closeTweens = closeTweens.filter((t) => t !== tween);
-				closing = Math.max(0, closing - 1);
-				if (closeTweens.length === 0) {
-					clearSurvivorTransforms(addCard ?? undefined);
-					scrollActiveIntoView();
-				}
+				// GSAP fires onComplete from its ticker, which can advance synchronously
+				// while we're mid-Svelte-flush (a later overlapping delete's Flip.from
+				// drives the tick that completes THIS tween). Writing $state (`closing`)
+				// re-entrantly during a flush silently wedges Svelte's scheduler — the
+				// whole app's reactivity dies with no error. Defer the $state write one
+				// microtask so it lands after the flush unwinds. See docs/link-mode.md.
+				queueMicrotask(() => {
+					closeTweens = closeTweens.filter((t) => t !== tween);
+					closing = Math.max(0, closing - 1);
+					if (closeTweens.length === 0) {
+						clearSurvivorTransforms(addCard ?? undefined);
+						scrollActiveIntoView();
+					}
+				});
 			}
 		});
 		closeTweens.push(tween);
