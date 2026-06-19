@@ -3,8 +3,23 @@
 	import PinyinInput from './PinyinInput.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
 	import icons from '$lib/assets/icons.json';
+	import type { TransitionConfig } from 'svelte/transition';
 
-	let { mappingView, index }: { mappingView: MappingView; index: number } = $props();
+	// exit / onExitStart / onExitEnd are owned by MappingsList — the leaving card's
+	// slide and the gap-close Flip are orchestrated there (see MappingsList.svelte).
+	let {
+		mappingView,
+		index,
+		exit,
+		onExitStart,
+		onExitEnd
+	}: {
+		mappingView: MappingView;
+		index: number;
+		exit: (node: HTMLElement) => TransitionConfig;
+		onExitStart?: (e: Event) => void;
+		onExitEnd?: (e: Event) => void;
+	} = $props();
 
 	const alignment = getAlignmentContext();
 	const color = $derived(MAPPING_COLORS[mappingView.colorIndex % MAPPING_COLORS.length]);
@@ -65,8 +80,11 @@
 	aria-selected={isActive}
 	tabindex="0"
 	data-mapping-id={mappingView.id}
-	class="group flex flex-col rounded-md outline-0 duration-200 select-none"
+	class="group flex flex-col rounded-md outline-0 transition-[outline-color] duration-200 select-none"
 	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
+	out:exit
+	onoutrostart={onExitStart}
+	onoutroend={onExitEnd}
 	onfocus={() => (isFocused = true)}
 	onblur={() => (isFocused = false)}
 	onclick={toggleActive}
