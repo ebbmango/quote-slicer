@@ -75,10 +75,24 @@
 	// Each in-flight delete owns its own close tween so concurrent deletes don't
 	// cancel one another's gap-close; killed together on teardown.
 	let closeTweens: gsap.core.Timeline[] = [];
+	// Reactive mirror of closeTweens.length. closeTweens is a plain `let` (gsap
+	// timelines must not be wrapped in a $state proxy), so scrollSuppressed reading
+	// its .length would never re-run the scroll $effect when a gap-close finishes —
+	// the scroll to a card activated mid-close would be skipped and never retried.
+	// This $state counter gives the effect a dependency that drops back to 0.
+	let closing = $state(0);
 
-	// Suppress the active-card scroll while an add is queued or animating, instead
-	// of a separate boolean that could desync from the animation and get stuck.
-	const scrollSuppressed = () => pendingAddId != null || addCard != null || closeTweens.length > 0;
+	// Count of cards mid-exit. The `<ol>` stays mounted even when empty (so the last
+	// card's local out:exit can play — see template), so the "No mappings" overlay
+	// holds back until the leaving card's slide finishes instead of popping in over it.
+	let outroing = $state(0);
+
+	// Suppress the active-card scroll while an add or exit-slide is queued/animating,
+	// instead of a separate boolean that could desync from the animation and get
+	// stuck. `outroing` and `closing` are $state, so the scroll $effect re-runs (and
+	// scrolls to the now-active card) the moment the exit slide and gap-close finish.
+	const scrollSuppressed = () =>
+		pendingAddId != null || addCard != null || outroing > 0 || closing > 0;
 
 	onMount(async () => {
 		const [{ gsap: g }, { Flip: F }] = await Promise.all([import('gsap'), import('gsap/Flip')]);
@@ -101,9 +115,9 @@
 
 	// Max two columns (the grid's minmax floors tracks at ~50%), so a binary
 	// left/right is enough. Single column always slides from/to the right.
-	function columnDir(card: HTMLElement): 1 | -1 {
+	function columnDir(card: HTMLElement, twoCol = isTwoCol()): 1 | -1 {
 		if (!listEl) return 1;
-		if (!isTwoCol()) return 1;
+		if (!twoCol) return 1;
 		const list = listEl.getBoundingClientRect();
 		const c = card.getBoundingClientRect();
 		return c.left + c.width / 2 < list.left + list.width / 2 ? -1 : 1;
@@ -122,6 +136,7 @@
 	function killClose() {
 		for (const t of closeTweens) t.kill();
 		closeTweens = [];
+		closing = 0;
 	}
 
 	// Flip leaves displaced neighbours at a resting transform; strip it so they
@@ -145,7 +160,8 @@
 		}
 		killAdd();
 		addCard = card;
-		const dir = columnDir(card);
+		const twoCol = isTwoCol();
+		const dir = columnDir(card, twoCol);
 		gsap.set(card, { opacity: 0, x: dir * SLIDE });
 		// Neighbours flip from their old slots to the room-made layout the DOM
 		// already holds; the new card (absent from `state`) is left untouched. The
@@ -153,7 +169,7 @@
 		// only the slide-in runs.
 		if (state) {
 			addFlip = Flip.from(state, {
-				duration: isTwoCol() ? 0.40 : MAKEWAY_S,
+				duration: twoCol ? 0.40 : MAKEWAY_S,
 				ease: MAKEWAY_EASE,
 				absolute: false,
 				onComplete: () => clearSurvivorTransforms(card)
@@ -194,6 +210,7 @@
 	// If a card that's still sliding in gets deleted, drop its add tween so the exit
 	// transition owns the node cleanly.
 	function onExitStart(e: Event) {
+		outroing++;
 		const node = (e.target as HTMLElement).closest<HTMLElement>('li[data-mapping-id]');
 		if (node && node === addCard) killAdd();
 	}
@@ -206,12 +223,22 @@
 	// synchronous handler is frame-perfect: no teleport, no reliance on when Svelte
 	// gets around to detaching the node.
 	function onExitEnd(e: Event) {
+		outroing = Math.max(0, outroing - 1);
 		if (!canAnimate() || !Flip || !gsap || !listEl) return;
 		const node = (e.target as HTMLElement).closest<HTMLElement>('li[data-mapping-id]');
 		if (!node) return;
 		const all = [...listEl.querySelectorAll<HTMLElement>('li[data-mapping-id]')];
 		const fromIdx = Math.max(0, all.indexOf(node));
 		const survivors = all.filter((n) => n !== node);
+		// Last card deleted: no neighbours to close a gap. Flip.from([]) returns a
+		// no-op tween whose onComplete may never fire, which would pin `closing` > 0
+		// and leave scrollSuppressed() stuck true. Nothing to scroll to either.
+		if (survivors.length === 0) return;
+		// A concurrent add's make-way Flip is still tweening a survivor's transform;
+		// it would fight the gap-close Flip for the same node. Settle the add to rest
+		// first so the snapshot below captures the survivor at its final position,
+		// not mid-add. (clearProps no-ops when no add is in flight.)
+		if (addCard) killAdd();
 		const state = Flip.getState(survivors); // survivors at open-gap positions
 		node.style.display = 'none'; // free the slot → survivors reflow closed
 		const tween = Flip.from(state, {
@@ -221,6 +248,7 @@
 			stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, survivors.length - 1)) },
 			onComplete: () => {
 				closeTweens = closeTweens.filter((t) => t !== tween);
+				closing = Math.max(0, closing - 1);
 				if (closeTweens.length === 0) {
 					clearSurvivorTransforms(addCard ?? undefined);
 					scrollActiveIntoView();
@@ -228,6 +256,7 @@
 			}
 		});
 		closeTweens.push(tween);
+		closing++;
 	}
 
 	// Runs before the DOM patch: snapshot neighbour positions and flag the new id so
@@ -238,12 +267,15 @@
 		if (ready) {
 			const added = ids.filter((id) => !prevIds.has(id));
 			// Flag the add unconditionally; runAdd (post-patch) decides whether to
-			// animate. Capturing neighbour state needs the list to already exist —
-			// when it doesn't (first card grows the list from empty), state stays null
-			// and runAdd just slides the card in.
+			// animate. Capturing neighbour state needs cards already present —
+			// the first card grows the list from empty, so state stays null and
+			// runAdd just slides it in.
 			if (added.length === 1) {
 				pendingAddId = added[0];
-				addFlipState = listEl && Flip ? Flip.getState(listEl.querySelectorAll('li[data-mapping-id]')) : null;
+				// The `<ol>` is always mounted now, so guard on existing-card count, not
+				// `listEl`: an empty list still yields null state (no make-way needed).
+				const existing = listEl?.querySelectorAll('li[data-mapping-id]');
+				addFlipState = Flip && existing && existing.length ? Flip.getState(existing) : null;
 			}
 		}
 		prevIds = new Set(ids);
@@ -306,11 +338,11 @@
 	});
 </script>
 
-{#if alignment.sortedMappingViews.length === 0}
-	<div class="flex h-full w-full flex-col items-center justify-center gap-1 p-6 text-center opacity-30 font-ss4 font-[350]">
-		<p>No mappings.</p>
-	</div>
-{:else}
+<!-- The `<ol>` stays mounted even when empty so the last card's `out:exit` is a
+	plain each-block removal (a local Svelte transition), not an ancestor-block
+	teardown that would skip the slide. The empty-state is an overlay, held back by
+	`outroing` until the leaving card's slide finishes so it doesn't pop in over it. -->
+<div class="relative h-full w-full">
 	<ol
 		role="listbox"
 		aria-label="Mappings"
@@ -322,4 +354,11 @@
 			<Mapping {mappingView} index={i} {exit} {onExitStart} {onExitEnd} />
 		{/each}
 	</ol>
-{/if}
+	{#if alignment.sortedMappingViews.length === 0 && outroing === 0}
+		<div
+			class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 p-6 text-center opacity-30 font-ss4 font-[350]"
+		>
+			<p>No mappings.</p>
+		</div>
+	{/if}
+</div>
