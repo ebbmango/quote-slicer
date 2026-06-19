@@ -3,7 +3,7 @@
 	import Mapping from '$lib/components/Mapping.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { cubicIn } from 'svelte/easing';
-	import type { TransitionConfig } from 'svelte/transition';
+	import { fade, type TransitionConfig } from 'svelte/transition';
 
 	type FlipState = ReturnType<(typeof import('gsap/Flip'))['Flip']['getState']>;
 
@@ -370,8 +370,10 @@
 			<Mapping {mappingView} index={i} {exit} {onExitStart} {onExitEnd} />
 		{/each}
 	</ol>
-	{#if alignment.sortedMappingViews.length === 0 && outroing === 0}
+	{#if alignment.sortedMappingViews.length === 0}
 		<div
+			in:fade={{ duration: EXIT_MS }}
+			out:fade={{ duration: 200 }}
 			class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 p-6 text-center opacity-30 font-ss4 font-[350]"
 		>
 			<p>No mappings.</p>
