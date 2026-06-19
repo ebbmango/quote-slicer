@@ -101,7 +101,7 @@ export function createTokenStore() {
 
 	async function animate(zone: Zone, scope: EditScope, mutate: () => void): Promise<void> {
 		const heightEl = zone === 'source' ? scope.sourceScrollEl : scope.targetScrollEl;
-		if (!Flip || !gsap) {
+		if (!Flip || !gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 			mutate();
 			return;
 		}

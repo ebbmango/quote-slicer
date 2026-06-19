@@ -5,20 +5,18 @@
 	import icons from '$lib/assets/icons.json';
 	import type { TransitionConfig } from 'svelte/transition';
 
-	// exit / onExitStart / onExitEnd are owned by MappingsList — the leaving card's
-	// slide and the gap-close Flip are orchestrated there (see MappingsList.svelte).
+	// exit / onExitStart are owned by MappingsList — the leaving card's slide and the
+	// gap-close Flip (driven off the card's detach) are orchestrated there.
 	let {
 		mappingView,
 		index,
-		exit,
-		onExitStart,
-		onExitEnd
+		exit = () => ({ duration: 0 }),
+		onExitStart
 	}: {
 		mappingView: MappingView;
 		index: number;
-		exit: (node: HTMLElement) => TransitionConfig;
+		exit?: (node: HTMLElement) => TransitionConfig;
 		onExitStart?: (e: Event) => void;
-		onExitEnd?: (e: Event) => void;
 	} = $props();
 
 	const alignment = getAlignmentContext();
@@ -84,7 +82,6 @@
 	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
 	out:exit
 	onoutrostart={onExitStart}
-	onoutroend={onExitEnd}
 	onfocus={() => (isFocused = true)}
 	onblur={() => (isFocused = false)}
 	onclick={toggleActive}
