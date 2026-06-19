@@ -95,11 +95,15 @@
 		return true;
 	}
 
+	function isTwoCol(): boolean {
+		return !!listEl && getComputedStyle(listEl).gridTemplateColumns.split(' ').length >= 2;
+	}
+
 	// Max two columns (the grid's minmax floors tracks at ~50%), so a binary
 	// left/right is enough. Single column always slides from/to the right.
 	function columnDir(card: HTMLElement): 1 | -1 {
 		if (!listEl) return 1;
-		if (getComputedStyle(listEl).gridTemplateColumns.split(' ').length < 2) return 1;
+		if (!isTwoCol()) return 1;
 		const list = listEl.getBoundingClientRect();
 		const c = card.getBoundingClientRect();
 		return c.left + c.width / 2 < list.left + list.width / 2 ? -1 : 1;
@@ -149,7 +153,7 @@
 		// only the slide-in runs.
 		if (state) {
 			addFlip = Flip.from(state, {
-				duration: MAKEWAY_S,
+				duration: isTwoCol() ? 0.40 : MAKEWAY_S,
 				ease: MAKEWAY_EASE,
 				absolute: false,
 				onComplete: () => clearSurvivorTransforms(card)
@@ -211,7 +215,7 @@
 		const state = Flip.getState(survivors); // survivors at open-gap positions
 		node.style.display = 'none'; // free the slot → survivors reflow closed
 		const tween = Flip.from(state, {
-			duration: CLOSE_S,
+			duration: isTwoCol() ? 0.40 : CLOSE_S,
 			ease: CLOSE_EASE,
 			absolute: false,
 			stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, survivors.length - 1)) },
