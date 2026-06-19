@@ -37,12 +37,26 @@
 	let gsap: (typeof import('gsap'))['gsap'] | null = null;
 	let Flip: (typeof import('gsap/Flip'))['Flip'] | null = null;
 
-	const SLIDE = 56; // px a card travels to/from its column edge
-	const FLIP_S = 0.22; // neighbour displacement / gap close
-	const ENTER_S = 0.25; // new card slide-in
-	const EXIT_MS = 250; // leaving card slide-out (Svelte transition → ms)
+	// ───────────────────────── Animation tunables ─────────────────────────
+	// Edit these to retune the feel. Durations are seconds (GSAP) except
+	// EXIT_MS, which is milliseconds (a Svelte transition). Easings: GSAP
+	// string eases for the Flip/slide tweens, a Svelte easing fn for the exit.
+	const SLIDE = 56; // px a card travels in/out from its column edge
+
+	// Add: neighbours open the gap, then the new card slides in.
+	const MAKEWAY_S = 0.22; // neighbours sliding apart to make room
+	const MAKEWAY_EASE = 'power2.inOut';
+	const ENTER_S = 0.25; // new card sliding into the opened gap
+	const ENTER_EASE = 'back.out(1.2)';
 	const GAP_DELAY = 0.15; // new card waits this long so the gap is already opening
-	const STAGGER = 0.025; // per-card delay of the deletion-point ripple
+
+	// Delete: the card slides out, then neighbours close the gap.
+	const EXIT_MS = 250; // leaving card sliding out to its edge (milliseconds)
+	const EXIT_EASE = cubicIn; // Svelte easing fn for the slide-out
+	const CLOSE_S = 0.22; // neighbours sliding in to close the gap
+	const CLOSE_EASE = 'power2.inOut';
+	const STAGGER = 0.025; // per-card ripple delay, outward from the deleted slot
+	// ───────────────────────────────────────────────────────────────────────
 
 	// Diff bookkeeping: prevIds lets effect.pre tell an add from a reorder/remove
 	// before the DOM is patched; `ready` suppresses the initial population so a list
@@ -58,15 +72,13 @@
 	let addFlip: gsap.core.Timeline | null = null;
 	let addEnter: gsap.core.Tween | null = null;
 	let addCard: HTMLElement | null = null;
-	// Each in-flight delete owns its own observer + close tween so concurrent
-	// deletes don't cancel each other (a shared single ref would let a later
-	// delete disconnect an earlier card's observer before it detaches).
-	let closeTweens: Set<gsap.core.Timeline> = new Set();
-	let closeObservers: Set<MutationObserver> = new Set();
+	// Each in-flight delete owns its own close tween so concurrent deletes don't
+	// cancel one another's gap-close; killed together on teardown.
+	let closeTweens: gsap.core.Timeline[] = [];
 
 	// Suppress the active-card scroll while an add is queued or animating, instead
 	// of a separate boolean that could desync from the animation and get stuck.
-	const scrollSuppressed = () => pendingAddId != null || addCard != null;
+	const scrollSuppressed = () => pendingAddId != null || addCard != null || closeTweens.length > 0;
 
 	onMount(async () => {
 		const [{ gsap: g }, { Flip: F }] = await Promise.all([import('gsap'), import('gsap/Flip')]);
@@ -105,7 +117,7 @@
 	}
 	function killClose() {
 		for (const t of closeTweens) t.kill();
-		closeTweens.clear();
+		closeTweens = [];
 	}
 
 	// Flip leaves displaced neighbours at a resting transform; strip it so they
@@ -137,8 +149,8 @@
 		// only the slide-in runs.
 		if (state) {
 			addFlip = Flip.from(state, {
-				duration: FLIP_S,
-				ease: 'power2.inOut',
+				duration: MAKEWAY_S,
+				ease: MAKEWAY_EASE,
 				absolute: false,
 				onComplete: () => clearSurvivorTransforms(card)
 			});
@@ -147,7 +159,7 @@
 			opacity: 1,
 			x: 0,
 			duration: ENTER_S,
-			ease: 'back.out(1.2)',
+			ease: ENTER_EASE,
 			delay: state ? GAP_DELAY : 0,
 			onComplete: () => {
 				gsap!.set(card, { clearProps: 'transform,opacity' });
@@ -163,53 +175,55 @@
 	}
 
 	// Svelte transition: keeps the leaving card in the DOM (holding its grid slot
-	// via transform) while it slides to its column edge. The detach then triggers the
-	// gap-close Flip (see onExitStart).
+	// via transform) while it slides to its column edge. When it ends, onExitEnd runs
+	// the gap-close Flip.
 	function exit(node: HTMLElement): TransitionConfig {
 		if (!canAnimate()) return { duration: 0 };
 		const dir = columnDir(node);
 		return {
 			duration: EXIT_MS,
-			easing: cubicIn,
+			easing: EXIT_EASE,
 			css: (t) => `opacity:${t}; transform: translateX(${(1 - t) * dir * SLIDE}px);`
 		};
 	}
 
-	// When a card starts leaving, snapshot the survivors (still at their open-gap
-	// slots — the leaving node holds its grid cell via transform) and watch for the
-	// node's actual detach. Svelte removes it well after outrostart/outroend and not
-	// on any tick we can hook, so a MutationObserver is the only reliable "it's gone
-	// now" signal: it fires as a microtask the instant the grid reflows closed, so
-	// Flip measures the real open-to-closed delta (no teleport, no closed-gap flash).
+	// If a card that's still sliding in gets deleted, drop its add tween so the exit
+	// transition owns the node cleanly.
 	function onExitStart(e: Event) {
-		if (!canAnimate() || !Flip || !listEl) return;
+		const node = (e.target as HTMLElement).closest<HTMLElement>('li[data-mapping-id]');
+		if (node && node === addCard) killAdd();
+	}
+
+	// The exit slide just finished and the leaving card is invisible but STILL holds
+	// its grid slot (transform doesn't free layout), so the survivors are right now at
+	// their open-gap positions — snapshot them. Then `display:none` pulls the card out
+	// of flow so the grid reflows the survivors closed synchronously, and Flip runs
+	// them from the snapshot (open) to that closed layout. Doing it all in this one
+	// synchronous handler is frame-perfect: no teleport, no reliance on when Svelte
+	// gets around to detaching the node.
+	function onExitEnd(e: Event) {
+		if (!canAnimate() || !Flip || !gsap || !listEl) return;
 		const node = (e.target as HTMLElement).closest<HTMLElement>('li[data-mapping-id]');
 		if (!node) return;
-		if (node === addCard) killAdd();
-		const list = listEl;
-		const all = [...list.querySelectorAll<HTMLElement>('li[data-mapping-id]')];
+		const all = [...listEl.querySelectorAll<HTMLElement>('li[data-mapping-id]')];
 		const fromIdx = Math.max(0, all.indexOf(node));
-		const state = Flip.getState(all.filter((n) => n !== node));
-		const observer = new MutationObserver(() => {
-			if (node.isConnected) return; // leaving card not detached yet
-			observer.disconnect();
-			closeObservers.delete(observer);
-			if (!Flip || !gsap) return;
-			const count = list.querySelectorAll('li[data-mapping-id]').length;
-			const tween = Flip.from(state, {
-				duration: FLIP_S,
-				ease: 'power2.inOut',
-				absolute: false,
-				stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, count - 1)) },
-				onComplete: () => {
-					closeTweens.delete(tween);
-					clearSurvivorTransforms();
+		const survivors = all.filter((n) => n !== node);
+		const state = Flip.getState(survivors); // survivors at open-gap positions
+		node.style.display = 'none'; // free the slot → survivors reflow closed
+		const tween = Flip.from(state, {
+			duration: CLOSE_S,
+			ease: CLOSE_EASE,
+			absolute: false,
+			stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, survivors.length - 1)) },
+			onComplete: () => {
+				closeTweens = closeTweens.filter((t) => t !== tween);
+				if (closeTweens.length === 0) {
+					clearSurvivorTransforms(addCard ?? undefined);
+					scrollActiveIntoView();
 				}
-			});
-			closeTweens.add(tween);
+			}
 		});
-		closeObservers.add(observer);
-		observer.observe(list, { childList: true });
+		closeTweens.push(tween);
 	}
 
 	// Runs before the DOM patch: snapshot neighbour positions and flag the new id so
@@ -246,8 +260,6 @@
 	onDestroy(() => {
 		killAdd();
 		killClose();
-		for (const o of closeObservers) o.disconnect();
-		closeObservers.clear();
 	});
 
 	function scrollCardIntoView(card: Element) {
@@ -303,7 +315,7 @@
 		onkeydown={handleListTab}
 	>
 		{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
-			<Mapping {mappingView} index={i} {exit} {onExitStart} />
+			<Mapping {mappingView} index={i} {exit} {onExitStart} {onExitEnd} />
 		{/each}
 	</ol>
 {/if}
