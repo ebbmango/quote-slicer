@@ -56,6 +56,16 @@
 	const CLOSE_S = 0.22; // neighbours sliding in to close the gap
 	const CLOSE_EASE = 'power2.inOut';
 	const STAGGER = 0.025; // per-card ripple delay, outward from the deleted slot
+
+	// Swipe-to-delete (touch). The card tracks the finger 1:1; releasing past
+	// SWIPE_THRESHOLD_FRAC of the card width flies it off its swipe-side edge
+	// (clipped at the panel edge) and the usual gap-close runs. Below threshold it
+	// springs back.
+	const SWIPE_DEADZONE = 10; // px of travel before a touch is treated as a swipe
+	const SWIPE_THRESHOLD_FRAC = 0.4; // fraction of card width past which release deletes
+	const SWIPE_FLYOFF_MS = 180; // card flying off after a past-threshold release (ms)
+	const SWIPE_FLYOFF_EASE = cubicIn; // Svelte easing fn for the fly-off
+	const SWIPE_SPRINGBACK_S = 0.3; // card easing back after a below-threshold release
 	// ───────────────────────────────────────────────────────────────────────
 
 	// Diff bookkeeping: prevIds lets effect.pre tell an add from a reorder/remove
@@ -82,9 +92,9 @@
 	// This $state counter gives the effect a dependency that drops back to 0.
 	let closing = $state(0);
 
-	// Count of cards mid-exit. The `<ol>` stays mounted even when empty (so the last
-	// card's local out:exit can play — see template), so the "No mappings" overlay
-	// holds back until the leaving card's slide finishes instead of popping in over it.
+	// Count of cards mid-exit. The `<ol>` stays mounted even when empty so the last
+	// card's local out:exit can play (see template); the "No mappings" overlay then
+	// cross-fades in over that slide rather than popping in after it.
 	let outroing = $state(0);
 
 	// Suppress the active-card scroll while an add or exit-slide is queued/animating,
@@ -199,6 +209,23 @@
 	// the gap-close Flip.
 	function exit(node: HTMLElement): TransitionConfig {
 		if (!canAnimate()) return { duration: 0 };
+		// Swipe-delete: onSwipeUp stamped the exact release offset on the node. Fly it
+		// off the rest of the way from there (no fade — it's clipped at the panel edge),
+		// then onExitEnd runs the same gap-close as a button delete. t runs 1→0, so at
+		// t=1 the transform equals the swipe offset (continuous) and at t=0 it's
+		// off-screen. We read the stamped marker rather than the node's computed
+		// transform so a button-deleted card that happens to carry a GSAP transform
+		// (e.g. a survivor mid gap-close Flip) is never mistaken for a swipe.
+		const stamped = node.dataset.swipeFlyoff;
+		const startX = stamped === undefined ? NaN : Number(stamped);
+		if (Number.isFinite(startX) && startX !== 0) {
+			const target = Math.sign(startX) * (listEl?.clientWidth ?? 400);
+			return {
+				duration: SWIPE_FLYOFF_MS,
+				easing: SWIPE_FLYOFF_EASE,
+				css: (t) => `transform: translateX(${startX * t + target * (1 - t)}px);`
+			};
+		}
 		const dir = columnDir(node);
 		return {
 			duration: EXIT_MS,
@@ -267,6 +294,151 @@
 		closing++;
 	}
 
+	// ─── Swipe-to-delete (touch) ───────────────────────────────────────────────
+	// One finger at a time, so a single set of plain `let`s tracks the in-flight
+	// swipe (imperative, never read by the template). The card is translated via
+	// inline `transform`; on a past-threshold release we leave that transform in
+	// place and call deleteById — exit() reads it and flies the card off from there.
+	let swipeCard: HTMLElement | null = null;
+	let swipeStartX = 0;
+	let swipePointerId = -1;
+	let swipeRecognized = false;
+	let swipeRejected = false;
+	// 0 = either direction (single column); ±1 = only that direction (two-column,
+	// each card may only leave toward its own outer edge).
+	let swipeAllowedDir: 0 | 1 | -1 = 0;
+	// Set on a recognised swipe so the click synthesised by pointerup doesn't also
+	// toggle the card active. Swallowed by the capture-phase click handler below;
+	// also cleared on the next pointerdown in case no click follows, and by a
+	// macrotask fallback in case the browser drops the synthesised click entirely
+	// (e.g. its target node was removed by the fly-off before the click dispatched).
+	let justSwiped = false;
+	let justSwipedTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// Cache the MediaQueryList: created lazily on first use (so it never touches
+	// `window` during SSR prerender), then reused so each pointerdown reads `.matches`
+	// instead of allocating a fresh MediaQueryList and forcing a style recalc.
+	let coarsePointerMQL: MediaQueryList | null = null;
+	const isCoarsePointer = () => {
+		coarsePointerMQL ??= window.matchMedia('(pointer: coarse)');
+		return coarsePointerMQL.matches;
+	};
+
+	function currentTranslateX(node: HTMLElement): number {
+		const t = getComputedStyle(node).transform;
+		if (!t || t === 'none') return 0;
+		return new DOMMatrixReadOnly(t).m41;
+	}
+
+	// Single column: free. Two columns: clamp to the card's outer-edge direction so
+	// the opposite drag produces no movement (grilled decision A). TODO: rubber-band
+	// the wrong way + spring back instead of a hard block (decision B, deferred).
+	function clampSwipe(dx: number): number {
+		if (swipeAllowedDir === 0) return dx;
+		return swipeAllowedDir === 1 ? Math.max(0, dx) : Math.min(0, dx);
+	}
+
+	function resetSwipeTracking() {
+		swipeCard = null;
+		swipeRecognized = false;
+		swipeRejected = false;
+		swipeAllowedDir = 0;
+		swipePointerId = -1;
+	}
+
+	function springBackSwipe(card: HTMLElement) {
+		if (gsap)
+			gsap.to(card, { x: 0, duration: SWIPE_SPRINGBACK_S, ease: 'power2.out', clearProps: 'transform' });
+		else card.style.transform = '';
+	}
+
+	function onSwipeDown(e: PointerEvent) {
+		clearJustSwiped();
+		if (e.pointerType !== 'touch' || !isCoarsePointer()) return;
+		if (e.target instanceof HTMLInputElement) return; // let pinyin inputs focus
+		const card = (e.target as HTMLElement).closest<HTMLElement>('li[data-mapping-id]');
+		if (!card) return;
+		swipeCard = card;
+		swipeStartX = e.clientX;
+		swipePointerId = e.pointerId;
+		swipeRecognized = false;
+		swipeRejected = false;
+		swipeAllowedDir = isTwoCol() ? columnDir(card) : 0;
+	}
+
+	function onSwipeMove(e: PointerEvent) {
+		if (!swipeCard || swipeRejected || e.pointerId !== swipePointerId) return;
+		const dx = e.clientX - swipeStartX;
+		if (!swipeRecognized) {
+			if (Math.abs(dx) < SWIPE_DEADZONE) return; // still a tap, or a vertical scroll
+			// Two-column wrong-direction swipe: drop the gesture so it neither moves the
+			// card nor (with no movement) deletes it.
+			if (swipeAllowedDir !== 0 && Math.sign(dx) !== swipeAllowedDir) {
+				swipeRejected = true;
+				return;
+			}
+			swipeRecognized = true;
+			swipeCard.setPointerCapture(swipePointerId);
+		}
+		// touch-action: pan-y (on the card) reserves horizontal for us, so once the
+		// browser commits to this horizontal pan the list no longer scrolls under it.
+		swipeCard.style.transform = `translateX(${clampSwipe(dx)}px)`;
+	}
+
+	function onSwipeUp(e: PointerEvent) {
+		if (!swipeCard || e.pointerId !== swipePointerId) return;
+		const card = swipeCard;
+		const recognized = swipeRecognized;
+		// Read the card's actual painted translate (already clamped by onSwipeMove)
+		// rather than recomputing from e.clientX: on touch, pointerup can report a
+		// coordinate that differs from the last pointermove, which would let the
+		// threshold disagree with what the user sees.
+		const tx = recognized ? currentTranslateX(card) : 0;
+		resetSwipeTracking();
+		if (!recognized) return; // a tap — let the click select the card
+		markSwiped(); // swallow the click this release will synthesise
+		const pastThreshold = Math.abs(tx) >= card.offsetWidth * SWIPE_THRESHOLD_FRAC;
+		// deleteById no-ops while another card animates; deleting then would strand
+		// this card off-screen, so spring it back instead and let the user retry.
+		if (pastThreshold && !alignment.listAnimating) {
+			card.dataset.swipeFlyoff = String(tx); // exit() flies it off from here
+			alignment.deleteById(card.dataset.mappingId as MappingId);
+		} else {
+			springBackSwipe(card);
+		}
+	}
+
+	function onSwipeCancel(e: PointerEvent) {
+		if (!swipeCard || e.pointerId !== swipePointerId) return;
+		const card = swipeCard;
+		const recognized = swipeRecognized;
+		resetSwipeTracking();
+		if (recognized) springBackSwipe(card);
+	}
+
+	// Raise justSwiped and arm a macrotask fallback. The click we mean to swallow
+	// normally fires right after this pointerup (cleared synchronously by the capture
+	// handler, before this timer runs). If the browser drops that click, the timer
+	// clears the flag so a later genuine click isn't swallowed.
+	function markSwiped() {
+		justSwiped = true;
+		clearTimeout(justSwipedTimer);
+		justSwipedTimer = setTimeout(clearJustSwiped, 0);
+	}
+
+	function clearJustSwiped() {
+		justSwiped = false;
+		clearTimeout(justSwipedTimer);
+		justSwipedTimer = undefined;
+	}
+
+	function onSwipeClickCapture(e: MouseEvent) {
+		if (!justSwiped) return;
+		clearJustSwiped();
+		e.stopPropagation();
+		e.preventDefault();
+	}
+
 	// Runs before the DOM patch: snapshot neighbour positions and flag the new id so
 	// the post-update effect can flip them apart. Deletes are handled by the exit
 	// transition, so only a single fresh id counts as an add.
@@ -311,6 +483,7 @@
 	onDestroy(() => {
 		killAdd();
 		killClose();
+		clearTimeout(justSwipedTimer);
 		alignment.listAnimating = false;
 	});
 
@@ -356,15 +529,21 @@
 
 <!-- The `<ol>` stays mounted even when empty so the last card's `out:exit` is a
 	plain each-block removal (a local Svelte transition), not an ancestor-block
-	teardown that would skip the slide. The empty-state is an overlay, held back by
-	`outroing` until the leaving card's slide finishes so it doesn't pop in over it. -->
+	teardown that would skip the slide. The empty-state is an overlay that cross-fades
+	in (over EXIT_MS) as the last card slides out, and fades back out when the first
+	mapping is added. -->
 <div class="relative h-full w-full">
 	<ol
 		role="listbox"
 		aria-label="Mappings"
-		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-y-auto scroll-smooth p-6 no-scrollbar tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-x-hidden overflow-y-auto scroll-smooth p-6 no-scrollbar tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
 		use:listRef
 		onkeydown={handleListTab}
+		onpointerdown={onSwipeDown}
+		onpointermove={onSwipeMove}
+		onpointerup={onSwipeUp}
+		onpointercancel={onSwipeCancel}
+		onclickcapture={onSwipeClickCapture}
 	>
 		{#each alignment.sortedMappingViews as mappingView, i (mappingView.id)}
 			<Mapping {mappingView} index={i} {exit} {onExitStart} {onExitEnd} />

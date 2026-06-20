@@ -104,6 +104,14 @@
 	}
 }
 
+/* Touch / coarse pointers: no reliable hover or focus, so the delete button can
+   never be safely revealed — deletion happens by swiping the card instead. */
+@custom-variant coarse {
+	@media (pointer: coarse) {
+		@slot;
+	}
+}
+
 @custom-variant tablet {
 	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
 		@slot;

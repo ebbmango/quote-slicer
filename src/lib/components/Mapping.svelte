@@ -80,7 +80,7 @@
 	aria-selected={isActive}
 	tabindex="0"
 	data-mapping-id={mappingView.id}
-	class="group flex flex-col rounded-md outline-0 transition-[outline-color] duration-200 select-none"
+	class="group flex flex-col rounded-md outline-0 transition-[outline-color] duration-200 touch-pan-y select-none"
 	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
 	out:exit
 	onoutrostart={onExitStart}
@@ -158,7 +158,7 @@
 						onfocus={() => (isButtonHovered = true)}
 						onblur={() => (isButtonHovered = false)}
 						tabindex={-1}
-						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100 hover:opacity-100"
+						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100 coarse:hidden hover:opacity-100"
 						class:opacity-100={isFocused}
 						style="color: {theme.tagBg};"
 						aria-label="Delete mapping"
