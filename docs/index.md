@@ -37,6 +37,7 @@ Then the feature-specific pages as you need them.
 | [UI Architecture](ui-architecture.md) | Component tree, responsibilities, context wiring, the responsive data panels/modal |
 | [Build & Deploy](build-and-deploy.md) | Static prerender, base path, the GitHub Pages pipeline, the proprietary icons secret |
 | [File Map](file-map.md) | Every source file and its responsibility |
+| [Future Features](future-features.md) | Designed-but-unbuilt affordances: punctuation exclusion toggle, paired-mark pairing, per-breakpoint line breaks |
 
 ## Companion documents (repo root)
 

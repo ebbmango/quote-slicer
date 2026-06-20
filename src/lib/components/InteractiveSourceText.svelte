@@ -52,8 +52,9 @@
 
 	// Punctuation glued to its base token so it never wraps onto its own line.
 	// Each group renders inside one inline-flex wrapper (an atomic flex item of the
-	// row); divisors between same-group tokens stay inside it, divisors between
-	// groups stay direct children of the row container. See groupSourceTokens.
+	// row) holding only tokens — no intra-group divisors, so punctuation can never
+	// be split off from its base. Divisors live only between groups, as direct
+	// children of the row container. See groupSourceTokens.
 	let groups = $derived(groupSourceTokens(tokens));
 
 	function handleSplit(globalIndex: number) {
@@ -269,15 +270,12 @@
 
 		{#each groups as group (group[0])}
 			<!-- inline-flex wrapper: never wraps internally (so glued punctuation stays
-			     with its base), yet acts as a single atomic flex item of the row — and
-			     keeps its tokens/divisors in a flex row so every divisor rule still
-			     resolves (align-self: stretch, net-zero margins). -->
+			     with its base), and acts as a single atomic flex item of the row. No
+			     intra-group divisor: a base token and its punctuation can never be split
+			     onto different lines. -->
 			<span class="tok-group">
-				{#each group as i, gi (i)}
+				{#each group as i (i)}
 					{@render tokenSpan(i)}
-					{#if gi < group.length - 1}
-						{@render divisor(i)}
-					{/if}
 				{/each}
 			</span>
 			{#if group[group.length - 1] < tokens.length - 1}
@@ -322,11 +320,10 @@
 		);
 	}
 
-	/* Glued punctuation wrapper: one atomic flex item of the row that itself lays
-	   its tokens + intra-group split-zones out in a non-wrapping flex row, so the
-	   divisors keep the exact flex-item context their rules assume (align-self:
-	   stretch, the -0.5em net-zero margins). `align-items: stretch` matches the
-	   row's default so zones still fill the line-box height. */
+	/* Glued punctuation wrapper: one atomic flex item of the row that lays its
+	   tokens out in a non-wrapping flex row, so a base token and its glued
+	   punctuation never wrap apart. `align-items: stretch` matches the row's
+	   default so the wrapper still fills the line-box height. */
 	.tok-group {
 		display: inline-flex;
 		flex-wrap: nowrap;

@@ -107,9 +107,20 @@
 					el.click();
 					if (zone && divisorIndex !== undefined) {
 						tick().then(() => {
-							const next = tokenContainer?.querySelector<HTMLElement>(
-								`[data-zone="${zone}"] [data-divisor-index="${divisorIndex}"]`
-							);
+							const zoneEl = tokenContainer?.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
+							let next =
+								zoneEl?.querySelector<HTMLElement>(`[data-divisor-index="${divisorIndex}"]`) ?? null;
+							if (!next && zoneEl) {
+								// The divisor can vanish when a base token and its punctuation
+								// recombine into one group (they can no longer be split apart) — its
+								// index is now intra-group and unrendered. Focus the nearest remaining
+								// divisor so a keyboard merge doesn't drop focus to <body>.
+								const all = [...zoneEl.querySelectorAll<HTMLElement>(LINE_ITEM_SELECTOR)];
+								next =
+									all.filter((d) => Number(d.dataset.divisorIndex) <= Number(divisorIndex)).pop() ??
+									all[0] ??
+									null;
+							}
 							next?.focus();
 						});
 					}
