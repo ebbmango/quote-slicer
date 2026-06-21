@@ -1,9 +1,125 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+
+		<script>
+			(() => {
+				const STATE_KEY = 'quote-slicer:theme-state:v1';
+				const TABS_KEY = 'quote-slicer:theme-tabs:v1';
+				const STALE_TAB_MS = 300000;
+				const RELOAD_GRACE_MS = 300000;
+
+				const root = document.documentElement;
+				root.classList.replace('no-js', 'js');
+
+				const systemMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+					? 'dark'
+					: 'light';
+				const now = Date.now();
+				const writerTabId = `prepaint-${now}-${Math.random().toString(36).slice(2)}`;
+
+				const applyTheme = (mode) => {
+					const isDark = mode === 'dark';
+					root.classList.toggle('dark', isDark);
+					root.style.colorScheme = mode;
+				};
+
+				const systemState = () => ({
+					version: 1,
+					mode: systemMode,
+					source: 'system',
+					systemMode,
+					updatedAt: now,
+					writerTabId
+				});
+
+				const parseState = (value) => {
+					if (!value) return null;
+					try {
+						const state = JSON.parse(value);
+						if (state.version !== 1) return null;
+						if (state.mode !== 'light' && state.mode !== 'dark') return null;
+						if (state.source !== 'system' && state.source !== 'user') return null;
+						if (state.systemMode !== 'light' && state.systemMode !== 'dark') return null;
+						if (typeof state.updatedAt !== 'number' || !Number.isFinite(state.updatedAt)) {
+							return null;
+						}
+						if (typeof state.writerTabId !== 'string' || state.writerTabId.length === 0) {
+							return null;
+						}
+						return state;
+					} catch {
+						return null;
+					}
+				};
+
+				const parseRegistry = (value) => {
+					if (!value) return { version: 1, tabs: {} };
+					try {
+						const registry = JSON.parse(value);
+						if (registry.version !== 1 || !registry.tabs || typeof registry.tabs !== 'object') {
+							return { version: 1, tabs: {} };
+						}
+						const tabs = {};
+						for (const [tabId, entry] of Object.entries(registry.tabs)) {
+							if (!entry || typeof entry !== 'object') continue;
+							if (typeof entry.seenAt !== 'number' || !Number.isFinite(entry.seenAt)) continue;
+							if (now - entry.seenAt <= STALE_TAB_MS) {
+								tabs[tabId] = { seenAt: entry.seenAt };
+							}
+						}
+						const next = { version: 1, tabs };
+						if (typeof registry.lastEmptyAt === 'number' && Number.isFinite(registry.lastEmptyAt)) {
+							next.lastEmptyAt = registry.lastEmptyAt;
+						}
+						if (Object.keys(tabs).length === 0 && Object.keys(registry.tabs).length > 0) {
+							next.lastEmptyAt = next.lastEmptyAt || now;
+						}
+						return next;
+					} catch {
+						return { version: 1, tabs: {} };
+					}
+				};
+
+				const isReload = () => {
+					const [navigation] = performance.getEntriesByType?.('navigation') ?? [];
+					if (navigation && 'type' in navigation) return navigation.type === 'reload';
+					return performance.navigation?.type === 1;
+				};
+
+				try {
+					const storedState = parseState(localStorage.getItem(STATE_KEY));
+					const registry = parseRegistry(localStorage.getItem(TABS_KEY));
+					const activeTabCount = Object.keys(registry.tabs).length;
+					const recentReload =
+						isReload() &&
+						typeof registry.lastEmptyAt === 'number' &&
+						now - registry.lastEmptyAt <= RELOAD_GRACE_MS;
+					const hasContinuity = activeTabCount > 0 || recentReload;
+
+					localStorage.setItem(TABS_KEY, JSON.stringify(registry));
+
+					if (storedState && hasContinuity) {
+						if (storedState.systemMode === systemMode) {
+							applyTheme(storedState.mode);
+						} else {
+							const state = systemState();
+							localStorage.setItem(STATE_KEY, JSON.stringify(state));
+							applyTheme(state.mode);
+						}
+					} else {
+						if (storedState) localStorage.removeItem(STATE_KEY);
+						applyTheme(systemMode);
+					}
+				} catch {
+					applyTheme(systemMode);
+				}
+			})();
+		</script>
+
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

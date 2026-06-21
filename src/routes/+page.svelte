@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import icons from '$lib/assets/icons.json';
 	import QuoteWorkbench from '$lib/components/QuoteWorkbench.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import DataPanel from '$lib/components/DataPanel.svelte';
 	import DataModal from '$lib/components/DataModal.svelte';
 	import ModeToolbar from '$lib/components/ModeToolbar.svelte';
@@ -70,7 +71,10 @@
 </script>
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
-	<aside class="sidebar sidebar-left bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
+	<aside
+		class="sidebar sidebar-left bg-[var(--panel-bg)]"
+		aria-hidden={modeCtx.current === 'text'}
+	>
 		<!-- At minimal the modal owns the maps/json content, so the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
 		{#if !breakpoints.minimal}
@@ -78,14 +82,8 @@
 		{/if}
 	</aside>
 	<main class="content flex flex-col justify-between gap-6">
-		<!-- Placeholder for the Light Switch Area -->
-		<div class="flex w-full justify-center opacity-20 hocus:opacity-100 duration-200">
-			<button aria-label="theme-toggle" class="size-6">
-				<svg viewBox={icons['sun-bright'].viewBox}>
-					<path d={icons['sun-bright'].sharp.light} />
-				</svg>
-			</button>
-		</div>
+		<!-- Light Switch Area -->
+		<ThemeToggle />
 		<!-- Quote Workbench Area -->
 		<div class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[20px]">
 			<!-- Scroll layer: centers the quote (safe center) when it fits, and is the
@@ -130,7 +128,10 @@
 			{/if}
 		</div>
 	</main>
-	<aside class="sidebar sidebar-right bg-[#f9f9f9]" aria-hidden={modeCtx.current === 'text'}>
+	<aside
+		class="sidebar sidebar-right bg-[var(--panel-bg)]"
+		aria-hidden={modeCtx.current === 'text'}
+	>
 		<DataPanel view="json" />
 	</aside>
 </div>
