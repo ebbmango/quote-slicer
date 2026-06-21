@@ -3,8 +3,9 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
-	import { divisorColor, HIGHLIGHT_COLOR, type MappingColor } from '$lib/constants/colors';
+	import { divisorColor, HIGHLIGHT_COLOR, type MappingColorVariant } from '$lib/constants/colors';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
+	import { theme as appTheme } from '$lib/theme';
 
 	// Row-spread params for this panel's split zones (see redistribute.ts).
 	const SPREAD = { max: 6, perGap: 3 } as const;
@@ -39,7 +40,7 @@
 
 	// Palette field the divisor indicators draw from. Swap to give source vs
 	// target (or vertical vs horizontal) divisors a different hue later.
-	const DIVISOR_FIELD: keyof MappingColor = 'target';
+	const DIVISOR_FIELD: keyof MappingColorVariant = 'target';
 
 	// Map each whitespace token's index → its running divisor ordinal. Every
 	// whitespace token is a divisor (ws-split or, at a line break, merge-zone);
@@ -61,6 +62,7 @@
 	let isLineMode = $derived(mode.current === 'line');
 	let isViewMode = $derived(!isLinkMode && !isLineMode);
 	let isTouch = $derived(interactionMode.current === 'touch');
+	const colorMode = $derived(appTheme.current);
 	// Hover-highlight reset on view-mode exit/unmount lives in QuoteWorkbench (one
 	// owner) — see its clearHighlight $effect.
 	let focusedIndex: number | null = $state(null);
@@ -199,7 +201,7 @@
 				class:line-active={isLineMode}
 				class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 				data-divisor-index={i}
-				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
+				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD, colorMode)}"
 				tabindex={-1}
 				onclick={(e) =>
 					handleDivisorClick(e, i, 'merge', () => {
@@ -219,7 +221,7 @@
 				class:line-active={isLineMode}
 				class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 				data-divisor-index={i}
-				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD)}"
+				style="--line-tool-color: {divisorColor(divisorOrdinal.get(i) ?? 0, DIVISOR_FIELD, colorMode)}"
 				tabindex={-1}
 				onclick={(e) =>
 					handleDivisorClick(e, i, 'split', () => {

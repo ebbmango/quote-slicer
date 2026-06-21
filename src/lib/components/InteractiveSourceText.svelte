@@ -4,15 +4,16 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
 	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
-	import { divisorColor, HIGHLIGHT_COLOR, type MappingColor } from '$lib/constants/colors';
+	import { divisorColor, HIGHLIGHT_COLOR, type MappingColorVariant } from '$lib/constants/colors';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
+	import { theme as appTheme } from '$lib/theme';
 
 	// Row-spread params for this panel's split zones (see redistribute.ts).
 	const SPREAD = { max: 8, perGap: 2 } as const;
 
 	// Palette field the divisor indicators draw from. Swap to give source vs
 	// target (or vertical vs horizontal) divisors a different hue later.
-	const DIVISOR_FIELD: keyof MappingColor = 'source';
+	const DIVISOR_FIELD: keyof MappingColorVariant = 'source';
 
 	// Token opacity in view mode. Options: 'opacity-100' | 'opacity-70' | 'opacity-30'
 	const VIEW_TOKEN_OPACITY = 'opacity-80';
@@ -46,6 +47,7 @@
 	let isLineMode = $derived(mode.current === 'line');
 	let isViewMode = $derived(!isLinkMode && !isLineMode);
 	let isTouch = $derived(interactionMode.current === 'touch');
+	const colorMode = $derived(appTheme.current);
 	// Hover-highlight reset on view-mode exit/unmount lives in QuoteWorkbench (one
 	// owner) — see its clearHighlight $effect.
 	let focusedIndex: number | null = $state(null);
@@ -193,7 +195,7 @@
 					class:line-active={isLineMode}
 					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 					data-divisor-index={i}
-					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
+					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD, colorMode)}"
 					tabindex={-1}
 					onclick={(e) =>
 						handleDivisorClick(e, i, 'merge', () => {
@@ -210,7 +212,7 @@
 					class:line-active={isLineMode}
 					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
 					data-divisor-index={i}
-					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD)}"
+					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD, colorMode)}"
 					tabindex={-1}
 					onclick={(e) =>
 						handleDivisorClick(e, i, 'split', () => {

@@ -29,14 +29,14 @@ describe('deriveSourceTokenState', () => {
 	it('returns idle for a token in a non-active mapping', () => {
 		expect(deriveSourceTokenState(0, sourceMappingIndex, [m1], null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].source,
+			color: MAPPING_COLORS[0].light.source,
 		});
 	});
 
 	it('returns active for a token in the active mapping', () => {
 		expect(deriveSourceTokenState(0, sourceMappingIndex, [m1], 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].source,
+			color: MAPPING_COLORS[0].light.source,
 		});
 	});
 });
@@ -56,11 +56,11 @@ describe('deriveTargetTokenState', () => {
 		const targetMappingIndex = new Map([[0, 'm1']]);
 		expect(deriveTargetTokenState(0, tokens, targetMappingIndex, [m1], null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].target,
+			color: MAPPING_COLORS[0].light.target,
 		});
 		expect(deriveTargetTokenState(0, tokens, targetMappingIndex, [m1], 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].target,
+			color: MAPPING_COLORS[0].light.target,
 		});
 	});
 
@@ -76,11 +76,11 @@ describe('deriveTargetTokenState', () => {
 		]);
 		expect(deriveTargetTokenState(1, tokens, targetMappingIndex, [m1], null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].target,
+			color: MAPPING_COLORS[0].light.target,
 		});
 		expect(deriveTargetTokenState(1, tokens, targetMappingIndex, [m1], 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].target,
+			color: MAPPING_COLORS[0].light.target,
 		});
 	});
 

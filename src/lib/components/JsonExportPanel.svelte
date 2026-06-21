@@ -15,8 +15,8 @@
 		colorReplacements={{
 			dracula: {
 				// strings
-				'#f1fa8c': colors.compostella.base,
-				'#e9f284': colors.compostella.base,
+				'#f1fa8c': colors.compostella.light.base,
+				'#e9f284': colors.compostella.light.base,
 				// properties
 				'#8be9fe': '#A8A8A8',
 				'#8be9fd': '#A8A8A8',
@@ -24,9 +24,9 @@
 				'#ff79c6': '#A8A8A8',
 				'#f8f8f2': '#A8A8A8',
 				// numbers
-				'#bd93f9': colors.azure.base,
+				'#bd93f9': colors.azure.light.base,
 				// undefined
-				'#ff5555': colors.sugar.base
+				'#ff5555': colors.sugar.light.base
 			}
 		}}
 	/>

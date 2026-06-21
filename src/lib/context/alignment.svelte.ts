@@ -13,6 +13,7 @@ import {
 	type QuoteExportMeta,
 	type TokenState,
 } from '$lib/tokenState';
+import { theme as appTheme } from '$lib/theme';
 
 export type { Mapping, MappingId, QuoteExport, QuoteExportMeta, TokenState };
 
@@ -274,7 +275,7 @@ export class Alignment {
 	}
 
 	stateOfSource(i: number): TokenState {
-		return deriveSourceTokenState(i, this.sourceMappingIndex, this.mappings, this.activeMappingId);
+		return deriveSourceTokenState(i, this.sourceMappingIndex, this.mappings, this.activeMappingId, appTheme.current);
 	}
 
 	stateOfTarget(i: number): TokenState {
@@ -283,7 +284,8 @@ export class Alignment {
 			this.targetTokens,
 			this.targetMappingIndex,
 			this.mappings,
-			this.activeMappingId
+			this.activeMappingId,
+			appTheme.current
 		);
 	}
 

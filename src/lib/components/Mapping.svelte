@@ -2,6 +2,7 @@
 	import { getAlignmentContext, type MappingView } from '$lib/context/alignment.svelte';
 	import PinyinInput from './PinyinInput.svelte';
 	import { MAPPING_COLORS } from '$lib/constants/colors';
+	import { theme as appTheme } from '$lib/theme';
 	import icons from '$lib/assets/icons.json';
 	import type { TransitionConfig } from 'svelte/transition';
 
@@ -33,41 +34,49 @@
 	const r = $derived(Math.floor(rowCount / 2) + 1);
 	const EMPTY_ROW = [null];
 
+	const isDark = $derived(appTheme.current === 'dark');
+	const colorVariant = $derived(isDark ? color.dark : color.light);
+
 	// Collapses every active/inactive color pair into one lookup so the markup
-	// reads `theme.X` instead of repeating `isActive ? color.A : color.B`.
+	// reads `theme.X` instead of repeating `isActive ? colorVariant.A : colorVariant.B`.
+	// Inline styles can't be gated by a `.dark` CSS class, so light/dark is
+	// handled via `colorVariant` (derived from `appTheme.current`); tune dark
+	// values in colors.ts under each palette entry's `dark` key.
 	const theme = $derived(
 		isActive
 			? {
-					cardBg: color.base,
-					hanziText: color.text,
-					pinyinText: color.text,
-					separator: color.tagBgActive,
+					cardBg: colorVariant.base,
+					hanziText: colorVariant.text,
+					pinyinText: colorVariant.text,
+					separator: colorVariant.tagBgActive,
 					separatorOpacity: 0.3,
-					tagBg: color.tagBgActive,
+					tagBg: colorVariant.tagBgActive,
 					tagText: 'white',
 					outlinePct: '50%',
 					deleteHoverText: 'white',
-					botBg: color.botActive,
-					botText: color.botTextActive
+					botBg: colorVariant.botActive,
+					botText: colorVariant.botTextActive
 				}
 			: {
-					cardBg: 'white',
-					hanziText: '#555',
-					pinyinText: '#666',
-					separator: color.botInactive,
+					cardBg: isDark ? '#4a4a4a' : 'white',
+					hanziText: isDark ? 'white' : '#555',
+					pinyinText: isDark ? 'white' : '#666',
+					separator: colorVariant.botInactive,
 					separatorOpacity: 0.7,
-					tagBg: color.tagBgInactive,
-					tagText: color.tagNoInactive,
+					tagBg: colorVariant.tagBgInactive,
+					tagText: colorVariant.tagNoInactive,
 					outlinePct: '75%',
-					deleteHoverText: color.botTextActive,
-					botBg: color.botInactive,
-					botText: color.botTextInactive
+					deleteHoverText: colorVariant.botTextActive,
+					botBg: colorVariant.botInactive,
+					botText: colorVariant.botTextInactive
 				}
 	);
 	const hanziOpacity = $derived(isEmpty ? 0.3 : isActive ? 1 : 0.65);
 	const pinyinOpacity = $derived(isEmpty ? 0.3 : isActive ? 0.85 : 0.6);
 	const deleteIconFill = $derived(isButtonHovered ? theme.tagBg : theme.botBg);
-	const deleteGlyphFill = $derived(isButtonHovered ? theme.deleteHoverText : color.tagBgActive);
+	const deleteGlyphFill = $derived(
+		isButtonHovered ? theme.deleteHoverText : colorVariant.tagBgActive
+	);
 
 	function toggleActive() {
 		if (alignment.activeMappingId === mappingView.id) alignment.deselect();
@@ -80,7 +89,7 @@
 	aria-selected={isActive}
 	tabindex="0"
 	data-mapping-id={mappingView.id}
-	class="group flex flex-col rounded-md outline-0 transition-[outline-color] duration-200 touch-pan-y select-none"
+	class="group flex touch-pan-y flex-col rounded-md outline-0 transition-[outline-color] duration-200 select-none"
 	style="grid-row: span {r}; outline-color: color-mix(in srgb, {theme.tagBg} {theme.outlinePct}, transparent);"
 	out:exit
 	onoutrostart={onExitStart}
@@ -104,7 +113,7 @@
 >
 	<!-- Top section: hanzi | pinyin | badge -->
 	<div
-		class="relative grid flex-1 w-full rounded-t-md transition-colors duration-200"
+		class="relative grid w-full flex-1 rounded-t-md transition-colors duration-200"
 		style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat({rowCount}, 1fr); background: {theme.cardBg};"
 	>
 		{#each isEmpty ? EMPTY_ROW : mappingView.sourceEntries as entry, i (entry?.tokenId ?? 'empty')}
@@ -112,7 +121,8 @@
 				<!-- divisory line -->
 				<div
 					class="pointer-events-none absolute left-0 w-full transition-[background-color,opacity] duration-200"
-					style="top: calc({(i / rowCount) * 100}%); height: 1px; opacity: {theme.separatorOpacity}; background: {theme.separator}; z-index: 0;"
+					style="top: calc({(i / rowCount) *
+						100}%); height: 1px; opacity: {theme.separatorOpacity}; background: {theme.separator}; z-index: 0;"
 				></div>
 			{/if}
 
@@ -133,9 +143,7 @@
 					color={theme.pinyinText}
 					opacity={pinyinOpacity}
 					value={isEmpty ? '- - - -' : (entry?.pinyin ?? '')}
-					onCommit={isEmpty
-						? undefined
-						: (raw) => alignment.setPinyin(mappingView.id, i, raw)}
+					onCommit={isEmpty ? undefined : (raw) => alignment.setPinyin(mappingView.id, i, raw)}
 				/>
 			</div>
 
@@ -148,8 +156,7 @@
 					{#if !isEmpty}
 						<span
 							class="rounded px-2 py-0.5 font-ss4 text-sm duration-200"
-							style="background: {theme.tagBg}; color: {theme.tagText};"
-							>{label}</span
+							style="background: {theme.tagBg}; color: {theme.tagText};">{label}</span
 						>
 					{/if}
 					<button
@@ -158,7 +165,7 @@
 						onfocus={() => (isButtonHovered = true)}
 						onblur={() => (isButtonHovered = false)}
 						tabindex={-1}
-						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100 coarse:hidden hover:opacity-100"
+						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100 hover:opacity-100 coarse:hidden"
 						class:opacity-100={isFocused}
 						style="color: {theme.tagBg};"
 						aria-label="Delete mapping"

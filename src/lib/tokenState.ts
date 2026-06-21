@@ -1,4 +1,5 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
+import type { Mode } from '$lib/types';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;
@@ -34,12 +35,13 @@ export function deriveSourceTokenState(
 	i: number,
 	sourceMappingIndex: Map<number, MappingId>,
 	mappings: Mapping[],
-	activeMappingId: MappingId | null
+	activeMappingId: MappingId | null,
+	mode: Mode = 'light'
 ): TokenState {
 	const claimed = sourceMappingIndex.get(i);
 	if (claimed === undefined) return { kind: 'unmapped' };
 	const m = mappings.find((x) => x.id === claimed)!;
-	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length].source;
+	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].source;
 	if (claimed === activeMappingId) return { kind: 'active', color };
 	return { kind: 'idle', color };
 }
@@ -98,7 +100,8 @@ export function deriveTargetTokenState(
 	targetTokens: TargetToken[],
 	targetMappingIndex: Map<number, MappingId>,
 	mappings: Mapping[],
-	activeMappingId: MappingId | null
+	activeMappingId: MappingId | null,
+	mode: Mode = 'light'
 ): TokenState {
 	const claimed = targetMappingIndex.get(i);
 	if (claimed === undefined) {
@@ -106,7 +109,7 @@ export function deriveTargetTokenState(
 			const bridgeId = findBridgeMappingId(i, targetTokens, targetMappingIndex);
 			if (bridgeId !== undefined) {
 				const m = mappings.find((x) => x.id === bridgeId)!;
-				const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length].target;
+				const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].target;
 				if (bridgeId === activeMappingId) return { kind: 'active', color };
 				return { kind: 'idle', color };
 			}
@@ -114,7 +117,7 @@ export function deriveTargetTokenState(
 		return { kind: 'unmapped' };
 	}
 	const m = mappings.find((x) => x.id === claimed)!;
-	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length].target;
+	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].target;
 	if (claimed === activeMappingId) return { kind: 'active', color };
 	return { kind: 'idle', color };
 }
