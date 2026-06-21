@@ -31,15 +31,17 @@ punctuation mark's side from the character itself rather than a hand-maintained 
 
 In `InteractiveSourceText.svelte`, the flat `{#each tokens}` loop is replaced with `{#each groups}`.
 Each group renders inside a `.tok-group` span (`display: inline-flex; flex-wrap: nowrap`) — an
-atomic flex item of the outer wrapping row that itself lays its tokens and intra-group divisors out
-in a non-breaking inner row.
+atomic flex item of the outer wrapping row that lays its tokens out in a non-breaking inner row.
+Intra-group divisors were removed in a later commit (`1898c48`); see
+[`26-06-20-punctuation-atomic-line-splitting.md`](./26-06-20-punctuation-atomic-line-splitting.md).
 
 ## Design Decisions
 
-**Divisors cross group boundaries correctly.** The divisor between two groups is rendered as a
-direct child of the outer row (between group wrappers), while divisors between tokens *within* a
-group are rendered inside the `.tok-group` span. Both contexts are still `flex` items, so the
-divisor hover/redistribution logic (`align-self: stretch`, net-zero margins) works unchanged.
+**Divisors sit only between groups.** Each divisor is a direct child of the outer row, rendered
+between group wrappers. No divisors exist inside `.tok-group` spans (intra-group divisors were
+removed in `1898c48` to enforce the no-split invariant). All divisors remain `flex` items of the
+outer row, so the hover/redistribution logic (`align-self: stretch`, net-zero margins) works
+unchanged.
 
 **Line boundaries stop grouping.** `groupSourceTokens` never crosses a `.line` boundary. If a
 line-mode split lands between a character and its punctuation, they end up on different lines and

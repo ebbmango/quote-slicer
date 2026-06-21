@@ -21,6 +21,7 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-20 | [Punctuation atomic for line splitting](./26-06-20-punctuation-atomic-line-splitting.md) | `1898c48` | Removes intra-group split-zone divisors so a base token and its glued punctuation can never be split onto different lines; adds focus-restore fallback for the keyboard-merge edge case where the merged divisor vanishes |
 | 2026-06-20 | [Swipe-to-delete on touch](./26-06-20-swipe-to-delete.md) | `31e080c` | Horizontal swipe replaces delete button on coarse-pointer devices; angle-check + deadzone gesture recognition; column-aware direction constraint; stamped `dataset.swipeFlyoff` marker fixes confirmed bug where button-deleted cards carried a GSAP transform and flew off in wrong direction |
 | 2026-06-20 | [MappingsList animation polish](./26-06-20-mappings-list-animation-polish.md) | `a59c47d`, `c70f089` | `listAnimating` guard throttles mutations during card animations; empty-state overlay crossfades concurrently with the last card's slide-out instead of gating on `outroing` |
 | 2026-06-19 | [MappingsList GSAP Flip animations](./26-06-19-mappings-list-gsap-flip-animations.md) | `4d7a123` … `3315995` | Two-phase add (make-way Flip + slide-in) and exit-slide + gap-close ripple for mapping cards; column-aware direction; interruption safety; fixes re-entrant `$state` write in GSAP `onComplete` that silently killed Svelte's reactive scheduler |

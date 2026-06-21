@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="no-js">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,7 +13,6 @@
 				const RELOAD_GRACE_MS = 300000;
 
 				const root = document.documentElement;
-				root.classList.replace('no-js', 'js');
 
 				const systemMode = window.matchMedia('(prefers-color-scheme: dark)').matches
 					? 'dark'

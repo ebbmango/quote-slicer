@@ -81,19 +81,15 @@
 	--line-tool-opacity-hover: 0.7;
 }
 
-/* Light/dark page chrome. light-dark() resolves from `color-scheme`, which the
-   theme controller (and the no-flash prepaint script) sets to "dark" alongside
-   the .dark class. So these vars need no per-class overrides. */
+/* Light/dark page chrome. light-dark() resolves from `color-scheme`. With JS,
+   the theme controller (and the no-flash prepaint script) sets `color-scheme`
+   inline to "light"/"dark" alongside the .dark class. Without JS, the base
+   `light dark` below makes the page follow the OS preference. */
 html {
-	color-scheme: light;
+	color-scheme: light dark;
 	--page-bg: light-dark(#ffffff, #1b1b1b);
 	--page-fg: light-dark(#1b1b1b, #f4f4f4);
 	--panel-bg: light-dark(#f9f9f9, #262626);
-}
-
-html.no-js {
-	/* No JS: let the browser pick the scheme from the OS preference. */
-	color-scheme: light dark;
 }
 
 html.dark {
@@ -118,23 +114,8 @@ body {
 	}
 }
 
-@custom-variant js-only (&:where(html.js, html.js *));
-@custom-variant no-js (&:where(html.no-js, html.no-js *));
-
-@custom-variant dark {
-	/* JS path: .dark class is toggled on <html> by the theme controller. */
-	&:where(.dark, .dark *) {
-		@slot;
-	}
-
-	/* No-JS fallback: follow the OS preference directly. No overlap with the
-	   class path — .dark is only ever applied once JavaScript is running. */
-	@media (prefers-color-scheme: dark) {
-		&:where(html.no-js, html.no-js *) {
-			@slot;
-		}
-	}
-}
+/* .dark class is toggled on <html> by the theme controller. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @custom-variant hocus (&:is(:hover, :focus-visible));
 
