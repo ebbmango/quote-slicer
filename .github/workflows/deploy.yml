@@ -36,7 +36,7 @@ jobs:
             const icons = require('./src/lib/assets/icons.json');
             const required = [
               'arrow-down', 'curly-brackets', 'delete-left', 'objects-column',
-              'sun-bright', 'eye', 'language', 'paragraph'
+              'sun-bright', 'moon', 'eye', 'language', 'paragraph'
             ];
             const missing = required.filter(k => !icons[k]?.viewBox);
             if (missing.length) {
