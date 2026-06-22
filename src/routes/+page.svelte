@@ -114,7 +114,7 @@
 					class:arrow-exit={arrowExiting}
 					onclick={advanceToLinkMode}
 				>
-					<svg viewBox={iconArrow.viewBox} class="arrow-svg">
+					<svg viewBox={iconArrow.viewBox} class="arrow-svg" fill="currentColor">
 						<path d={iconArrow.sharp.light} />
 					</svg>
 				</button>
@@ -217,6 +217,7 @@
 		overflow: hidden;
 		pointer-events: none;
 		transition:
+			background-color 500ms ease,
 			opacity 250ms ease,
 			transform var(--slide) ease;
 	}

@@ -306,18 +306,17 @@
 	.morph-target.exiting {
 		color: color-mix(in oklab, currentColor 30%, transparent);
 	}
-	/* target placeholder: driven by a FIXED black alpha, NOT currentColor. The
-	   element's own colour is animating (above); a currentColor-based placeholder
-	   would reference that moving value and compound, dipping its effective opacity
-	   below the target before settling. Tokens render at solid black, so black @ 0.5
-	   (resting, == Tailwind's default placeholder tint) → black @ 0.3 (== token) is
-	   the exact, monotonic path. */
+	/* target placeholder: driven by a FIXED alpha of --page-fg, NOT currentColor.
+	   The element's own colour is animating (above); a currentColor-based placeholder
+	   would reference that moving value and compound. Using --page-fg is static
+	   during the morph (it only changes on theme toggle) so the transition is
+	   monotonic, and it resolves correctly in both light and dark mode. */
 	.morph-target::placeholder {
-		color: rgb(0 0 0 / 0.5);
+		color: color-mix(in oklab, var(--page-fg) 50%, transparent);
 		transition: color 400ms ease-out;
 	}
 	.morph-target.exiting::placeholder {
-		color: rgb(0 0 0 / 0.3);
+		color: color-mix(in oklab, var(--page-fg) 30%, transparent);
 	}
 
 	/* Reduced motion: keep the pre-match (so the swap is still seamless) but drop the

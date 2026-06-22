@@ -58,7 +58,7 @@
 					botText: colorVariant.botTextActive
 				}
 			: {
-					cardBg: isDark ? '#4a4a4a' : 'white',
+					cardBg: isDark ? '#3e3e3e' : 'white',
 					hanziText: isDark ? 'white' : '#555',
 					pinyinText: isDark ? 'white' : '#666',
 					separator: colorVariant.botInactive,
@@ -113,14 +113,14 @@
 >
 	<!-- Top section: hanzi | pinyin | badge -->
 	<div
-		class="relative grid w-full flex-1 rounded-t-md transition-colors duration-200"
+		class="relative grid w-full flex-1 rounded-t-md transition-colors duration-500"
 		style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat({rowCount}, 1fr); background: {theme.cardBg};"
 	>
 		{#each isEmpty ? EMPTY_ROW : mappingView.sourceEntries as entry, i (entry?.tokenId ?? 'empty')}
 			{#if i > 0}
 				<!-- divisory line -->
 				<div
-					class="pointer-events-none absolute left-0 w-full transition-[background-color,opacity] duration-200"
+					class="pointer-events-none absolute left-0 w-full transition-[background-color,opacity] duration-500"
 					style="top: calc({(i / rowCount) *
 						100}%); height: 1px; opacity: {theme.separatorOpacity}; background: {theme.separator}; z-index: 0;"
 				></div>
@@ -129,7 +129,7 @@
 			<!-- Hanzi cell -->
 			<div class="flex items-center justify-center">
 				<span
-					class="font-wenkai text-[1.75rem] font-[320] transition-colors duration-200"
+					class="font-wenkai text-[1.75rem] font-[320] transition-colors duration-500"
 					style="color: {theme.hanziText}; opacity: {hanziOpacity};"
 					>{isEmpty ? '未定' : (entry?.text ?? '?')}</span
 				>
@@ -150,12 +150,12 @@
 			<!-- Badge + delete button — col 3, spanning all source rows. -->
 			{#if i === 0}
 				<div
-					class="relative flex items-center justify-center px-3 transition-colors duration-200"
+					class="relative flex items-center justify-center px-3 transition-colors duration-500"
 					style="grid-column: 3; grid-row: 1 / span {rowCount}; z-index: 1;"
 				>
 					{#if !isEmpty}
 						<span
-							class="rounded px-2 py-0.5 font-ss4 text-sm duration-200"
+							class="rounded px-2 py-0.5 font-ss4 text-sm duration-500"
 							style="background: {theme.tagBg}; color: {theme.tagText};">{label}</span
 						>
 					{/if}
@@ -194,7 +194,7 @@
 
 	<!-- Bottom bar: translation -->
 	<div
-		class="flex h-6 w-full items-center justify-center overflow-hidden rounded-b-md transition-colors duration-200"
+		class="flex h-6 w-full items-center justify-center overflow-hidden rounded-b-md transition-colors duration-500"
 		style="background: {theme.botBg};"
 	>
 		{#if mappingView.targetText}

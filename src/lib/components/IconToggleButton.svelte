@@ -25,7 +25,7 @@
 	{onclick}
 	onpointerup={(e) => { if (e.pointerType === 'touch') (e.currentTarget as HTMLButtonElement).blur(); }}
 >
-	<svg viewBox={icon.viewBox}>
+	<svg viewBox={icon.viewBox} fill="currentColor">
 		<path d={icon.path} />
 	</svg>
 </button>
