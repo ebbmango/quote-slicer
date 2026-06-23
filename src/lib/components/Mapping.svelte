@@ -51,7 +51,7 @@
 					separator: colorVariant.tagBgActive,
 					separatorOpacity: 0.3,
 					tagBg: colorVariant.tagBgActive,
-					tagText: 'white',
+					tagText: colorVariant.tagNoActive,
 					outlinePct: '50%',
 					deleteHoverText: 'white',
 					botBg: colorVariant.botActive,
