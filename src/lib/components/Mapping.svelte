@@ -53,7 +53,6 @@
 					tagBg: colorVariant.tagBgActive,
 					tagText: colorVariant.tagNoActive,
 					outlinePct: '50%',
-					deleteHoverText: 'white',
 					botBg: colorVariant.botActive,
 					botText: colorVariant.botTextActive
 				}
@@ -66,7 +65,6 @@
 					tagBg: colorVariant.tagBgInactive,
 					tagText: colorVariant.tagNoInactive,
 					outlinePct: '75%',
-					deleteHoverText: colorVariant.botTextActive,
 					botBg: colorVariant.botInactive,
 					botText: colorVariant.botTextInactive
 				}
@@ -75,9 +73,23 @@
 	const pinyinOpacity = $derived(isEmpty ? 0.3 : isActive ? 0.85 : 0.6);
 	const botTextOpacity = $derived(!isActive && isDark ? 0.5 : 1);
 	const botTextEmptyOpacity = $derived(!isActive && isDark ? 0.3 : 0.55);
-	const deleteIconFill = $derived(isButtonHovered ? theme.tagBg : theme.botBg);
+	// The delete button is an action affordance, not a state indicator: it always
+	// renders in the *active* palette regardless of the card's active/inactive
+	// state. Coupling it to `isActive` caused a flash — the button reveals on
+	// focus (fires at mousedown) one paint before the click sets `isActive`
+	// (fires at mouseup), so it briefly showed inactive colors before snapping to
+	// active for the whole duration the mouse was held down. Decoupling removes
+	// the inactive→active change entirely, so there is nothing left to flash.
+	const deleteIconFill = $derived(
+		isButtonHovered ? colorVariant.tagBgActive : colorVariant.botActive
+	);
+	const deleteGlyphOpacity = $derived(isFocused && !isButtonHovered ? 0.7 : 1);
 	const deleteGlyphFill = $derived(
-		isButtonHovered ? theme.deleteHoverText : colorVariant.tagBgActive
+		isButtonHovered
+			? colorVariant.tagNoActive
+			: isDark
+				? colorVariant.botTextActive
+				: colorVariant.tagBgActive
 	);
 
 	function toggleActive() {
@@ -167,7 +179,7 @@
 						onfocus={() => (isButtonHovered = true)}
 						onblur={() => (isButtonHovered = false)}
 						tabindex={-1}
-						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 duration-100 hover:opacity-100 coarse:hidden"
+						class="absolute -right-4 flex cursor-pointer items-center justify-center opacity-0 outline-0 transition-opacity duration-100 hover:opacity-100 coarse:hidden"
 						class:opacity-100={isFocused}
 						style="color: {theme.tagBg};"
 						aria-label="Delete mapping"
@@ -176,18 +188,26 @@
 							alignment.deleteById(mappingView.id);
 						}}
 					>
-						<svg viewBox={icons['delete-left'].viewBox} class="size-7">
-							<path
-								class="duration-100"
-								d={icons['delete-left'].classic.solid[0]}
-								fill={deleteIconFill}
-							/>
-							<path
-								class="duration-100"
-								d={icons['delete-left'].classic.solid[1]}
-								fill={deleteGlyphFill}
-							/>
-						</svg>
+						<!--
+							Re-key on theme: while hidden (opacity-0) the button's SVG is
+							paint-culled, so a theme switch updates the `fill` attrs but Chrome
+							does not re-rasterize the hidden subtree. The first reveal after a
+							switch would composite the stale pre-switch texture (the previous
+							theme's color) for one frame. Recreating the node on `isDark` forces
+							a fresh raster with the current colors. Invisible: toggling the theme
+							moves focus to the theme button, so every delete button is hidden
+							during the swap.
+						-->
+						{#key isDark}
+							<svg viewBox={icons['delete-left'].viewBox} class="size-7">
+								<path d={icons['delete-left'].classic.solid[0]} fill={deleteIconFill} />
+								<path
+									d={icons['delete-left'].classic.solid[1]}
+									fill={deleteGlyphFill}
+									fill-opacity={deleteGlyphOpacity}
+								/>
+							</svg>
+						{/key}
 					</button>
 				</div>
 			{/if}
