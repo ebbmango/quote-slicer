@@ -73,6 +73,8 @@
 	);
 	const hanziOpacity = $derived(isEmpty ? 0.3 : isActive ? 1 : 0.65);
 	const pinyinOpacity = $derived(isEmpty ? 0.3 : isActive ? 0.85 : 0.6);
+	const botTextOpacity = $derived(!isActive && isDark ? 0.5 : 1);
+	const botTextEmptyOpacity = $derived(!isActive && isDark ? 0.3 : 0.55);
 	const deleteIconFill = $derived(isButtonHovered ? theme.tagBg : theme.botBg);
 	const deleteGlyphFill = $derived(
 		isButtonHovered ? theme.deleteHoverText : colorVariant.tagBgActive
@@ -198,13 +200,13 @@
 		style="background: {theme.botBg};"
 	>
 		{#if mappingView.targetText}
-			<span class="truncate px-3 font-ss4 text-xs font-[380]" style="color: {theme.botText};"
+			<span class="truncate px-3 font-ss4 text-xs font-[380]" style="color: {theme.botText}; opacity: {botTextOpacity};"
 				>&ldquo;{mappingView.targetText}&rdquo;</span
 			>
 		{:else}
 			<span
 				class="font-ss4 text-xs font-[350] italic"
-				style="color: {theme.botText}; opacity: 0.55;">no translation</span
+				style="color: {theme.botText}; opacity: {botTextEmptyOpacity};">no translation</span
 			>
 		{/if}
 	</div>
