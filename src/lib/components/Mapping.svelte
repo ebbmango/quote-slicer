@@ -169,7 +169,7 @@
 				>
 					{#if !isEmpty}
 						<span
-							class="rounded px-2 py-0.5 font-ss4 text-sm duration-500"
+							class="rounded px-2 py-0.5 font-ss4 text-sm transition-colors duration-500"
 							style="background: {theme.tagBg}; color: {theme.tagText};">{label}</span
 						>
 					{/if}
@@ -220,12 +220,12 @@
 		style="background: {theme.botBg};"
 	>
 		{#if mappingView.targetText}
-			<span class="truncate px-3 font-ss4 text-xs font-[380]" style="color: {theme.botText}; opacity: {botTextOpacity};"
+			<span class="truncate px-3 font-ss4 text-xs font-[380] transition-colors duration-500" style="color: {theme.botText}; opacity: {botTextOpacity};"
 				>&ldquo;{mappingView.targetText}&rdquo;</span
 			>
 		{:else}
 			<span
-				class="font-ss4 text-xs font-[350] italic"
+				class="font-ss4 text-xs font-[350] italic transition-colors duration-500"
 				style="color: {theme.botText}; opacity: {botTextEmptyOpacity};">no translation</span
 			>
 		{/if}

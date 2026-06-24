@@ -16,9 +16,21 @@
 	let lines: ThemedToken[][] = $state([]);
 
 	$effect(() => {
+		// Read every tokenizer input synchronously so the effect re-runs when any
+		// of them change (theme toggle swaps colorReplacements). Reads inside the
+		// async .then below would not be tracked as dependencies.
 		const currentCode = code;
+		const currentLang = lang;
+		const currentTheme = theme;
+		const currentReplacements = colorReplacements;
 		import('shiki')
-			.then(({ codeToTokens }) => codeToTokens(currentCode, { lang, theme, colorReplacements }))
+			.then(({ codeToTokens }) =>
+				codeToTokens(currentCode, {
+					lang: currentLang,
+					theme: currentTheme,
+					colorReplacements: currentReplacements
+				})
+			)
 			.then((result) => {
 				lines = result.tokens;
 			});

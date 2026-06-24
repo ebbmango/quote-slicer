@@ -316,6 +316,18 @@
 			transform 150ms ease;
 	}
 
+	/* On a theme flip the page background eases over 500ms; widen the token's own
+	   colour transition to match so the (inherited) text colour doesn't settle
+	   ~220ms early. Scoped to the theme-switch window only, so the 280ms
+	   mode-crossfade above is untouched. See systemTheme flashThemeTransition. */
+	:global(html.theme-anim) .tok {
+		transition:
+			color 500ms ease,
+			opacity 280ms ease,
+			font-weight 280ms ease,
+			transform 150ms ease;
+	}
+
 	/* During a split/merge GSAP Flip drives `transform` on the tokens and divisors.
 	   The redistribution's own `transform` transition would ease toward each Flip
 	   frame, so the row chased its target and wobbled. Drop the transform

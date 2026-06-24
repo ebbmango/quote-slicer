@@ -55,6 +55,23 @@ function applyDocumentTheme(mode: Mode) {
 	document.documentElement.style.colorScheme = mode;
 }
 
+// During an actual theme flip, mark <html> for the length of the page's 500ms
+// colour transition. Components whose elements normally transition colour faster
+// (e.g. the token spans' 280ms mode-crossfade) widen to 500ms under
+// `html.theme-anim`, so every element settles on the new theme at the same rate.
+// Cleared after the window so mode transitions keep their own faster feel.
+const THEME_ANIM_MS = 500;
+let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
+function flashThemeTransition() {
+	const root = document.documentElement;
+	root.classList.add('theme-anim');
+	if (themeAnimTimer !== undefined) clearTimeout(themeAnimTimer);
+	themeAnimTimer = setTimeout(() => {
+		root.classList.remove('theme-anim');
+		themeAnimTimer = undefined;
+	}, THEME_ANIM_MS);
+}
+
 export function adaptiveTheme() {
 	if (!browser) {
 		return {
@@ -112,6 +129,7 @@ export function adaptiveTheme() {
 		currentState = state;
 		currentMode = state.mode;
 		applyDocumentTheme(currentMode);
+		if (modeChanged) flashThemeTransition();
 
 		if (options.write !== false) {
 			withStorage((storage) => writeThemeState(storage, state), undefined);

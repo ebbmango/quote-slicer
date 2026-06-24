@@ -29,7 +29,7 @@
 <input
 	{disabled}
 	{tabindex}
-	class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-200 outline-none placeholder:opacity-40"
+	class="w-full max-w-[9ch] bg-transparent text-center font-ss4 text-base transition-colors duration-500 outline-none placeholder:opacity-40"
 	style="color: {color}; opacity: {opacity};"
 	placeholder="Empty"
 	value={shown}

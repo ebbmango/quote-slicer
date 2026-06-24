@@ -306,17 +306,30 @@
 	.morph-target.exiting {
 		color: color-mix(in oklab, currentColor 30%, transparent);
 	}
-	/* target placeholder: driven by a FIXED alpha of --page-fg, NOT currentColor.
-	   The element's own colour is animating (above); a currentColor-based placeholder
-	   would reference that moving value and compound. Using --page-fg is static
-	   during the morph (it only changes on theme toggle) so the transition is
-	   monotonic, and it resolves correctly in both light and dark mode. */
+	/* target placeholder: uses currentColor (the element's own computed colour)
+	   rather than var(--page-fg) directly. var(--page-fg) is defined via
+	   light-dark(), and browsers don't re-resolve that function on ::placeholder
+	   when color-scheme changes — the colour would be frozen at the initial
+	   theme value. currentColor properly inherits through the cascade, so it
+	   updates and transitions with the rest of the page.
+	   During .exiting the element's colour animates to 30% alpha (see above);
+	   the placeholder explicitly resets to the full element colour (not the
+	   50%-mixed value) so its effective opacity also lands at 30% and matches
+	   the original intention. */
 	.morph-target::placeholder {
-		color: color-mix(in oklab, var(--page-fg) 50%, transparent);
+		color: color-mix(in oklab, currentColor 50%, transparent);
 		transition: color 400ms ease-out;
 	}
 	.morph-target.exiting::placeholder {
-		color: color-mix(in oklab, var(--page-fg) 30%, transparent);
+		color: currentColor;
+	}
+
+	/* Widen the target's colour transition to match the 500ms page background
+	   during a theme flip. Scoped to the theme-switch window only; the 400ms
+	   mode-crossfade above is untouched for normal arrow-exit morph. */
+	:global(html.theme-anim) .morph-target,
+	:global(html.theme-anim) .morph-target::placeholder {
+		transition: color 500ms ease;
 	}
 
 	/* Reduced motion: keep the pre-match (so the swap is still seamless) but drop the

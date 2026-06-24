@@ -62,7 +62,7 @@
 
 {#if modalOpen}
 	<div
-		class="data-modal bg-[#f9f9f9]"
+		class="data-modal bg-[var(--panel-bg)]"
 		in:fly={{ x: flyX, duration: 450 }}
 		out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
 	>
@@ -80,5 +80,6 @@
 		border-radius: 20px;
 		overflow: hidden;
 		z-index: 2;
+		transition: background-color 500ms ease;
 	}
 </style>
