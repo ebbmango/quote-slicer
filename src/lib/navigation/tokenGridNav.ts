@@ -1,6 +1,7 @@
+import { tick } from 'svelte';
 import { pickVisualNeighbor } from './visualNeighbor';
 import { interactionMode } from '$lib/context/interactionMode.svelte';
-import { getZone, zoneSelector, tokenSelector, type Zone } from './gridDom';
+import { getZone, zoneSelector, tokenSelector, divisorSelector, divisorIndexOf, type Zone } from './gridDom';
 
 export type TokenGridNavConfig = {
 	/** CSS selector for the currently navigable elements (varies by mode). */
@@ -11,6 +12,9 @@ export type TokenGridNavConfig = {
 	onActivate: (el: HTMLElement, e: KeyboardEvent) => void;
 	/** Escape, after the focused element has been blurred. */
 	onEscape: () => void;
+	/** Whether an Alt+Space activation may re-render the focused item away, so focus
+	 *  must be re-acquired by index (line mode: a split/merge replaces the divisor). */
+	restoresFocusOnActivate?: () => boolean;
 };
 
 // ─── Token grid keyboard scheme ──────────────────────────────────────────────
@@ -45,6 +49,25 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		// only scopes its first branch, so the rest would match other zones.
 		const zoneEl = container.querySelector<HTMLElement>(zoneSelector(zone));
 		return zoneEl?.querySelector<HTMLElement>(config.itemSelector()) ?? null;
+	}
+
+	// After an activation that re-renders the focused item, re-acquire focus by the
+	// divisor index it sat at. Only line-mode activations are destructive (gated by
+	// config.restoresFocusOnActivate), so items here are divisors.
+	function restoreFocusByIndex(zone: Zone, divisorIndex: number): void {
+		const container = getContainer();
+		const zoneEl = container?.querySelector<HTMLElement>(zoneSelector(zone));
+		if (!zoneEl) return;
+		let next = zoneEl.querySelector<HTMLElement>(divisorSelector(divisorIndex));
+		if (!next) {
+			// The divisor can vanish when a base token and its punctuation recombine into
+			// one group (they can no longer be split apart) — its index is now intra-group
+			// and unrendered. Focus the nearest remaining divisor so a keyboard merge
+			// doesn't drop focus to <body>.
+			const all = [...zoneEl.querySelectorAll<HTMLElement>(config.itemSelector())];
+			next = all.filter((d) => divisorIndexOf(d) <= divisorIndex).pop() ?? all[0] ?? null;
+		}
+		next?.focus();
 	}
 
 	function jumpTo(zone: Zone): void {
@@ -92,7 +115,12 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		if (e.key === ' ') {
 			if (!target.matches(config.itemSelector())) return;
 			e.preventDefault();
+			const zone = getZone(target);
+			const divisorIndex = divisorIndexOf(target);
 			config.onActivate(target, e);
+			if (config.restoresFocusOnActivate?.() && zone && !Number.isNaN(divisorIndex)) {
+				tick().then(() => restoreFocusByIndex(zone, divisorIndex));
+			}
 			return;
 		}
 

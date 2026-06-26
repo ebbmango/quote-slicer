@@ -1,6 +1,5 @@
 <script lang="ts">
 	// version B
-	import { tick } from 'svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
@@ -8,10 +7,7 @@
 	import { createTokenGridNav } from '$lib/navigation/tokenGridNav';
 	import {
 		getZone,
-		zoneSelector,
-		divisorSelector,
 		tokenIndexOf,
-		divisorIndexOf,
 		LINE_ITEM_SELECTOR,
 		TOKEN_ITEM_SELECTOR,
 		SCROLLBOX_SELECTOR,
@@ -110,29 +106,11 @@
 			getDefaultIndex: (zone: Zone) =>
 				mode.current === 'line' ? -1 : alignment.findDefaultTokenIndex(zone),
 			onActivate: (el, e) => {
+				// Line mode: the divisor's own click handler runs the split/merge. The nav
+				// re-acquires focus after (restoresFocusOnActivate below) — the divisor is
+				// re-rendered away by the edit.
 				if (mode.current === 'line') {
-					const zone = getZone(el);
-					const divisorIndex = divisorIndexOf(el);
 					el.click();
-					if (zone && !Number.isNaN(divisorIndex)) {
-						tick().then(() => {
-							const zoneEl = tokenContainer?.querySelector<HTMLElement>(zoneSelector(zone));
-							let next =
-								zoneEl?.querySelector<HTMLElement>(divisorSelector(divisorIndex)) ?? null;
-							if (!next && zoneEl) {
-								// The divisor can vanish when a base token and its punctuation
-								// recombine into one group (they can no longer be split apart) — its
-								// index is now intra-group and unrendered. Focus the nearest remaining
-								// divisor so a keyboard merge doesn't drop focus to <body>.
-								const all = [...zoneEl.querySelectorAll<HTMLElement>(LINE_ITEM_SELECTOR)];
-								next =
-									all.filter((d) => divisorIndexOf(d) <= divisorIndex).pop() ??
-									all[0] ??
-									null;
-							}
-							next?.focus();
-						});
-					}
 					return;
 				}
 				const zone = getZone(el);
@@ -140,6 +118,7 @@
 				if (zone === 'source') alignment.toggleSource(idx, { force: e.shiftKey });
 				else if (zone === 'target') alignment.toggleTarget(idx);
 			},
+			restoresFocusOnActivate: () => mode.current === 'line',
 			onEscape: () => {
 				if (mode.current !== 'line') alignment.deselect();
 			}
