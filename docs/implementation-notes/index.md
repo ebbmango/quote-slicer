@@ -21,6 +21,7 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-26 | [Alignment concern split: ViewHighlight and colouring index](./26-06-26-alignment-concern-split.md) | `d998e63` | ViewHighlight extracted from Alignment for fake-timer testability; buildMappingIndex moved to tokenState.ts as pure fn; index value changed from MappingId to Mapping, eliminating O(n) mappings.find() per render |
 | 2026-06-26 | [Line-edit animation overhaul](./26-06-26-line-edit-animation-overhaul.md) | `a2e434e` | LineDivisor extraction (~505 lines deduped); single nested GSAP Flip over full vertical layout; clearProps fix for double-counting bug that caused auth and opposite panel to jump on first frame in unconstrained viewports |
 | 2026-06-25 | [Theme transition synchronization](./26-06-25-theme-transition-synchronization.md) | `eb941ed` | html.theme-anim gating window syncs fast token transitions to 500ms page background; placeholder color fixed with currentColor; JsonExportPanel dark palette derived from appTheme.current; colorReplacements hoisted to $derived |
 | 2026-06-23 | [Delete button color flash fix](./26-06-23-delete-button-flash-fix.md) | `296de30` | Three-layer bug: SVG fill transition, focus-before-click color mismatch, stale GPU texture on hidden element after theme switch; fixed by removing fill transition, decoupling delete colors from isActive, and {#key isDark} for fresh raster |
