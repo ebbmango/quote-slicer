@@ -170,6 +170,7 @@
 		}
 		killAdd();
 		addCard = card;
+		scrollCardIntoView(card); // card at natural layout position before GSAP transforms
 		const twoCol = isTwoCol();
 		const dir = columnDir(card, twoCol);
 		gsap.set(card, { opacity: 0, x: dir * SLIDE });
@@ -194,7 +195,7 @@
 			onComplete: () => {
 				gsap!.set(card, { clearProps: 'transform,opacity' });
 				addCard = null;
-				scrollActiveIntoView();
+				scrollActiveIntoView(); // retry: corrects scroll if active mapping changed mid-animation
 			}
 		});
 	}
@@ -268,6 +269,10 @@
 		if (addCard) killAdd();
 		const state = Flip.getState(survivors); // survivors at open-gap positions
 		node.style.display = 'none'; // free the slot → survivors reflow closed
+		// Only scroll immediately if no prior gap-close Flip is mid-flight; otherwise
+		// survivors still carry inverse transforms and getBoundingClientRect is wrong.
+		// The $effect retries correctly when the last closing tween completes.
+		if (closing === 0) scrollActiveIntoView();
 		const tween = Flip.from(state, {
 			duration: isTwoCol() ? 0.40 : CLOSE_S,
 			ease: CLOSE_EASE,
@@ -285,7 +290,6 @@
 					closing = Math.max(0, closing - 1);
 					if (closeTweens.length === 0) {
 						clearSurvivorTransforms(addCard ?? undefined);
-						scrollActiveIntoView();
 					}
 				});
 			}
