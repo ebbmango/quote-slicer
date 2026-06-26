@@ -39,8 +39,9 @@ linked per area.
 | File | Responsibility |
 |------|----------------|
 | `src/lib/components/QuoteWorkbench.svelte` | The workbench: textareas (text mode), token grid (link/line/view), IME-filtered source input, builds `editScope()`, owns the nav instance |
-| `src/lib/components/InteractiveSourceText.svelte` | Source tokens; one DOM tree per mode; link-mode click; line-mode split/merge zones |
-| `src/lib/components/InteractiveTargetText.svelte` | Target tokens; same structure; whitespace tokens as split/merge affordances |
+| `src/lib/components/InteractiveSourceText.svelte` | Source tokens; one DOM tree per mode; link-mode click; renders a `LineDivisor` between groups |
+| `src/lib/components/InteractiveTargetText.svelte` | Target tokens; same structure; renders a `LineDivisor` for each whitespace/boundary token |
+| `src/lib/components/LineDivisor.svelte` | The **line divisor** — single owner of the split/merge affordance (split-zone · ws-split · merge-zone), its touch state machine, hover-spread wiring, and CSS; shared by both panels ([Line Mode](line-mode.md)) |
 | `src/lib/components/Mapping.svelte` | One mapping card (reads `MappingView` only); quantized grid sizing; `theme` object; pinyin inputs; delete button |
 | `src/lib/components/MappingsList.svelte` | The `<ol>` of cards; responsive grid; active-card scroll; `handleListTab`; `use:listRef`; empty state |
 | `src/lib/components/JsonExportPanel.svelte` | Derives `formatExport(exportData)`; feeds `HighlightedCode` the palette `colorReplacements` |

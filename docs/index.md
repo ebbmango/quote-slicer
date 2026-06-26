@@ -39,6 +39,12 @@ Then the feature-specific pages as you need them.
 | [File Map](file-map.md) | Every source file and its responsibility |
 | [Future Features](future-features.md) | Designed-but-unbuilt affordances: punctuation exclusion toggle, paired-mark pairing, per-breakpoint line breaks |
 
+## Architecture Decision Records
+
+| ADR | Decision |
+|-----|----------|
+| [ADR-0001](adr/0001-line-edit-dual-scroll-regime.md) | Line-edit animation handles two scroll regimes differently (constrained vs unconstrained) |
+
 ## Companion documents (repo root)
 
 - **[`CLAUDE.md`](../CLAUDE.md)** — dev commands, the modes table, and the canonical

@@ -105,7 +105,7 @@ This keeps the animation-only members (`split`/`merge`/`animating`) out of
 `Alignment`'s type surface, so changes to the animation internals can't ripple into
 the alignment logic.
 
-## The unified Flip (split/merge animation)
+## The line-edit animation (split/merge)
 
 A line edit changes the height of one panel, which shifts everything below it. The
 store animates this as **one** GSAP Flip over an **edit scope** — instead of the old
@@ -122,23 +122,29 @@ type EditScope = {
 };
 ```
 
-`animate(zone, scope, mutate)` runs the sequence:
+`animate(zone, scope, mutate)` is a single nested Flip over the whole vertical layout —
+no manual height locking or tweening:
 
-1. `Flip.getState(...)` over the flip targets — the **edited** panel's individual
-   tokens (each carries `data-flip-id`; they reflow) plus the **other** panel's
-   wrapper and the authorship element (they only reposition, as whole units).
-2. Lock the edited scroll box to its current pixel height and set `animating = true`,
-   so the panel's own instant-fit `$effect` won't snap the height mid-flight.
-3. Run `mutate()` (the split/merge + cache write) and `await tick()`.
-4. Measure the settled height (briefly set `height: auto`, read `scrollHeight`), then
-   GSAP-tween the scroll box from the locked height to the new one; on complete,
-   release back to `height: ''` (auto) so the box can follow later in-flow changes.
-5. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false })`.
-   `absolute: false` keeps the boxes in flow while transforms resolve — the height
-   tween supplies the room they need.
+1. `Flip.getState(...)` over the flip targets: **both panel wrappers + the authorship
+   field + the edited panel's tokens**. Flipping the *layout boxes* (not just the tokens)
+   is the key — it makes the panel boundary animate from its pre-edit position rather than
+   snapping there on the first frame (the "abrupt layout shift on click").
+2. Set `animating = true` (gates the panel's instant-fit `$effect`), run `mutate()`
+   (split/merge + cache write), `await tick()`, then force one synchronous reflow
+   (read `offsetHeight`) so flex fully resolves before Flip reads the after-state.
+3. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false, nested: true })`.
+   - **`nested: true`** — the wrappers and their child tokens are flipped together; Flip
+     accounts for the wrapper transform when animating the tokens inside.
+   - **`absolute: false`** — elements stay in flow, so each wrapper's height change drives
+     the surrounding layout (the boundary slides, siblings follow) naturally.
+   - The tokens already **overflow** their `overflow-clip` wrapper, so the wrapper's own
+     height animation never fights the token slide inside it — the property that makes the
+     single nested Flip work without the two motions interfering.
 
-Both the Flip and the height tween use the same `DURATION = 0.35` /
-`EASE = 'power2.inOut'`, so the panel boundary and the token slide move as one motion.
+The whole sequence shares one `DURATION = 0.35` / `EASE = 'power2.inOut'`, so the panel
+boundary and the token slide move as one motion. See
+[ADR-0001](adr/0001-line-edit-dual-scroll-regime.md) for the alternatives tried and the
+residual limitation.
 
 `Flip` and `gsap` are lazy-loaded in `onMount` (the app is statically prerendered, so
 import-time browser API calls must be avoided). **If they haven't loaded yet,

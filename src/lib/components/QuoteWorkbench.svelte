@@ -38,7 +38,6 @@
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);
-	let authorshipEl: HTMLTextAreaElement | null = $state(null);
 
 	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
 	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
@@ -47,7 +46,6 @@
 		return {
 			sourceWrapperEl,
 			targetWrapperEl,
-			authorshipEl,
 			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null,
 			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null
 		};
@@ -221,7 +219,12 @@
 		onkeydown={tokenGridNav.handleKeydown}
 		onfocusin={tokenGridNav.handleFocusIn}
 	>
-		<div bind:this={sourceWrapperEl} data-zone="source" data-flip-id="source-panel" class="flex min-h-0 w-full">
+		<!-- overflow-clip: during a split/merge the store locks the inner scroll box to an
+		     explicit pixel height. If the stack is over capacity (max-h-full) the flex-col
+		     shrinks this wrapper, but the explicit-height box does NOT stretch down to a
+		     shrunk wrapper — so without clipping it paints straight through into the other
+		     panel. Clipping the wrapper contains the box to its flex slot in every regime. -->
+		<div bind:this={sourceWrapperEl} data-zone="source" data-flip-id="source-panel" class="flex min-h-0 w-full overflow-clip">
 			<InteractiveSourceText
 				tokens={sourceTokens}
 				onSplit={splitSource}
@@ -232,7 +235,7 @@
 				onClearTouchDivisor={clearTouchDivisor}
 			/>
 		</div>
-		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel" class="flex min-h-0 w-full">
+		<div bind:this={targetWrapperEl} data-zone="target" data-flip-id="target-panel" class="flex min-h-0 w-full overflow-clip">
 			<InteractiveTargetText
 				tokens={targetTokens}
 				onSplit={splitTarget}
@@ -251,8 +254,6 @@
 		name="authorship"
 		autocomplete="off"
 		bind:value={authorship}
-		bind:this={authorshipEl}
-		data-flip-id="authorship"
 		rows="1"
 		use:autosize
 		disabled={mode.current === 'view'}

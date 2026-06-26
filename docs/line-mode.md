@@ -45,7 +45,14 @@ A utility for any consumer that needs to render or reason about lines as units.
 ## The line-tool affordances
 
 The source and target panels expose split/merge differently, because their token
-streams differ (source has no whitespace tokens; target does).
+streams differ (source has no whitespace tokens; target does). Both render the same
+module — **`LineDivisor`** — for the affordance itself: it owns the three divisor
+surfaces (`.split-zone` / `.ws-split` / `.merge-zone`), the touch first-tap/second-tap
+state machine, the mouse/keyboard hover-spread wiring (`redistributeRow`), the
+instant-clear that precedes a Flip, and all the divisor CSS. The panels only choose
+*which* divisor goes *where* (from their own token stream) and pass down the resolved
+palette colour, the panel-specific `SPREAD` tuning, the row container, and the
+`onActivate` edit. So a change to divisor behaviour lands in one place, not two.
 
 ### Source panel (`InteractiveSourceText`)
 

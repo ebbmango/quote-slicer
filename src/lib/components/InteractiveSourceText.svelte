@@ -3,7 +3,8 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
-	import { redistributeRow, clearRedistribute } from '$lib/actions/redistribute';
+	import { clearRedistribute } from '$lib/actions/redistribute';
+	import LineDivisor from '$lib/components/LineDivisor.svelte';
 	import { divisorColor, HIGHLIGHT_COLOR, type MappingColorVariant } from '$lib/constants/colors';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
 	import { theme as appTheme } from '$lib/theme';
@@ -58,39 +59,6 @@
 	// be split off from its base. Divisors live only between groups, as direct
 	// children of the row container. See groupSourceTokens.
 	let groups = $derived(groupSourceTokens(tokens));
-
-	function handleSplit(globalIndex: number) {
-		onSplit(globalIndex);
-	}
-
-	function handleMerge(lineN: number) {
-		onMerge(lineN);
-	}
-
-	// Touch divisor tap: first tap highlights (+ spread, split zones only); second
-	// tap on the same divisor activates. Mouse/keyboard activate immediately.
-	function handleDivisorClick(
-		e: MouseEvent,
-		index: number,
-		kind: 'split' | 'merge',
-		activate: () => void
-	) {
-		e.stopPropagation();
-		if (!isLineMode) return;
-		if (!isTouch) {
-			activate();
-			return;
-		}
-		if (touchedDivisorIndex === index) {
-			// activate() runs clearRedistribute({ instant: true }) before the edit, so
-			// any first-tap spread snaps back exactly as the line splits/merges.
-			onClearTouchDivisor();
-			activate();
-		} else {
-			onTouchDivisor(index);
-			if (kind === 'split') redistributeRow(lineContainer, index, SPREAD);
-		}
-	}
 
 	// Clear any lingering divisor-hover redistribution when leaving line mode.
 	$effect(() => {
@@ -188,56 +156,6 @@
 			if (isViewMode && !isTouch) alignment.hoverOut();
 		}}
 	>
-		{#snippet divisor(i)}
-			{#if tokens[i + 1].line !== tokens[i].line}
-				<button
-					class="merge-zone"
-					class:line-active={isLineMode}
-					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
-					data-divisor-index={i}
-					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD, colorMode)}"
-					tabindex={-1}
-					onclick={(e) =>
-						handleDivisorClick(e, i, 'merge', () => {
-							clearRedistribute(lineContainer, { instant: true });
-							handleMerge(tokens[i].line);
-						})}
-					aria-label="Merge with next line"
-				>
-					<span class="merge-indicator"></span>
-				</button>
-			{:else}
-				<button
-					class="split-zone"
-					class:line-active={isLineMode}
-					class:touch-lit={isLineMode && isTouch && touchedDivisorIndex === i}
-					data-divisor-index={i}
-					style="--line-tool-color: {divisorColor(i, DIVISOR_FIELD, colorMode)}"
-					tabindex={-1}
-					onclick={(e) =>
-						handleDivisorClick(e, i, 'split', () => {
-							clearRedistribute(lineContainer, { instant: true });
-							handleSplit(i);
-						})}
-					onmouseenter={() => {
-						if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
-					}}
-					onmouseleave={() => {
-						if (!isTouch) clearRedistribute(lineContainer);
-					}}
-					onfocus={() => {
-						if (isLineMode && !isTouch) redistributeRow(lineContainer, i, SPREAD);
-					}}
-					onblur={() => {
-						if (!isTouch) clearRedistribute(lineContainer);
-					}}
-					aria-label="Split line here"
-				>
-					<span class="split-indicator"></span>
-				</button>
-			{/if}
-		{/snippet}
-
 		{#snippet tokenSpan(i)}
 			{@const token = tokens[i]}
 			{@const interactive = isLinkMode && token.type !== 'punctuation'}
@@ -281,25 +199,26 @@
 				{/each}
 			</span>
 			{#if group[group.length - 1] < tokens.length - 1}
-				{@render divisor(group[group.length - 1])}
+				{@const di = group[group.length - 1]}
+				{@const isMerge = tokens[di + 1].line !== tokens[di].line}
+				<LineDivisor
+					kind={isMerge ? 'merge' : 'split'}
+					surface="zone"
+					divisorIndex={di}
+					color={divisorColor(di, DIVISOR_FIELD, colorMode)}
+					container={lineContainer}
+					spread={SPREAD}
+					touchedDivisorIndex={touchedDivisorIndex}
+					onActivate={() => (isMerge ? onMerge(tokens[di].line) : onSplit(di))}
+					onTouch={onTouchDivisor}
+					onClearTouch={onClearTouchDivisor}
+				/>
 			{/if}
 		{/each}
 	</div>
 </div>
 
 <style>
-	/* Register --rd-x so it always resolves to a concrete length (0px) instead of a
-	   var() fallback. Transitions on transform: translateX(var(--rd-x)) only ease
-	   when both ends are explicit values; an unset/fallback end snaps. Registering
-	   keeps every redistribution explicit→explicit, so collapsing a previously-spread
-	   row and opening a new one both animate (cross-visual-row, where a token touches
-	   the rest state for the first/last time). See actions/redistribute.ts. */
-	@property --rd-x {
-		syntax: '<length>';
-		initial-value: 0px;
-		inherits: true; /* indicators read it via inheritance from their zone */
-	}
-
 	/* Soft top/bottom fade on the scroll area instead of a hard cutoff. The 0.75rem
 	   fade matches the scroll box's 0.75rem (py-3) padding, so at either scroll
 	   extreme the first/last line sits past the fade and reads at full opacity —
@@ -365,163 +284,9 @@
 			color 280ms ease,
 			opacity 280ms ease;
 	}
-	/* Snap the indicator back instantly when the redistribution is cleared just
-	   before a Flip (clearRedistribute({ instant: true })) so its `--rd-x` ease
-	   doesn't run alongside the Flip. */
-	:global(.rd-instant) .split-indicator {
-		transition: none;
-	}
-
-	/* While GSAP Flip runs, kill pointer events on divisors — prevents hover
-	   activation, opacity flash, and spread animations mid-animation. */
-	.flipping .split-zone,
-	.flipping .merge-zone.line-active .merge-indicator {
-		pointer-events: none;
-	}
-
-	.split-zone {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		/* Hit target spans roughly a full character so the whole inter-word gap is
-		   hoverable, not just a narrow band over the indicator. `margin: -width/2`
-		   keeps the layout contribution net-zero (zones overlap into the flanking
-		   glyphs but don't reflow them); z-index:1 keeps them on top for the hit. */
-		width: 1em;
-		margin: 0 -0.5em;
-		z-index: 1;
-		align-self: stretch;
-		padding: 0;
-		background: none;
-		border: none;
-		cursor: pointer;
-		outline: none;
-	}
-
-	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
-	.split-zone:not(.line-active) {
-		pointer-events: none;
-	}
-
-	.split-indicator {
-		display: block;
-		width: var(--line-tool-width);
-		height: 0.85em;
-		background: var(--line-tool-color);
-		opacity: var(--line-tool-opacity-idle);
-		/* The hit-zone stays anchored under the pointer; only the indicator slides
-		   to stay centred in the resized gap during the hover redistribution. This
-		   prevents the divisor "dancing" out from under a stationary pointer (the
-		   8px zone moving triggered leave/enter flicker). See actions/redistribute.ts. */
-		transform: translateX(var(--rd-x, 0)) skewX(-10deg);
-		transition:
-			opacity 150ms,
-			transform 150ms ease;
-	}
-
-	:global(html[data-interaction='mouse']) .split-zone.line-active:hover .split-indicator,
-	:global(html[data-interaction='keyboard'])
-		.split-zone.line-active:focus
-		.split-indicator {
-		opacity: var(--line-tool-opacity-hover);
-	}
-
-	/* Touch-highlighted split divisor — same visual as hover/focus. No media gate:
-	   touch-lit is only set when interactionMode === 'touch'. */
-	.split-zone.touch-lit .split-indicator {
-		opacity: var(--line-tool-opacity-hover);
-	}
-
-	/* Full-width line break. Height animates 0 ↔ 1.5rem on the mode change so the
-	   lines "come apart"; the scroll box (height: auto) follows in flow. At height
-	   0 it still forces a flex wrap, so it doubles as the plain line break in
-	   link/view modes. */
-	.merge-zone {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 100%;
-		height: 0;
-		padding: 0;
-		overflow: hidden;
-		background: none;
-		border: none;
-		outline: none;
-		transition: height 350ms ease;
-	}
-
-	/* NOTE: in one headless/automated probe, forcing `height` on this flex item
-	   (even via inline style, transition disabled) computed to 0px, while
-	   `min-height` worked. Looked fine in a real browser. If this ever shows up
-	   as a real bug, swap `height` for `min-height` here (and in
-	   InteractiveTargetText's matching rule) and re-check the close transition. */
-	.merge-zone.line-active {
-		height: 1.5rem;
-		/* The full-width band is only here to force the flex wrap (the line break).
-		   Hover/click belong to the dashed line itself, not the empty span beside it —
-		   so the band takes no pointer events; the indicator re-enables them. */
-		pointer-events: none;
-	}
-
-	.merge-zone:not(.line-active) {
-		pointer-events: none;
-	}
-
-	.merge-zone:not(.line-active) .merge-indicator {
-		opacity: 0;
-	}
-
-	.merge-indicator {
-		display: block;
-		width: 2.5rem;
-		height: var(--line-tool-width);
-		/* Vertical padding gives the thin line a hittable height without thickening
-		   it — the dashes are clipped to the content box, so the padding stays
-		   invisible. `box-sizing: content-box` keeps the line height exact. */
-		box-sizing: content-box;
-		padding: 0.45rem 0;
-		background-clip: content-box;
-		background-image: linear-gradient(
-			to right,
-			var(--line-tool-color) 0 50%,
-			transparent 50% 100%
-		);
-		background-repeat: repeat-x;
-		background-size: calc(var(--line-tool-dash) + var(--line-tool-gap)) 100%;
-		opacity: var(--line-tool-opacity-idle-merge);
-		transition: opacity 340ms, width 340ms ease, background-size 340ms ease;
-	}
-
-	/* The line itself is the only interactive part of the band (see .merge-zone).
-	   Raise it above the flanking tokens, whose tall (leading-10) line-boxes spill
-	   into the gap and would otherwise capture the hit. */
-	.merge-zone.line-active .merge-indicator {
-		pointer-events: auto;
-		cursor: pointer;
-		position: relative;
-		z-index: 2;
-	}
-
-	:global(html[data-interaction='mouse']) .merge-zone.line-active .merge-indicator:hover,
-	:global(html[data-interaction='keyboard'])
-		.merge-zone.line-active:focus
-		.merge-indicator {
-		opacity: var(--line-tool-opacity-hover);
-		width: 30%;
-		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;
-	}
-
-	/* Touch-highlighted merge divisor — same visual as hover/focus. */
-	.merge-zone.touch-lit .merge-indicator {
-		opacity: var(--line-tool-opacity-hover);
-		width: 30%;
-		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;
-	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.tok,
-		.merge-zone,
-		.split-zone {
+		.tok {
 			transition: none;
 		}
 	}
