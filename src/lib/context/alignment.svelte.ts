@@ -4,6 +4,7 @@ import { toCanonical, toDisplay } from '$lib/pinyinConvert';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 import type { TokenAccess } from '$lib/animation/tokenStore.svelte';
 import {
+	buildMappingIndex,
 	buildTargetText,
 	deriveSourceTokenState,
 	deriveTargetTokenState,
@@ -14,6 +15,7 @@ import {
 	type TokenState,
 } from '$lib/tokenState';
 import { theme as appTheme } from '$lib/theme';
+import { ViewHighlight } from './viewHighlight.svelte';
 
 export type { Mapping, MappingId, QuoteExport, QuoteExportMeta, TokenState };
 
@@ -32,15 +34,6 @@ function tokenPinyin(token: SourceToken | undefined): string {
 
 const ALIGNMENT_KEY = Symbol('alignment');
 
-// View-mode hover-highlight timing (ms). `COLD` is the wait before a mapping
-// lights up when nothing was lit; `WARM` is the shorter wait when re-entering a
-// mapping within `GRACE` ms of the previous highlight clearing. The delay stops
-// the whole text flickering as the pointer glides across tokens; clearing is
-// always immediate (the CSS color transition makes the fade-out gradual).
-const HL_COLD_DELAY = 500;
-const HL_WARM_DELAY = 300;
-const HL_WARMTH_GRACE = 500;
-
 export class Alignment {
 	activeMappingId: MappingId | null = $state(null);
 	// True while the MappingsList panel is animating (card entering or exiting). Written
@@ -54,7 +47,14 @@ export class Alignment {
 	// The token store is the single owner of the token arrays (with pinyin and the
 	// split/merge cache). Alignment reads them as live derivations of the store
 	// keyed by the current text — it no longer holds its own copy to keep in sync.
-	constructor(private store: TokenAccess) {}
+	private highlight: ViewHighlight;
+
+	constructor(private store: TokenAccess) {
+		this.highlight = new ViewHighlight((zone, i) => {
+			const m = zone === 'source' ? this.sourceMappingIndex.get(i) : this.targetMappingIndex.get(i);
+			return m?.id ?? null;
+		});
+	}
 
 	private sourceTokens: SourceToken[] = $derived.by(() => this.store.sourceTokens(this.meta.sourceText));
 	private targetTokens: TargetToken[] = $derived.by(() => this.store.targetTokens(this.meta.targetText));
@@ -98,26 +98,12 @@ export class Alignment {
 		this.sortedMappings.map((m) => this.buildMappingView(m))
 	);
 
-	private sourceMappingIndex: Map<number, MappingId> = $derived(
-		new Map(
-			this.mappings.flatMap((m) =>
-				m.sourceTokenIds.flatMap((id) => {
-					const idx = this.sourceIdToIndex.get(id);
-					return idx !== undefined ? [[idx, m.id] as [number, MappingId]] : [];
-				})
-			)
-		)
+	private sourceMappingIndex: Map<number, Mapping> = $derived(
+		buildMappingIndex(this.mappings, this.sourceIdToIndex, (m) => m.sourceTokenIds)
 	);
 
-	private targetMappingIndex: Map<number, MappingId> = $derived(
-		new Map(
-			this.mappings.flatMap((m) =>
-				m.targetTokenIds.flatMap((id) => {
-					const idx = this.targetIdToIndex.get(id);
-					return idx !== undefined ? [[idx, m.id] as [number, MappingId]] : [];
-				})
-			)
-		)
+	private targetMappingIndex: Map<number, Mapping> = $derived(
+		buildMappingIndex(this.mappings, this.targetIdToIndex, (m) => m.targetTokenIds)
 	);
 
 	private get activeMapping(): Mapping | undefined {
@@ -277,7 +263,7 @@ export class Alignment {
 	}
 
 	stateOfSource(i: number): TokenState {
-		return deriveSourceTokenState(i, this.sourceMappingIndex, this.mappings, this.activeMappingId, appTheme.current);
+		return deriveSourceTokenState(i, this.sourceMappingIndex, this.activeMappingId, appTheme.current);
 	}
 
 	stateOfTarget(i: number): TokenState {
@@ -285,127 +271,24 @@ export class Alignment {
 			i,
 			this.targetTokens,
 			this.targetMappingIndex,
-			this.mappings,
 			this.activeMappingId,
 			appTheme.current
 		);
 	}
 
 	// ── View-mode hover highlight ──────────────────────────────────────────────
-	// `hoveredMappingId` is the mapping currently lit; both panels read it via
-	// `isSourceHighlighted` / `isTargetHighlighted`. `pointerMapping` is the
-	// mapping under the pointer right now (may differ while a light-up timer is
-	// pending). `warm` is the grace flag — true while lit and for `HL_WARMTH_GRACE`
-	// ms after clearing — which selects the shorter `HL_WARM_DELAY`.
-	hoveredMappingId: MappingId | null = $state(null);
-	private pointerMapping: MappingId | null = null;
-	private warm = false;
-	private lightTimer: ReturnType<typeof setTimeout> | null = null;
-	private graceTimer: ReturnType<typeof setTimeout> | null = null;
+	// Delegated to ViewHighlight. The resolver closure reads the live $derived
+	// index maps at call time, so it always reflects the current token layout.
+	get hoveredMappingId(): MappingId | null { return this.highlight.hoveredMappingId; }
 
-	private sourceMappingAt(i: number): MappingId | null {
-		return this.sourceMappingIndex.get(i) ?? null;
-	}
-	private targetMappingAt(i: number): MappingId | null {
-		return this.targetMappingIndex.get(i) ?? null;
-	}
-
-	// Mouse hover. `next` is the mapping under the pointer (null = unmapped token,
-	// whitespace, or the pointer left the text). Light-up is delayed; clearing is
-	// immediate. No-op when the pointer hasn't actually changed mapping — this is
-	// what keeps a move between two tokens of the *same* mapping lit without a
-	// flash, and lets the clear come only from entering a non-mapping or leaving.
-	private movePointer(next: MappingId | null): void {
-		if (next === this.pointerMapping) return;
-		this.pointerMapping = next;
-		this.clearLightTimer();
-
-		if (next === null) {
-			if (this.hoveredMappingId !== null) {
-				this.hoveredMappingId = null;
-				this.startGrace();
-			}
-			return;
-		}
-		if (next === this.hoveredMappingId) return; // already lit — instant stay
-
-		const delay = this.warm ? HL_WARM_DELAY : HL_COLD_DELAY;
-		this.lightTimer = setTimeout(() => {
-			this.lightTimer = null;
-			this.hoveredMappingId = next;
-			this.warm = true;
-			this.clearGrace();
-		}, delay);
-	}
-
-	hoverSource(i: number): void {
-		this.movePointer(this.sourceMappingAt(i));
-	}
-	hoverTarget(i: number): void {
-		this.movePointer(this.targetMappingAt(i));
-	}
-	hoverOut(): void {
-		this.movePointer(null);
-	}
-
-	// Touch tap. Instant, no delay: tap the lit mapping again to dismiss, tap a
-	// different mapping to switch, tap nothing (null) to clear.
-	private tapMapping(m: MappingId | null): void {
-		this.clearLightTimer();
-		// A grace timer left running from a prior hover-away would keep `warm` true
-		// through the tap, so the next mouse hover would use the 300ms warm delay
-		// instead of the 500ms cold delay. Reset both for consistent timing.
-		this.clearGrace();
-		this.warm = false;
-		// Keep `pointerMapping` in lockstep with what ends up lit, not the tapped
-		// id: a toggle-off lands on null, so a later mouse hover of the same token
-		// won't hit movePointer's `next === pointerMapping` early-return and stay dark.
-		const next = m === this.hoveredMappingId ? null : m;
-		this.pointerMapping = next;
-		this.hoveredMappingId = next;
-	}
-	tapSource(i: number): void {
-		this.tapMapping(this.sourceMappingAt(i));
-	}
-	tapTarget(i: number): void {
-		this.tapMapping(this.targetMappingAt(i));
-	}
-
-	isSourceHighlighted(i: number): boolean {
-		return this.hoveredMappingId !== null && this.sourceMappingAt(i) === this.hoveredMappingId;
-	}
-	isTargetHighlighted(i: number): boolean {
-		return this.hoveredMappingId !== null && this.targetMappingAt(i) === this.hoveredMappingId;
-	}
-
-	// Reset everything — call when leaving view mode.
-	clearHighlight(): void {
-		this.clearLightTimer();
-		this.clearGrace();
-		this.pointerMapping = null;
-		this.warm = false;
-		this.hoveredMappingId = null;
-	}
-
-	private clearLightTimer(): void {
-		if (this.lightTimer !== null) {
-			clearTimeout(this.lightTimer);
-			this.lightTimer = null;
-		}
-	}
-	private startGrace(): void {
-		this.clearGrace();
-		this.graceTimer = setTimeout(() => {
-			this.graceTimer = null;
-			this.warm = false;
-		}, HL_WARMTH_GRACE);
-	}
-	private clearGrace(): void {
-		if (this.graceTimer !== null) {
-			clearTimeout(this.graceTimer);
-			this.graceTimer = null;
-		}
-	}
+	hoverSource(i: number): void { this.highlight.hoverSource(i); }
+	hoverTarget(i: number): void { this.highlight.hoverTarget(i); }
+	hoverOut(): void { this.highlight.hoverOut(); }
+	tapSource(i: number): void { this.highlight.tapSource(i); }
+	tapTarget(i: number): void { this.highlight.tapTarget(i); }
+	isSourceHighlighted(i: number): boolean { return this.highlight.isSourceHighlighted(i); }
+	isTargetHighlighted(i: number): boolean { return this.highlight.isTargetHighlighted(i); }
+	clearHighlight(): void { this.highlight.clearHighlight(); }
 }
 
 export function setAlignmentContext(store: TokenAccess): Alignment {

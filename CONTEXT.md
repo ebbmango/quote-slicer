@@ -27,6 +27,10 @@ _Avoid_: split zone (only the source surface), separator, gap button
 The bundle of DOM refs a single line edit animates over — each panel's wrapper and its inner scroll box. Passed into `split`/`merge`: `Flip.getState` captures the edited panel's tokens for reflow, and the edited wrapper is the element whose height is tweened (when the panel can grow).
 _Avoid_: animation context, refs, targets
 
+**ViewHighlight**:
+The view-mode hover-highlight timer state machine, extracted from `Alignment`. Owns `hoveredMappingId` (`$state`), the cold/warm/grace delay logic, and the mouse/touch input methods (`hoverSource`, `hoverTarget`, `hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`, `clearHighlight`). `Alignment` constructs one internally and passes a resolver closure over its live `sourceMappingIndex`/`targetMappingIndex` maps; callers access the surface through `Alignment` unchanged. Located at `src/lib/context/viewHighlight.svelte.ts`.
+_Avoid_: "hover state", "highlight machine"
+
 **line-edit animation**:
 What animates a line edit. The edited panel's tokens reflow via one GSAP Flip; when the new content still fits the panel its wrapper's height tweens (sliding the panels below it in flow); once the panel overflows (capped stack, internal scroll) the height is owned by flex, so the layout settles instantly and only the tokens reflow. The panels below are **not** flipped — they ride the flow — and each panel wrapper is `overflow-clip` so a reflowing token can never paint into the other panel. See [token store](docs/token-store.md).
 _Avoid_: unified Flip (the slide is flow-driven, not a second Flip); shift animation; double Flip

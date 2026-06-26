@@ -31,39 +31,53 @@ export type TokenState =
 	| { kind: 'idle'; color: string }
 	| { kind: 'active'; color: string };
 
+// Maps each token index to the Mapping that claims it. Owns the id→index
+// translation so the index-building is testable without a live Alignment.
+export function buildMappingIndex(
+	mappings: Mapping[],
+	idToIndex: Map<number, number>,
+	tokenIds: (m: Mapping) => number[]
+): Map<number, Mapping> {
+	const index = new Map<number, Mapping>();
+	for (const m of mappings) {
+		for (const id of tokenIds(m)) {
+			const idx = idToIndex.get(id);
+			if (idx !== undefined) index.set(idx, m);
+		}
+	}
+	return index;
+}
+
 export function deriveSourceTokenState(
 	i: number,
-	sourceMappingIndex: Map<number, MappingId>,
-	mappings: Mapping[],
+	index: Map<number, Mapping>,
 	activeMappingId: MappingId | null,
 	mode: Mode = 'light'
 ): TokenState {
-	const claimed = sourceMappingIndex.get(i);
-	if (claimed === undefined) return { kind: 'unmapped' };
-	const m = mappings.find((x) => x.id === claimed)!;
+	const m = index.get(i);
+	if (m === undefined) return { kind: 'unmapped' };
 	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].source;
-	if (claimed === activeMappingId) return { kind: 'active', color };
-	return { kind: 'idle', color };
+	return { kind: m.id === activeMappingId ? 'active' : 'idle', color };
 }
 
 // Whitespace bridging rule: a whitespace token inherits the state of its nearest
 // non-whitespace neighbors on both sides if they belong to the same mapping.
-function findBridgeMappingId(
+function findBridgeMapping(
 	i: number,
 	targetTokens: TargetToken[],
-	targetMappingIndex: Map<number, MappingId>
-): MappingId | undefined {
-	let left: MappingId | undefined;
+	index: Map<number, Mapping>
+): Mapping | undefined {
+	let left: Mapping | undefined;
 	for (let k = i - 1; k >= 0; k--) {
 		if (targetTokens[k]?.type !== 'whitespace') {
-			left = targetMappingIndex.get(k);
+			left = index.get(k);
 			break;
 		}
 	}
-	let right: MappingId | undefined;
+	let right: Mapping | undefined;
 	for (let k = i + 1; k < targetTokens.length; k++) {
 		if (targetTokens[k]?.type !== 'whitespace') {
-			right = targetMappingIndex.get(k);
+			right = index.get(k);
 			break;
 		}
 	}
@@ -98,26 +112,15 @@ export function buildTargetText(targetIndices: number[], targetTokens: TargetTok
 export function deriveTargetTokenState(
 	i: number,
 	targetTokens: TargetToken[],
-	targetMappingIndex: Map<number, MappingId>,
-	mappings: Mapping[],
+	index: Map<number, Mapping>,
 	activeMappingId: MappingId | null,
 	mode: Mode = 'light'
 ): TokenState {
-	const claimed = targetMappingIndex.get(i);
-	if (claimed === undefined) {
-		if (targetTokens[i]?.type === 'whitespace') {
-			const bridgeId = findBridgeMappingId(i, targetTokens, targetMappingIndex);
-			if (bridgeId !== undefined) {
-				const m = mappings.find((x) => x.id === bridgeId)!;
-				const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].target;
-				if (bridgeId === activeMappingId) return { kind: 'active', color };
-				return { kind: 'idle', color };
-			}
-		}
-		return { kind: 'unmapped' };
+	let m = index.get(i);
+	if (m === undefined && targetTokens[i]?.type === 'whitespace') {
+		m = findBridgeMapping(i, targetTokens, index);
 	}
-	const m = mappings.find((x) => x.id === claimed)!;
+	if (m === undefined) return { kind: 'unmapped' };
 	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].target;
-	if (claimed === activeMappingId) return { kind: 'active', color };
-	return { kind: 'idle', color };
+	return { kind: m.id === activeMappingId ? 'active' : 'idle', color };
 }
