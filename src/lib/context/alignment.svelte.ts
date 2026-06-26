@@ -147,10 +147,6 @@ export class Alignment {
 		};
 	}
 
-	getMappingView(id: MappingId): MappingView {
-		return this.buildMappingView(this.mappings.find((x) => x.id === id)!);
-	}
-
 	setMeta(meta: QuoteExportMeta): void {
 		this.meta = meta;
 	}

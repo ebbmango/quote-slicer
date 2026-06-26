@@ -1,4 +1,4 @@
-import type { Mode } from './types';
+import type { ThemeMode as Mode } from './types';
 
 export type ThemeSource = 'system' | 'user';
 

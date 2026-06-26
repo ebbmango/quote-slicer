@@ -9,28 +9,11 @@
 
 export type ActionMode = 'mouse' | 'keyboard' | 'touch';
 
-type InteractionModeState = {
-	current: ActionMode;
-	set: (newMode: ActionMode) => void;
-	isMouse: boolean;
-	isKeyboard: boolean;
-	isTouch: boolean;
-};
-
-export const interactionMode: InteractionModeState = $state({
-	current: 'mouse',
+export const interactionMode = $state({
+	current: 'mouse' as ActionMode,
 	set: (newMode: ActionMode) => {
 		interactionMode.current = newMode;
 		document.documentElement.dataset.interaction = newMode;
-	},
-	get isMouse() {
-		return interactionMode.current === 'mouse';
-	},
-	get isKeyboard() {
-		return interactionMode.current === 'keyboard';
-	},
-	get isTouch() {
-		return interactionMode.current === 'touch';
 	}
 });
 

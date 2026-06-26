@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { createSubscriber } from 'svelte/reactivity';
-import type { Mode } from './types';
+import type { ThemeMode as Mode } from './types';
 import {
 	HEARTBEAT_MS,
 	THEME_STATE_KEY,

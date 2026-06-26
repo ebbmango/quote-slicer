@@ -1,5 +1,5 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
-import type { Mode } from '$lib/types';
+import type { ThemeMode as Mode } from '$lib/types';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;

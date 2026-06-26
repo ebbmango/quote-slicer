@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import icons from '$lib/assets/icons.json';
 	import { theme } from '$lib/theme';
-	import type { Mode } from '$lib/types';
+	import type { ThemeMode as Mode } from '$lib/types';
 
 	const sun = icons['sun-bright'];
 	const moon = icons['moon'];
