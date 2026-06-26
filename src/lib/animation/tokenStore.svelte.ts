@@ -3,11 +3,7 @@ import 'gsap'; // pulls in ambient gsap.* type namespace used by Flip's vars typ
 import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 import { splitAfterToken, mergeLines } from '$lib/line';
-import {
-	AUTHORSHIP_SELECTOR,
-	FLIP_TOKEN_SELECTOR,
-	type Zone
-} from '$lib/navigation/gridDom';
+import { FLIP_TOKEN_SELECTOR, type Zone } from '$lib/navigation/gridDom';
 
 const DURATION = 0.35;
 const EASE = 'power2.inOut';
@@ -16,12 +12,15 @@ const TOKEN_STORE_KEY = Symbol('tokenStore');
 // Everything a single line edit animates over. The edited panel's tokens reflow
 // individually (each carries data-flip-id, found via its scroll box); the edited
 // panel's wrapper is the element whose height is tweened when the panel can grow.
-// The panels below ride the flow (not flipped) — see animate().
+// The panels below ride the flow (not flipped) — see animate(). The authorship
+// field (authEl) is carried here too: the workbench owns the layout, so it passes
+// the ref in rather than the store walking the DOM up to find it.
 export type EditScope = {
 	sourceWrapperEl: HTMLElement | null;
 	targetWrapperEl: HTMLElement | null;
 	sourceScrollEl: HTMLElement | null;
 	targetScrollEl: HTMLElement | null;
+	authEl: HTMLElement | null;
 };
 
 // The token store (see CONTEXT.md "tokens"). The single owner of the
@@ -95,9 +94,7 @@ export function createTokenStore() {
 		const tokens = editedScroll
 			? Array.from(editedScroll.querySelectorAll<HTMLElement>(FLIP_TOKEN_SELECTOR))
 			: [];
-		const stack = scope.sourceWrapperEl?.parentElement?.parentElement as HTMLElement | null;
-		const auth = stack?.querySelector<HTMLElement>(AUTHORSHIP_SELECTOR) ?? null;
-		return [scope.sourceWrapperEl, scope.targetWrapperEl, auth, ...tokens].filter(
+		return [scope.sourceWrapperEl, scope.targetWrapperEl, scope.authEl, ...tokens].filter(
 			(el): el is HTMLElement => el !== null
 		);
 	}
@@ -108,7 +105,6 @@ export function createTokenStore() {
 			return;
 		}
 
-		const stack = scope.sourceWrapperEl?.parentElement?.parentElement as HTMLElement | null;
 		const otherWrapper = zone === 'source' ? scope.targetWrapperEl : scope.sourceWrapperEl;
 		// Capture other wrapper's height before the edit to detect constrained flex
 		// redistribution (both wrappers change height when the outer-stack is capped).
@@ -155,10 +151,9 @@ export function createTokenStore() {
 		// The other wrapper is only safe to clear if it didn't change height: if it changed
 		// height (flex redistribution in the constrained/overflow regime) its Flip transform
 		// is load-bearing for the position animation that accompanies the height change.
-		const auth = stack?.querySelector<HTMLElement>(AUTHORSHIP_SELECTOR) ?? null;
 		const otherHeightChanged =
 			otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
-		if (auth) gsap.set(auth, { clearProps: 'transform' });
+		if (scope.authEl) gsap.set(scope.authEl, { clearProps: 'transform' });
 		if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 	}
 

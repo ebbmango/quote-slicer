@@ -12,7 +12,6 @@
 //   data-divisor-index  LineDivisor
 //   .split-zone / .merge-zone / .ws-split   LineDivisor
 //   data-scrollbox      the panels' scroll boxes
-//   #authorship         QuoteWorkbench
 //
 // Readers go through this module, so renaming an attribute touches the writer's
 // markup plus this file and nothing else. Absorbs the former constants/lineDivisor.ts.
@@ -38,8 +37,6 @@ export const PANEL_SELECTOR = '[data-zone]';
 export const SCROLLBOX_SELECTOR = '[data-scrollbox]';
 /** A token carrying a Flip id, reflowed during a line edit. */
 export const FLIP_TOKEN_SELECTOR = '[data-flip-id]';
-/** The authorship field, flipped alongside the panels. */
-export const AUTHORSHIP_SELECTOR = '#authorship';
 
 export const zoneSelector = (zone: Zone) => `[data-zone="${zone}"]`;
 export const tokenSelector = (index: number) => `[data-token-index="${index}"]`;

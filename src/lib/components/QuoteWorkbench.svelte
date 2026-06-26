@@ -47,6 +47,7 @@
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);
+	let authEl: HTMLTextAreaElement | null = $state(null);
 
 	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
 	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
@@ -56,7 +57,8 @@
 			sourceWrapperEl,
 			targetWrapperEl,
 			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
-			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null
+			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
+			authEl
 		};
 	}
 
@@ -261,6 +263,7 @@
 	<textarea
 		id="authorship"
 		name="authorship"
+		bind:this={authEl}
 		autocomplete="off"
 		bind:value={authorship}
 		rows="1"
