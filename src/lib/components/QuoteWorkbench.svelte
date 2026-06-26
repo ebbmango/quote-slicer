@@ -8,8 +8,7 @@
 	import { createTokenGridNav, getZone, type Zone } from '$lib/navigation/tokenGridNav';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
-
-	const LINE_ITEM_SELECTOR = '.split-zone, .merge-zone, .ws-split';
+	import { LINE_ITEM_SELECTOR } from '$lib/constants/lineDivisor';
 
 	let {
 		sourceText = $bindable(),

@@ -12,6 +12,8 @@
 // lazily on each hover-enter (a handful of `offsetTop` reads) — always fresh, so
 // resize / font-load / edits need no invalidation. Cleared on leave/blur.
 
+import { SPLIT_SURFACE_SELECTOR } from '$lib/constants/lineDivisor';
+
 const reducedMotion = () =>
 	typeof window !== 'undefined' &&
 	window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -35,7 +37,7 @@ export function redistributeRow(
 	if (!container || reducedMotion()) return;
 
 	// Clear any redistribution left on a previously spread row before applying the new one.
-	for (const el of container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split'))
+	for (const el of container.querySelectorAll<HTMLElement>(`.tok, ${SPLIT_SURFACE_SELECTOR}`))
 		el.style.removeProperty('--rd-x');
 
 	const toks = Array.from(container.querySelectorAll<HTMLElement>('.tok'));
@@ -85,7 +87,7 @@ export function redistributeRow(
 	const idxOff = new Map(row.map((r, j) => [r.idx, off[j]]));
 	const minIdx = row[0].idx;
 	const maxIdx = row[m - 1].idx;
-	for (const dv of container.querySelectorAll<HTMLElement>('.split-zone, .ws-split')) {
+	for (const dv of container.querySelectorAll<HTMLElement>(SPLIT_SURFACE_SELECTOR)) {
 		const d = Number(dv.dataset.divisorIndex);
 		if (!(d >= minIdx && d < maxIdx)) continue; // not an interior gap of this row
 		let lIdx = -Infinity;
@@ -116,7 +118,7 @@ export function clearRedistribute(
 ): void {
 	if (!container) return;
 	const els = Array.from(
-		container.querySelectorAll<HTMLElement>('.tok, .split-zone, .ws-split')
+		container.querySelectorAll<HTMLElement>(`.tok, ${SPLIT_SURFACE_SELECTOR}`)
 	);
 	if (instant) {
 		// The indicators consume `--rd-x` via inheritance (the value is written to

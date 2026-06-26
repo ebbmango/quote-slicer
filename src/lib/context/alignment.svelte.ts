@@ -222,7 +222,9 @@ export class Alignment {
 	toggleSource(i: number, opts: { force?: boolean } = {}): void {
 		if (this.listAnimating) return;
 		const type = this.sourceTokens[i]?.type;
-		if (type === 'whitespace' || type === 'punctuation') return;
+		// Source tokens are never whitespace (only target streams carry whitespace);
+		// punctuation can't anchor a mapping.
+		if (type === 'punctuation') return;
 		const tokenId = this.sourceTokens[i].id;
 		if (this.tryRemoveOrSwitch('source', tokenId)) return;
 

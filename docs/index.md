@@ -44,6 +44,7 @@ Then the feature-specific pages as you need them.
 | ADR | Decision |
 |-----|----------|
 | [ADR-0001](adr/0001-line-edit-dual-scroll-regime.md) | Line-edit animation handles two scroll regimes differently (constrained vs unconstrained) |
+| [ADR-0002](adr/0002-interactive-panel-asymmetry.md) | Source/target panel DOM and ordinal asymmetries are intentional — do not unify further |
 
 ## Companion documents (repo root)
 
