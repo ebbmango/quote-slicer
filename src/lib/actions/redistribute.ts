@@ -18,17 +18,13 @@ import {
 	tokenIndexOf,
 	divisorIndexOf
 } from '$lib/navigation/gridDom';
+import { computeRowOffsets, type RedistributeOpts } from '$lib/actions/rowSpread';
+
+export type { RedistributeOpts };
 
 const reducedMotion = () =>
 	typeof window !== 'undefined' &&
 	window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-export type RedistributeOpts = {
-	/** Largest gap-opening, in px, for a roomy/long row. */
-	max: number;
-	/** Opening contributed per borrow-able neighbour gap; also the m===2 fallback. */
-	perGap: number;
-};
 
 /**
  * Open the gap at `divisorIndex` (the global token index the divisor sits *after*)
@@ -63,24 +59,10 @@ export function redistributeRow(
 
 	const rowTop = anchor.top;
 	const row = data.filter((d) => Math.abs(d.top - rowTop) < 4).sort((a, b) => a.idx - b.idx);
+
+	const off = computeRowOffsets(row.map((d) => d.idx), divisorIndex, { max, perGap });
+	if (!off) return;
 	const m = row.length;
-	if (m < 2) return;
-
-	// Local split position p: index in the row of the last tok at/before the divisor.
-	// Everything ≤ p is the left group; the gap to open is between p and p+1.
-	let p = 0;
-	for (let k = 0; k < m; k++) if (row[k].idx <= divisorIndex) p = k;
-	if (p >= m - 1) return; // divisor's right side wrapped to the next row — nothing to open here
-
-	const delta = m === 2 ? perGap : Math.min(max, perGap * (m - 2));
-	const other = m > 2 ? -delta / (m - 2) : 0; // each non-hovered gap shrinks by this
-
-	// offset(j) = Σ of gap-deltas strictly left of token j.
-	// Ends land on 0 (Σ all deltas = delta + (m-2)·other = 0), so the row's
-	// outer edges never move — only the interior redistributes.
-	const off = row.map((_, j) =>
-		m === 2 ? (j === 0 ? -delta / 2 : delta / 2) : j * other + (p < j ? delta - other : 0)
-	);
 	for (let j = 0; j < m; j++) row[j].el.style.setProperty('--rd-x', off[j].toFixed(2) + 'px');
 
 	// Slide each divisor by the mean of its two flanking tokens so its indicator
