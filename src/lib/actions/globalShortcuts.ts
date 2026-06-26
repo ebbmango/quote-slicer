@@ -1,4 +1,5 @@
 import type { Alignment } from '$lib/context/alignment.svelte';
+import { PANEL_SELECTOR } from '$lib/navigation/gridDom';
 
 export function initAlignmentShortcuts(alignment: Alignment): () => void {
 	function handleDeleteKey(e: KeyboardEvent) {
@@ -17,8 +18,9 @@ export function initAlignmentShortcuts(alignment: Alignment): () => void {
 	function handleDocumentClick(e: MouseEvent) {
 		const target = e.target as HTMLElement;
 		if (target.closest('[data-mapping-id]')) return;
-		if (target.closest('[aria-label="Source tokens"]')) return;
-		if (target.closest('[aria-label="Target tokens"]')) return;
+		// Either token panel — identified by data-zone, like every other reader
+		// (was two aria-label matches; the panel wrapper carries the zone in all modes).
+		if (target.closest(PANEL_SELECTOR)) return;
 		alignment.deselect();
 	}
 

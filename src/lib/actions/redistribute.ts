@@ -12,7 +12,12 @@
 // lazily on each hover-enter (a handful of `offsetTop` reads) — always fresh, so
 // resize / font-load / edits need no invalidation. Cleared on leave/blur.
 
-import { SPLIT_SURFACE_SELECTOR } from '$lib/constants/lineDivisor';
+import {
+	SPLIT_SURFACE_SELECTOR,
+	TOK_SELECTOR,
+	tokenIndexOf,
+	divisorIndexOf
+} from '$lib/navigation/gridDom';
 
 const reducedMotion = () =>
 	typeof window !== 'undefined' &&
@@ -37,16 +42,16 @@ export function redistributeRow(
 	if (!container || reducedMotion()) return;
 
 	// Clear any redistribution left on a previously spread row before applying the new one.
-	for (const el of container.querySelectorAll<HTMLElement>(`.tok, ${SPLIT_SURFACE_SELECTOR}`))
+	for (const el of container.querySelectorAll<HTMLElement>(`${TOK_SELECTOR}, ${SPLIT_SURFACE_SELECTOR}`))
 		el.style.removeProperty('--rd-x');
 
-	const toks = Array.from(container.querySelectorAll<HTMLElement>('.tok'));
+	const toks = Array.from(container.querySelectorAll<HTMLElement>(TOK_SELECTOR));
 	if (!toks.length) return;
 
 	// Batch all layout reads first (no interleaved writes → one reflow at most).
 	const data = toks.map((el) => ({
 		el,
-		idx: Number(el.dataset.tokenIndex),
+		idx: tokenIndexOf(el),
 		top: el.offsetTop
 	}));
 
@@ -88,7 +93,7 @@ export function redistributeRow(
 	const minIdx = row[0].idx;
 	const maxIdx = row[m - 1].idx;
 	for (const dv of container.querySelectorAll<HTMLElement>(SPLIT_SURFACE_SELECTOR)) {
-		const d = Number(dv.dataset.divisorIndex);
+		const d = divisorIndexOf(dv);
 		if (!(d >= minIdx && d < maxIdx)) continue; // not an interior gap of this row
 		let lIdx = -Infinity;
 		let rIdx = Infinity;
@@ -118,7 +123,7 @@ export function clearRedistribute(
 ): void {
 	if (!container) return;
 	const els = Array.from(
-		container.querySelectorAll<HTMLElement>(`.tok, ${SPLIT_SURFACE_SELECTOR}`)
+		container.querySelectorAll<HTMLElement>(`${TOK_SELECTOR}, ${SPLIT_SURFACE_SELECTOR}`)
 	);
 	if (instant) {
 		// The indicators consume `--rd-x` via inheritance (the value is written to

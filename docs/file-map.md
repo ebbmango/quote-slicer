@@ -62,7 +62,8 @@ linked per area.
 
 | File | Responsibility |
 |------|----------------|
-| `src/lib/navigation/tokenGridNav.ts` | `createTokenGridNav()` — token-grid keyboard contract for link + line mode; exports `getZone()` |
+| `src/lib/navigation/gridDom.ts` | The **token-grid DOM contract** — selector constants, `zoneSelector`/`tokenSelector`/`divisorSelector` builders, `getZone`, `tokenIndexOf`/`divisorIndexOf`; the single source readers import instead of hand-writing DOM strings (absorbed `constants/lineDivisor.ts`) |
+| `src/lib/navigation/tokenGridNav.ts` | `createTokenGridNav()` — token-grid keyboard contract for link + line mode (reads the DOM via `gridDom`) |
 | `src/lib/navigation/visualNeighbor.ts` | `pickVisualNeighbor()` — pure rect-based row/column math |
 | `src/lib/navigation/visualNeighbor.spec.ts` | Unit tests for `pickVisualNeighbor()` |
 

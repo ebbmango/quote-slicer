@@ -5,10 +5,20 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
 	import { getTokenStoreContext, type EditScope } from '$lib/animation/tokenStore.svelte';
-	import { createTokenGridNav, getZone, type Zone } from '$lib/navigation/tokenGridNav';
+	import { createTokenGridNav } from '$lib/navigation/tokenGridNav';
+	import {
+		getZone,
+		zoneSelector,
+		divisorSelector,
+		tokenIndexOf,
+		divisorIndexOf,
+		LINE_ITEM_SELECTOR,
+		TOKEN_ITEM_SELECTOR,
+		SCROLLBOX_SELECTOR,
+		type Zone
+	} from '$lib/navigation/gridDom';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
-	import { LINE_ITEM_SELECTOR } from '$lib/constants/lineDivisor';
 
 	let {
 		sourceText = $bindable(),
@@ -45,8 +55,8 @@
 		return {
 			sourceWrapperEl,
 			targetWrapperEl,
-			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null,
-			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>('[data-scrollbox]') ?? null
+			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
+			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null
 		};
 	}
 
@@ -94,19 +104,19 @@
 	const tokenGridNav = createTokenGridNav(
 		() => tokenContainer,
 		{
-			itemSelector: () => (mode.current === 'line' ? LINE_ITEM_SELECTOR : '[role="option"]'),
+			itemSelector: () => (mode.current === 'line' ? LINE_ITEM_SELECTOR : TOKEN_ITEM_SELECTOR),
 			getDefaultIndex: (zone: Zone) =>
 				mode.current === 'line' ? -1 : alignment.findDefaultTokenIndex(zone),
 			onActivate: (el, e) => {
 				if (mode.current === 'line') {
 					const zone = getZone(el);
-					const divisorIndex = el.dataset.divisorIndex;
+					const divisorIndex = divisorIndexOf(el);
 					el.click();
-					if (zone && divisorIndex !== undefined) {
+					if (zone && !Number.isNaN(divisorIndex)) {
 						tick().then(() => {
-							const zoneEl = tokenContainer?.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
+							const zoneEl = tokenContainer?.querySelector<HTMLElement>(zoneSelector(zone));
 							let next =
-								zoneEl?.querySelector<HTMLElement>(`[data-divisor-index="${divisorIndex}"]`) ?? null;
+								zoneEl?.querySelector<HTMLElement>(divisorSelector(divisorIndex)) ?? null;
 							if (!next && zoneEl) {
 								// The divisor can vanish when a base token and its punctuation
 								// recombine into one group (they can no longer be split apart) — its
@@ -114,7 +124,7 @@
 								// divisor so a keyboard merge doesn't drop focus to <body>.
 								const all = [...zoneEl.querySelectorAll<HTMLElement>(LINE_ITEM_SELECTOR)];
 								next =
-									all.filter((d) => Number(d.dataset.divisorIndex) <= Number(divisorIndex)).pop() ??
+									all.filter((d) => divisorIndexOf(d) <= divisorIndex).pop() ??
 									all[0] ??
 									null;
 							}
@@ -124,7 +134,7 @@
 					return;
 				}
 				const zone = getZone(el);
-				const idx = Number(el.dataset.tokenIndex);
+				const idx = tokenIndexOf(el);
 				if (zone === 'source') alignment.toggleSource(idx, { force: e.shiftKey });
 				else if (zone === 'target') alignment.toggleTarget(idx);
 			},

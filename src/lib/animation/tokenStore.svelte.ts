@@ -3,7 +3,11 @@ import 'gsap'; // pulls in ambient gsap.* type namespace used by Flip's vars typ
 import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 import { splitAfterToken, mergeLines } from '$lib/line';
-import type { Zone } from '$lib/navigation/tokenGridNav';
+import {
+	AUTHORSHIP_SELECTOR,
+	FLIP_TOKEN_SELECTOR,
+	type Zone
+} from '$lib/navigation/gridDom';
 
 const DURATION = 0.35;
 const EASE = 'power2.inOut';
@@ -89,10 +93,10 @@ export function createTokenStore() {
 	function flipTargets(zone: Zone, scope: EditScope): HTMLElement[] {
 		const editedScroll = zone === 'source' ? scope.sourceScrollEl : scope.targetScrollEl;
 		const tokens = editedScroll
-			? Array.from(editedScroll.querySelectorAll<HTMLElement>('[data-flip-id]'))
+			? Array.from(editedScroll.querySelectorAll<HTMLElement>(FLIP_TOKEN_SELECTOR))
 			: [];
 		const stack = scope.sourceWrapperEl?.parentElement?.parentElement as HTMLElement | null;
-		const auth = stack?.querySelector<HTMLElement>('#authorship') ?? null;
+		const auth = stack?.querySelector<HTMLElement>(AUTHORSHIP_SELECTOR) ?? null;
 		return [scope.sourceWrapperEl, scope.targetWrapperEl, auth, ...tokens].filter(
 			(el): el is HTMLElement => el !== null
 		);
@@ -151,7 +155,7 @@ export function createTokenStore() {
 		// The other wrapper is only safe to clear if it didn't change height: if it changed
 		// height (flex redistribution in the constrained/overflow regime) its Flip transform
 		// is load-bearing for the position animation that accompanies the height change.
-		const auth = stack?.querySelector<HTMLElement>('#authorship') ?? null;
+		const auth = stack?.querySelector<HTMLElement>(AUTHORSHIP_SELECTOR) ?? null;
 		const otherHeightChanged =
 			otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
 		if (auth) gsap.set(auth, { clearProps: 'transform' });

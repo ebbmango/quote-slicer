@@ -1,7 +1,6 @@
 import { pickVisualNeighbor } from './visualNeighbor';
 import { interactionMode } from '$lib/context/interactionMode.svelte';
-
-export type Zone = 'source' | 'target';
+import { getZone, zoneSelector, tokenSelector, type Zone } from './gridDom';
 
 export type TokenGridNavConfig = {
 	/** CSS selector for the currently navigable elements (varies by mode). */
@@ -24,12 +23,6 @@ export type TokenGridNavConfig = {
 // Escape               Blur the focused element; mode-specific extra action.
 // ──────────────────────────────────────────────────────────────────────────────
 
-export function getZone(el: HTMLElement): Zone | null {
-	if (el.closest('[data-zone="source"]')) return 'source';
-	if (el.closest('[data-zone="target"]')) return 'target';
-	return null;
-}
-
 export function createTokenGridNav(getContainer: () => HTMLElement | null, config: TokenGridNavConfig) {
 	const lastFocused: Record<Zone, HTMLElement | null> = { source: null, target: null };
 
@@ -44,13 +37,13 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		if (!container) return null;
 		const idx = config.getDefaultIndex(zone);
 		if (idx !== -1) {
-			const el = container.querySelector<HTMLElement>(`[data-zone="${zone}"] [data-token-index="${idx}"]`);
+			const el = container.querySelector<HTMLElement>(`${zoneSelector(zone)} ${tokenSelector(idx)}`);
 			if (el) return el;
 		}
 		// Scope to the zone's container first, then run itemSelector() inside it.
 		// itemSelector() can be a comma-list (line mode); string-prefixing a list
 		// only scopes its first branch, so the rest would match other zones.
-		const zoneEl = container.querySelector<HTMLElement>(`[data-zone="${zone}"]`);
+		const zoneEl = container.querySelector<HTMLElement>(zoneSelector(zone));
 		return zoneEl?.querySelector<HTMLElement>(config.itemSelector()) ?? null;
 	}
 
