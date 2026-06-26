@@ -21,6 +21,8 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits | Summary |
 |------|------|---------|---------|
+| 2026-06-26 | [Line-edit animation overhaul](./26-06-26-line-edit-animation-overhaul.md) | `a2e434e` | LineDivisor extraction (~505 lines deduped); single nested GSAP Flip over full vertical layout; clearProps fix for double-counting bug that caused auth and opposite panel to jump on first frame in unconstrained viewports |
+| 2026-06-25 | [Theme transition synchronization](./26-06-25-theme-transition-synchronization.md) | `eb941ed` | html.theme-anim gating window syncs fast token transitions to 500ms page background; placeholder color fixed with currentColor; JsonExportPanel dark palette derived from appTheme.current; colorReplacements hoisted to $derived |
 | 2026-06-23 | [Delete button color flash fix](./26-06-23-delete-button-flash-fix.md) | `296de30` | Three-layer bug: SVG fill transition, focus-before-click color mismatch, stale GPU texture on hidden element after theme switch; fixed by removing fill transition, decoupling delete colors from isActive, and {#key isDark} for fresh raster |
 | 2026-06-21 | [Mapping palette dark variants](./26-06-21-mapping-palette-dark-variants.md) | `57ec2e9`, `e343e9b`, `8f4befd`, `f1665d9`, `ccebbb8` | MappingColor wraps light/dark MappingColorVariant; Mapping.svelte selects variant from appTheme.current; iterative color tuning for inactive cards, tag text, and bot-bar in dark mode |
 | 2026-06-21 | [Dark mode infrastructure](./26-06-21-dark-mode-infrastructure.md) | `0a90f89`, `247b60c` | No-flash prepaint script, cross-tab theme controller with OS-adaptive state semantics, animated orbit toggle button; Firefox clip-path repaint bug worked around with overflow:hidden |
