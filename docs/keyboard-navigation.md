@@ -22,19 +22,23 @@ re-evaluated on every keystroke:
 
 | Config field | Link mode | Line mode |
 |--------------|-----------|-----------|
-| `itemSelector()` | `[role="option"]` | `.split-zone, .merge-zone, .ws-split, .ws-boundary` |
-| `crossZoneJump()` | `true` (Alt+Enter and edge jump enabled) | `false` |
+| `itemSelector()` | `TOKEN_ITEM_SELECTOR` (`[role="option"]`) | `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone, .ws-split`) |
 | `getDefaultIndex(zone)` | `alignment.findDefaultTokenIndex(zone)` | unused (`-1`) |
-| `onActivate(el, e)` | resolve zone + `data-token-index`, call `toggleSource`/`toggleTarget` | `el.click()` (fires the button's own handler) |
+| `onActivate(el, e)` | resolve zone + `data-token-index`, call `toggleSource`/`toggleTarget` | `el.click()` (fires the divisor's own handler) |
+| `restoresFocusOnActivate()` | `false` | `true` (a split/merge re-renders the focused divisor away) |
 | `onEscape()` | `alignment.deselect()` | no-op |
+
+Cross-zone jumping (Alt+Enter and edge Alt+↑/↓) is now **unconditional** — it is no
+longer a config flag. An earlier `crossZoneJump()` getter gated it to link mode; it was
+removed so line-mode users can move between source and target with the keyboard too.
 
 The key bindings (identical machinery, mode-specific meaning):
 
 | Shortcut | Effect |
 |----------|--------|
-| Alt+↑ / Alt+↓ | Move focus to the element on the visual row above/below; at a zone's far edge (link mode only) jump to the other zone |
+| Alt+↑ / Alt+↓ | Move focus to the element on the visual row above/below; at a zone's far edge, jump to the other zone (both modes) |
 | Alt+← / Alt+→ | Move focus to the prev/next navigable element in DOM order |
-| Alt+Enter | (link mode) toggle focus between source and target |
+| Alt+Enter | Toggle focus between source and target (both modes) |
 | Alt+Space | activate the focused element |
 | Alt+Shift+Space | activate "with force" (force-add a source token in link mode) |
 | Escape | blur the focused element, then run `onEscape()` |
@@ -52,6 +56,45 @@ extracted into a **pure function**, `pickVisualNeighbor()` in
 `{ top, bottom, left, width }` rects (no DOM), so it is unit-tested directly in
 `visualNeighbor.spec.ts`. `tokenGridNav` just feeds it `getBoundingClientRect()`
 values.
+
+### Restoring focus after a line edit
+
+A keyboard split/merge in line mode **re-renders the activated divisor away** — the edit
+replaces it — so naive focus would drop to `<body>`. When `restoresFocusOnActivate()` is
+true, after the activation the navigator reads the divisor's `data-divisor-index`, waits
+a `tick()`, then re-acquires focus by that index via `restoreFocusByIndex(zone, index)`.
+
+That has a fallback for one case: merging a line break between a character and a
+**newline-orphaned** punctuation mark recombines them into one
+[group](tokenization.md#source-punctuation-grouping), and the merged divisor's index is
+now *intra-group* and unrendered — so the by-index lookup finds nothing. The fallback
+focuses the nearest remaining divisor at or before the original index instead, keeping
+keyboard focus in the panel.
+
+### The grid DOM contract (`gridDom.ts`)
+
+The navigator does not hand-write selector strings like `[data-zone="source"]` or
+`[data-token-index="3"]`. Those — together with the line-divisor and scrollbox selectors
+— were duplicated across five readers (this navigator, the hover-spread `redistribute`,
+the token store's line-edit animation, the global shortcuts, and `QuoteWorkbench`), so a
+single attribute rename meant hunting every reader. They are now centralized in
+`src/lib/navigation/gridDom.ts`, the **single source of truth** for the token grid's DOM
+contract:
+
+- selector constants (`TOKEN_ITEM_SELECTOR`, `LINE_ITEM_SELECTOR`, `PANEL_SELECTOR`,
+  `SCROLLBOX_SELECTOR`, `FLIP_TOKEN_SELECTOR`, …);
+- builders (`zoneSelector(zone)`, `tokenSelector(i)`, `divisorSelector(i)`);
+- dataset accessors paired with the builders (`tokenIndexOf(el)`, `divisorIndexOf(el)`)
+  and the zone resolver `getZone(el)`;
+- the `Zone` type (`'source' | 'target'`).
+
+Readers import from `gridDom`; the **writers** (components that stamp these attributes in
+their markup) still reference the names in their own templates, so there is no
+compile-time check that a writer and reader agree — a rename must touch the component
+templates *and* `gridDom.ts`. The module deliberately exports no `querySelector`
+wrappers: single-use lookups read fine inline. (`gridDom` absorbed the former
+`constants/lineDivisor.ts`.) See [`CONTEXT.md`](../CONTEXT.md) ("token-grid DOM
+contract").
 
 ## The interaction-mode sensor
 
@@ -99,6 +142,9 @@ once from `+page.svelte`'s `onMount`. It attaches two document listeners:
   Backspace works right after creating a mapping, before you've tabbed to its card.
   It bails if focus is in an `<input>`/`<textarea>`.
 - **click** → `alignment.deselect()`, unless the click landed inside a mapping card
-  (`[data-mapping-id]`) or one of the token panels (`[aria-label="Source tokens"]` /
-  `"Target tokens"`). This is the click-outside-to-deselect gesture; its keyboard
-  counterpart is Escape (via `tokenGridNav.onEscape`).
+  (`[data-mapping-id]`) or one of the token panels — identified by `PANEL_SELECTOR`
+  (`[data-zone]`, imported from [`gridDom`](#the-grid-dom-contract-griddomts)), like
+  every other grid reader. (This replaced two `aria-label` matches; the panel wrapper
+  carries its `data-zone` in all modes, whereas the `aria-label` is dropped in line
+  mode.) This is the click-outside-to-deselect gesture; its keyboard counterpart is
+  Escape (via `tokenGridNav.onEscape`).

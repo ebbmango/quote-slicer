@@ -79,6 +79,11 @@ function applyPinyin(tokens: SourceToken[]): SourceToken[] {
 so dependent `$derived` recompute. Passing `undefined` deletes the entry (clearing
 pinyin when a token leaves a mapping).
 
+The value stored here is **canonical numbered pinyin** (`"zhi1"`), not the diacritic
+display form — `Alignment` canonicalizes before calling `setPinyin`, and the diacritic
+is derived for display only. See
+[Link Mode → Pinyin](link-mode.md#pinyin-auto-fill-and-canonical-storage).
+
 > Trade-off: `applyPinyin` allocates a new array on every read (`.map()`). That is the
 > price of `$derived` recomputing when pinyin changes — don't memoize it without
 > confirming pinyin updates still propagate.
@@ -107,49 +112,81 @@ the alignment logic.
 
 ## The line-edit animation (split/merge)
 
-A line edit changes the height of one panel, which shifts everything below it. The
-store animates this as **one** GSAP Flip over an **edit scope** — instead of the old
-arrangement of an intra-panel Flip plus a separate cross-panel Y-shift, which could
-fight over the same elements' boxes.
+A line edit changes the height of one panel, which moves the panel boundary and — when
+the quote stack grows — re-centres the whole block. The store animates all of this with
+a **single GSAP Flip** keyed by an **edit scope**, replacing an older arrangement of an
+intra-panel Flip plus a separate cross-panel Y-shift that fought over the same boxes.
 
-The **edit scope** is the bundle of DOM refs a single edit animates over, built by
+The **edit scope** is the bundle of DOM refs a single edit operates on, built by
 `QuoteWorkbench.editScope()`:
 
 ```ts
 type EditScope = {
-  sourceWrapperEl, targetWrapperEl, authorshipEl,   // whole-unit repositioning targets
-  sourceScrollEl,  targetScrollEl                    // the [data-scrollbox] of each panel
+  sourceWrapperEl: HTMLElement | null;  // the data-zone panel wrappers (height-tweened
+  targetWrapperEl: HTMLElement | null;  //   when the edited one can grow)
+  sourceScrollEl:  HTMLElement | null;  // each panel's [data-scrollbox] — the edited one's
+  targetScrollEl:  HTMLElement | null;  //   tokens (data-flip-id) are found inside it
+  authEl:          HTMLElement | null;  // the authorship textarea
 };
 ```
 
-`animate(zone, scope, mutate)` is a single nested Flip over the whole vertical layout —
-no manual height locking or tweening:
+The authorship ref (`authEl`) is **passed in**, not discovered: the workbench owns the
+layout, so the store reads only what its scope hands it rather than walking the DOM up
+from a panel to find `#authorship`. See [`CONTEXT.md`](../CONTEXT.md) ("edit scope").
 
-1. `Flip.getState(...)` over the flip targets: **both panel wrappers + the authorship
-   field + the edited panel's tokens**. Flipping the *layout boxes* (not just the tokens)
-   is the key — it makes the panel boundary animate from its pre-edit position rather than
-   snapping there on the first frame (the "abrupt layout shift on click").
-2. Set `animating = true` (gates the panel's instant-fit `$effect`), run `mutate()`
+`animate(zone, scope, mutate)` runs one Flip over the whole vertical layout — no manual
+height locking, measuring, or tweening:
+
+1. Capture the edited panel's tokens (`[data-flip-id]` inside its scroll box) and the
+   other wrapper's height, then `Flip.getState(...)` over the flip targets: **both panel
+   wrappers + the authorship field + the edited tokens**. Capturing the *layout boxes*
+   (not just the tokens) is what lets the panel boundary animate from its pre-edit
+   position instead of snapping there on the first frame.
+2. Set `animating = true` (gates the panel's height `$effect`), run `mutate()`
    (split/merge + cache write), `await tick()`, then force one synchronous reflow
    (read `offsetHeight`) so flex fully resolves before Flip reads the after-state.
+   (Flex settles in a *single* reflow — confirmed with GSAP disabled — so no
+   release-and-wait loop is needed.)
 3. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false, nested: true })`.
-   - **`nested: true`** — the wrappers and their child tokens are flipped together; Flip
-     accounts for the wrapper transform when animating the tokens inside.
-   - **`absolute: false`** — elements stay in flow, so each wrapper's height change drives
-     the surrounding layout (the boundary slides, siblings follow) naturally.
+   - **`absolute: false`** keeps the boxes in flow, so the edited wrapper's height change
+     drives the surrounding layout naturally; **`nested: true`** lets each token's flip
+     ride inside its wrapper's flip.
    - The tokens already **overflow** their `overflow-clip` wrapper, so the wrapper's own
-     height animation never fights the token slide inside it — the property that makes the
-     single nested Flip work without the two motions interfering.
+     height animation never fights the token slide inside it.
 
-The whole sequence shares one `DURATION = 0.35` / `EASE = 'power2.inOut'`, so the panel
-boundary and the token slide move as one motion. See
-[ADR-0001](adr/0001-line-edit-dual-scroll-regime.md) for the alternatives tried and the
-residual limitation.
+### The slide is flow-driven, not a second Flip
+
+`Flip.getState` *includes* the other (non-edited) wrapper and the authorship field, but
+they are not meant to carry an independent transform — they should ride the flow as the
+edited wrapper's height changes. Because `absolute: false` reverts the layout to "before"
+when `Flip.from` starts, any transform Flip computed for them (from the full before→after
+delta) lands on an element already at its before-flow position and **double-counts** the
+displacement. So immediately after `Flip.from` the store clears those transforms:
+
+```js
+if (scope.authEl) gsap.set(scope.authEl, { clearProps: 'transform' });
+if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
+```
+
+Auth is always cleared (it has no height of its own — it only moves with the stack
+re-centring). The other wrapper is cleared **only if its height didn't change**: a changed
+height signals the constrained/overflow regime, where flex redistributes both panels and
+the Flip transform *is* load-bearing for the position animation. The other wrapper's
+height is measured before and after the mutation so the regime check uses settled values.
+
+This dual-regime behaviour — flow-driven slide when the stack can grow, Flip-driven
+position when it's capped — is recorded in
+[ADR-0001](adr/0001-line-edit-dual-scroll-regime.md), which also lists the alternatives
+tried and the residual ~10 px settle.
+
+> Avoid calling this a "unified Flip" or "double Flip" (see `CONTEXT.md`): there is one
+> Flip, and the panels below the edit move because flow pushes them, not because a Flip
+> transform carries them (except in the capped regime).
 
 `Flip` and `gsap` are lazy-loaded in `onMount` (the app is statically prerendered, so
-import-time browser API calls must be avoided). **If they haven't loaded yet,
-`mutate()` runs synchronously with no animation** — the edit still happens, it just
-doesn't tween.
+import-time browser API calls must be avoided). **If they haven't loaded yet, or
+`prefers-reduced-motion` is set, `mutate()` runs synchronously with no animation** — the
+edit still happens, it just doesn't tween.
 
 For the panel-side details (the `data-scrollbox` contract, the `animating`-gated
 height `$effect`, the index-keyed `{#each}` that keeps spans alive for Flip), see

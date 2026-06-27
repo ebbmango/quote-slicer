@@ -56,14 +56,22 @@ palette colour, the panel-specific `SPREAD` tuning, the row container, and the
 
 ### Source panel (`InteractiveSourceText`)
 
-Between every pair of adjacent tokens, a zero-width `<button>` is rendered:
+A zero-width `<button>` is rendered **between groups** (not between every token pair) —
+where a group is a base character plus its glued punctuation, from
+[`groupSourceTokens`](tokenization.md#source-punctuation-grouping):
 
 - **same line** → a `.split-zone` button; clicking it calls `onSplit(globalIndex)`.
-- **line boundary** (the next token is on a different line) → a `.merge-zone` button;
+- **line boundary** (the next group is on a different line) → a `.merge-zone` button;
   clicking it calls `onMerge(token.line)`.
 
 Each carries a hairline indicator (`.split-indicator` / `.merge-indicator`) that
 appears on hover/focus.
+
+**A group is unsplittable.** There are no divisors *inside* a `.tok-group`, so a line
+break can fall before or after a base+punctuation group but never between a character
+and its mark — which would orphan `，` or `。` at the start of a line, typographically
+wrong for CJK. (This replaced a fuller, dropped design where punctuation was instead
+click-to-exclude from the export; see [Future Features](future-features.md).)
 
 ### Target panel (`InteractiveTargetText`)
 
@@ -92,12 +100,27 @@ store's overlay, they are passed straight in — there is no special "live" arra
 out (a past source of pinyin-loss bugs, now eliminated by the
 [single-owner store](token-store.md#why-it-exists)).
 
+### Touch: the two-tap model
+
+On touch there is no hover, and split indicators are zero-width and invisible without
+it — so a divisor's hit zone would be effectively unreachable. The substitute is a
+two-tap model: the first tap "previews" a divisor (highlights it, and for split zones
+calls `redistributeRow()` to spread the row open so it's tappable), the second tap on
+the same one activates.
+
+`QuoteWorkbench` owns a single `touchedDivisor: { panel, index } | null`, passed down so
+only **one** divisor across both panels is lit at a time — tapping a target divisor
+clears any source highlight automatically. `LineDivisor` runs the per-divisor first-tap/
+second-tap branch (gated on `interactionMode` being touch); mouse and keyboard skip the
+staging step and activate immediately. An `$effect` collapses a leftover spread when the
+highlight clears, but only while `!animating`, so it never fights the edit's Flip.
+
 ## The split/merge animation
 
 The actual height tween + token reflow is owned by the token store, not these
-components — it runs **one unified Flip** over the
-[edit scope](token-store.md#the-unified-flip-splitmerge-animation). The panel
-components contribute three things to make that work:
+components — it runs the single Flip of the
+[line-edit animation](token-store.md#the-line-edit-animation-splitmerge) over the edit
+scope. The panel components contribute three things to make that work:
 
 1. **An index-keyed `{#each tokens (i)}` loop.** Keying by index (not token identity)
    keeps every span element *alive* across a mutation, so Flip can match old positions
@@ -118,15 +141,19 @@ field are also flip targets, repositioned as whole units.
 
 Same `createTokenGridNav()` instance as link mode, reconfigured per mode (see
 [Keyboard & Navigation](keyboard-navigation.md)). Here the navigable elements are the
-split/merge controls — the selector is `.split-zone, .merge-zone, .ws-split,
-.ws-boundary` — all focusable.
+split/merge controls — the selector is `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone,
+.ws-split`), all focusable.
 
 | Shortcut | Action |
 |----------|--------|
-| Alt+↑ / Alt+↓ | Focus the split/merge control on the visual row above/below |
+| Alt+↑ / Alt+↓ | Focus the split/merge control on the visual row above/below; at a panel edge, jump to the other zone |
 | Alt+← / Alt+→ | Focus the prev/next control in DOM order |
+| Alt+Enter | Toggle focus between the source and target panels |
 | Alt+Space / Alt+Shift+Space | Activate the focused control (calls its `click` → `handleSplit`/`handleMerge`) |
 | Escape | Blur the focused control |
 
-Alt+Enter and the source↔target edge jump are **link-mode only** (`crossZoneJump` is
-`false` in line mode), so at a panel edge Alt+↑/↓ simply does nothing.
+Cross-zone jumps (Alt+Enter and edge Alt+↑/↓) work in **every** mode — the old
+`crossZoneJump` config flag that restricted them to link mode was removed. Activating a
+divisor re-renders it away (the edit replaces it), so the navigator re-acquires focus by
+index afterward — see
+[Keyboard & Navigation](keyboard-navigation.md#restoring-focus-after-a-line-edit).

@@ -27,14 +27,20 @@ So there is exactly one token owner; `Alignment` never holds a synced copy. What
 | `activeMappingId` | public `$state` | the currently selected mapping (or `null`) |
 | `meta` | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()` |
 | `nextColorIndex` | private `$state` | monotonic counter for assigning mapping colors |
+| `listAnimating` | public `$state` | true while the mappings list is mid-animation; throttles mutations (see [Mappings List](mappings-list.md#the-listanimating-mutation-throttle)) |
 
 And what it derives:
 
 - `sourceIdToIndex` / `targetIdToIndex` — token ID → current array index.
-- `sourceMappingIndex` / `targetMappingIndex` — array index → owning mapping ID.
+- `sourceMappingIndex` / `targetMappingIndex` — array index → the owning `Mapping`,
+  built by [`buildMappingIndex`](data-model.md#buildmappingindex).
+- `sourceDisplayPinyin` — each source token's diacritic pinyin for display (see below).
 - `sortedMappingViews` — the display snapshots ([MappingView](data-model.md#mappingview--the-display-snapshot)),
   sorted by each mapping's first source-token position.
 - `exportData` — the [export shape](export.md).
+
+`Alignment` also hosts the **view-mode** mapping highlight, delegated to an internal
+`ViewHighlight` instance — see [View Mode](view-mode.md).
 
 ## The click state machine
 
@@ -49,7 +55,7 @@ is held (mouse), Alt+Shift+Space is pressed (keyboard), or on longpress (mobile)
 
 | Token state | force | Action |
 |-------------|-------|--------|
-| Whitespace or punctuation | any | **No-op** (guarded — can't start a mapping from these) |
+| Punctuation | any | **No-op** (guarded — can't anchor a mapping; the source stream has no whitespace tokens) |
 | Belongs to active mapping | any | Remove from mapping; clear its pinyin; prune if empty |
 | Belongs to another mapping | any | Switch active mapping to that one |
 | Unmapped; active mapping exists, has no source yet | any | Append to active mapping |
@@ -72,8 +78,9 @@ On any add, pinyin is auto-filled (see below).
 Target tokens have no force/multi-add distinction — any non-whitespace, non-punctuation
 target token can be freely added to the active mapping.
 
-> Both toggles guard `type === 'whitespace' || type === 'punctuation'` so a stray click
-> on a space or a comma can't spawn an empty mapping.
+> Both toggles guard the un-mappable types so a stray click can't spawn an empty
+> mapping: `toggleTarget` rejects `'whitespace'` and `'punctuation'`; `toggleSource`
+> rejects `'punctuation'` (the source stream never contains whitespace).
 
 ## Mapping lifecycle
 
@@ -89,18 +96,38 @@ target token can be freely added to the active mapping.
 from list position — deleting or reordering mappings can never reassign an existing
 card's color.
 
-## Pinyin auto-fill
+## Pinyin auto-fill and canonical storage
+
+Pinyin is **stored in canonical numbered form** (`"zhi1"`) and **displayed as
+diacritics** (`"zhī"`). Storing the numbered form — the shape `pinyin-pro` emits with
+`toneType: 'num'` — makes the stored/exported value system-agnostic: tone marks sit on
+different vowels per syllable, so a numbered tone is far easier to convert to other
+transliteration systems (Wade-Giles, Zhuyin) than a diacritic one. Diacritic is then
+just one display option, derived on the way out.
 
 When a source `'character'` token joins a mapping, `tokenPinyin()` calls `pinyin-pro`
-with `toneType: 'symbol'` (tone marks, not numbers) and `separator: ' '`. The result
-is written via `this.store.setPinyin(tokenId, value)` — into the token store's id-keyed
-[pinyin overlay](token-store.md#the-pinyin-overlay), **not** onto the mapping.
+with `toneType: 'num'` and writes the result via `this.store.setPinyin(tokenId, value)`
+— into the token store's id-keyed [pinyin overlay](token-store.md#the-pinyin-overlay),
+**not** onto the mapping.
 
 - Only `'character'` tokens get pinyin; `tokenPinyin()` returns `''` for anything else.
 - Removing a token from a mapping clears its pinyin (`setPinyin(tokenId, undefined)`).
-- The user can override pinyin in the mapping card's input; `Mapping.svelte` calls
-  `alignment.setPinyin(mappingId, position, value)`, which resolves the source token at
-  that position and writes the override through the same store path.
+- The user can override pinyin in the mapping card's input. `Mapping.svelte` uses the
+  **`PinyinInput.svelte`** component, which holds a local edit buffer while focused (so
+  typing `"zhi1"` isn't reformatted to `"zhī"` mid-keystroke) and commits on blur via
+  `alignment.setPinyin(mappingId, position, value)`. `Alignment` is the single owner of
+  canonicalization: it runs the raw text through `toCanonical()` (from `pinyinConvert.ts`)
+  before writing to the store — the UI never canonicalizes.
+
+`Alignment` derives `sourceDisplayPinyin` (each token's stored canonical pinyin mapped
+to its diacritic form via `toDisplay()`), memoized separately from `sortedMappingViews`
+so the conversion only re-runs when the tokens change, not on every mapping select.
+
+> `pinyinConvert.ts` carries a 407-syllable table of valid toneless Mandarin syllables.
+> It exists to tell toneless pinyin (`"zhi"` → gets a neutral tone) apart from free-text
+> annotation notes (`"river"` → stored as-is), so unparseable input survives as a literal
+> note rather than being mangled. Blank input clears the annotation to `undefined` (so
+> export omits the field rather than storing `""`).
 
 ## Whitespace bridging
 
@@ -108,10 +135,11 @@ A whitespace target token can't be mapped, but it can *display* a mapping's colo
 it sits between two tokens of the same mapping — so a multi-word phrase reads as one
 continuous highlight instead of striped gaps.
 
-`findBridgeMappingId()` (`tokenState.ts`) scans left and right past consecutive
-whitespace tokens, finds the nearest non-whitespace token on each side, and returns a
-mapping ID only if **both** sides resolve to the same mapping. The bridged token then
-renders `idle` or `active` depending on whether that mapping is the active one. See
+`findBridgeMapping()` (an internal helper in `tokenState.ts`, called by
+`deriveTargetTokenState`) scans left and right past consecutive whitespace tokens, finds
+the nearest non-whitespace token on each side, and returns a `Mapping` only if **both**
+sides resolve to the **same** mapping (compared by object identity). The bridged token
+then renders `idle` or `active` depending on whether that mapping is the active one. See
 [Tokenization](tokenization.md#whitespace-strategy) for the companion text-output
 bridging in `buildTargetText()`.
 

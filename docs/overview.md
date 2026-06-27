@@ -24,7 +24,7 @@ mode lives in `ModeContext` (`src/lib/context/mode.svelte.ts`).
 | `'text'` | Text entry | Paste/type the source (Chinese) and target (English) texts, plus an optional attribution line |
 | `'link'` | Link mode | Click tokens in both panels to create word-to-word mappings; edit pinyin; delete mappings |
 | `'line'` | Line tool | Adjust where line breaks fall in source and target *independently* — split one line into two, or merge two into one |
-| `'view'` | View | Read-only display of the alignment (tokens dimmed, authorship locked) |
+| `'view'` | View | Read-only display of the alignment (tokens dimmed, authorship locked); hovering or tapping a mapped token highlights its whole mapping across both panels — see [View Mode](view-mode.md) |
 
 The app **starts** in `text` mode. Clicking the advance arrow commits both texts and
 animates into `link` mode (see [Mode Transitions](mode-transitions.md)). From then

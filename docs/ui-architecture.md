@@ -9,18 +9,21 @@ or a modal. Feature-specific behaviour is covered elsewhere and linked from here
 ```
 +page.svelte                       root: sets all 4 contexts, owns layout grid + text→link arrow
 ├── DataPanel.svelte               sidebar-left   (one of two side surfaces)
-│   ├── MappingsList.svelte        └ view='maps'  → the mapping cards
+│   ├── MappingsList.svelte        └ view='maps'  → the mapping cards (GSAP Flip anims)
 │   │   └── Mapping.svelte (×N)
+│   │       └── PinyinInput.svelte (×N)  buffered canonical-pinyin editor
 │   └── JsonExportPanel.svelte     └ view='json'  → live JSON export
 │       └── HighlightedCode.svelte
 ├── main
-│   ├── theme toggle (placeholder)
+│   ├── ThemeToggle.svelte         orbiting moon/sun light–dark switch
 │   ├── QuoteWorkbench.svelte      the centre workbench
 │   │   ├── <textarea> source      text mode only (IME-filtered)
 │   │   ├── <textarea> target      text mode only
 │   │   ├── <div role="grid">      link/line/view: the token workspace
-│   │   │   ├── InteractiveSourceText.svelte
-│   │   │   └── InteractiveTargetText.svelte
+│   │   │   ├── InteractiveSourceText.svelte   ┐ render tokens + a
+│   │   │   │   └── LineDivisor.svelte (×N)     │ LineDivisor between
+│   │   │   └── InteractiveTargetText.svelte   ┘ them (line mode)
+│   │   │       └── LineDivisor.svelte (×N)
 │   │   └── <textarea> authorship  always present (disabled in view mode)
 │   ├── DataModal.svelte           minimal viewport: slide-in over the workbench
 │   │   └── DataPanel.svelte
@@ -63,27 +66,41 @@ self-contained piece into its own component/context. It:
   filtering on the source field (IME-composition-aware — it skips filtering while
   `isComposing`, then re-filters on `compositionend`, preserving the caret).
 - **Link/line/view:** renders the `role="grid"` token workspace.
-- Builds `editScope()` (the DOM refs for the unified Flip) and forwards split/merge into
-  the store; passes `store.animating` down to the panels.
+- Builds `editScope()` (the DOM refs for the [line-edit
+  animation](token-store.md#the-line-edit-animation-splitmerge), including the
+  authorship ref) and forwards split/merge into the store; passes `store.animating` down
+  to the panels.
 - Creates the single `createTokenGridNav()` instance and wires it to the grid container
   with a mode-dependent config (see [Keyboard & Navigation](keyboard-navigation.md)).
 - Tags each panel wrapper `data-zone` + `data-flip-id` so the navigator can resolve
   panels and the store can reposition them as units.
+- The authorship textarea carries `autocomplete="off"`. Unlike the source/target fields
+  (which live inside `{#if editing}` and remount fresh each load), authorship is always
+  in the DOM, so the browser would restore its previous value on reload and briefly race
+  Svelte's binding. `autocomplete="off"` declares the field's value app-owned and
+  suppresses that form restoration.
 
 ### `InteractiveSourceText.svelte` / `InteractiveTargetText.svelte`
 
 Render the source/target tokens as a flat flex-wrap layout, using **one DOM tree for
 all modes** (see [Mode Transitions](mode-transitions.md#the-persistent-dom-crossfade-link--line--view)).
 
+- Per-token colour/opacity/weight comes from the shared `tokenPresentation()` pure
+  function (see [Mode Transitions](mode-transitions.md#the-two-transitions-that-carry-the-motion)),
+  selected for the current `appTheme.current` mode.
 - **Link mode:** interactive `role="option"` spans (source: non-punctuation only); click
   → `toggleSource`/`toggleTarget`; the source panel also wires the `longpress` action for
   mobile force-add.
-- **Line mode:** the split/merge affordances become active
-  (see [Line Mode](line-mode.md#the-line-tool-affordances)).
+- **Line mode:** the split/merge affordances become active, each rendered via a shared
+  [`LineDivisor`](line-mode.md#the-line-tool-affordances) between tokens.
+- **View mode:** token hover/tap is wired to the [view-mode highlight](view-mode.md).
 - Both mark their scroll box `data-scrollbox` and gate a height `$effect` on the
   `animating` prop. Neither owns Alt+Space or Escape — those route through the navigator.
 - A bare click on empty container space calls `alignment.deselect()` (the mouse half of
   click-outside-to-deselect; Escape is the keyboard half).
+- Their structural differences (source's separate scrollbox vs row container; source's
+  sequential vs target's dense-map divisor ordinals) are intentional — see
+  [ADR-0002](adr/0002-interactive-panel-asymmetry.md).
 
 ### `Mapping.svelte`
 
@@ -93,9 +110,14 @@ One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview
 - Three columns: hanzi · pinyin input · number badge + delete button.
 - Card height spans `r = floor(rowCount / 2) + 1` grid rows (`rowCount` = number of
   source entries, min 1) — a quantized size that tiles cleanly in the CSS grid.
-- All colors flow through a single `theme` derived object keyed by `isActive`, so the
-  markup reads `theme.cardBg` instead of repeating `isActive ? a : b` everywhere.
-- Pinyin inputs are editable only when the card is active and non-empty; calls
+- Colours: it first selects `colorVariant = isDark ? color.dark : color.light` (from
+  `appTheme.current`), then flows everything through a single `theme` derived object
+  keyed by `isActive`, so the markup reads `theme.cardBg` instead of repeating
+  `isActive ? a : b`. The delete button's colours come from `colorVariant` directly
+  (not `isActive`) and the icon `<svg>` is `{#key isDark}`'d — both
+  [dark-mode flash fixes](dark-mode.md#the-delete-button-colour-flash).
+- Pinyin editing uses [`PinyinInput.svelte`](link-mode.md#pinyin-auto-fill-and-canonical-storage),
+  editable only when the card is active and non-empty; commits via
   `alignment.setPinyin(id, position, value)`.
 - The delete button shows on hover/focus; calls `alignment.deleteById(id)`.
 - An empty mapping (no sources yet) renders a placeholder (`未定`, `- - - -`).
@@ -105,7 +127,10 @@ One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview
 The `<ol>` of cards, plus the list-level behaviour: a responsive grid (single column,
 two columns at the `tablet:` and `modal-wide:` breakpoints), an `$effect` that scrolls
 the active card into view, Tab handling within the list (`handleListTab`), and a
-**"No mappings." empty state**.
+**"No mappings." empty state**. It also owns the **GSAP Flip card-animation system**
+(add/delete sequencing, the `swipeToDelete` touch gesture, the `listAnimating` throttle,
+and the re-entrancy rule that drives all of it) — covered in its own page,
+[Mappings List & Card Animations](mappings-list.md).
 
 > The list ref uses a `use:listRef` action rather than `bind:this`. Because a hidden
 > aside copy and the modal copy can briefly coexist during a breakpoint force-close, a
@@ -133,7 +158,23 @@ hidden (`no-scrollbar`). `JsonExportPanel` / `HighlightedCode` are covered in
 
 `IconToggleButton` collapses what were six near-duplicate buttons into one component: a
 single `<button>` wrapping an SVG path from `icons.json`, with props
-`icon` / `label` / `active` / `onclick` / `testid` / `tabindex`.
+`icon` / `label` / `active` / `onclick` / `testid` / `tabindex`. On touch it calls
+`e.currentTarget.blur()` on `pointerup` so a tapped toolbar button doesn't keep a sticky
+`:focus-visible` ring after the modal closes; the `:hover` style is gated behind
+`@media (hover: hover)` so iOS never applies a sticky synthetic hover.
+
+### `ThemeToggle`
+
+The light/dark switch — an orbiting moon/sun pair. Reads/writes `theme.current` and
+carries the Firefox-specific repaint and hydration workarounds. Covered in
+[Dark Mode → The toggle button](dark-mode.md#the-toggle-button-themetogglesvelte).
+
+### `LineDivisor`
+
+The single owner of the line-tool split/merge affordance (`.split-zone` · `.ws-split` ·
+`.merge-zone`), its touch two-tap state machine, the hover-spread wiring, and the divisor
+CSS — shared by both interactive panels so a behaviour change lands in one place. See
+[Line Mode](line-mode.md#the-line-tool-affordances).
 
 ### `DataModal`
 
@@ -222,4 +263,4 @@ registers `Draggable` + `Flip`; the token store separately lazy-loads `Flip` + `
 for the split/merge tween. The data modal's slide uses Svelte's built-in `fly` (not
 GSAP) — it needs only a fade+slide and stays self-contained. If GSAP hasn't loaded when
 a split/merge fires, the edit still happens, just without animation (see
-[Token Store](token-store.md#the-unified-flip-splitmerge-animation)).
+[Token Store](token-store.md#the-line-edit-animation-splitmerge)).

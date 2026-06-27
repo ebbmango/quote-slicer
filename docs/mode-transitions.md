@@ -24,6 +24,33 @@ nudge (`translateY(3px)`) and the launch keyframes share the same `.arrow-svg` e
 on purpose: while the keyframe animation runs it overrides the hover transition
 outright, so a half-finished hover slide can never bleed into the shot.
 
+### Seamless text→token handoff
+
+At 450 ms Svelte swaps the textarea block for the token grid. To keep that swap from
+being a visible cut, each textarea **pre-matches** its token-mode appearance *during* the
+launch, so the DOM change lands on a screen that already looks like the destination. A
+crossfade overlay was rejected — it needs two live DOM trees, timing coordination, and
+risks flicker; pre-matching costs nothing at mount.
+
+- **Geometry.** The source textarea carries `tracking-[2px]` and `translate-x-[1px]`. The
+  token row's effective per-pair gap is 2 px (a `gap-px` plus a zero-width divisor button
+  between each pair, counted twice); the 1 px translate cancels the trailing
+  letter-spacing that would otherwise centre the glyph block 1 px left. Font size is
+  unified to `1.75rem` across textareas, token spans, and sidebar cards.
+- **Colour.** When `arrowExiting` flips true, each field gets an `.exiting` modifier and
+  animates over 400 ms (just under the 450 ms swap, so it settles flat first). The three
+  fields use different strategies — source/authorship stay at their resting opacity and
+  only raise the *placeholder* to `currentColor`; the target field keeps element opacity
+  at 1 and dims via *text colour* to `currentColor @ 30%`, with a fixed placeholder path
+  rather than `currentColor` to avoid compounding two opacity multipliers.
+
+`prefers-reduced-motion` keeps the pre-match (the swap stays seamless) but applies the
+`.exiting` state instantly instead of animating it.
+
+> The geometry match is exact only because the divisor buttons are zero-width — if
+> divisor sizing changes, `tracking-[2px]` / `translate-x-[1px]` must be recomputed (a
+> comment in `QuoteWorkbench.svelte` flags this).
+
 ## The persistent-DOM crossfade (link ↔ line ↔ view)
 
 ### Why it's built this way
@@ -45,11 +72,14 @@ What changes between modes is *attributes*, not *which elements are mounted*:
 ### The two transitions that carry the motion
 
 - **`.tok`** — a class on every token span: `transition: color/opacity/font-weight
-  280ms`. The styling functions (`tokenStyle`, `tokenOpacity`) return only the *target*
-  values; the timing is in the CSS rule. Leaving link mode unsets color/weight, so the
-  span crossfades back to the default text color on its own. Source opacity also encodes
-  the mode (`opacity-70` in line, `opacity-30` in view), so the three modes read
-  distinctly without ever remounting.
+  280ms`. Both panels compute a token's target colour, opacity class, and weight with
+  one shared pure function, `tokenPresentation(o)` (`src/lib/tokenPresentation.ts`,
+  returning `{ style, opacityClass }`); the timing lives in the CSS rule. Leaving link
+  mode unsets colour/weight, so the span crossfades back to the default text colour on
+  its own. Source opacity also encodes the mode (`opacity-70` in line, `opacity-30` in
+  view), so the three modes read distinctly without ever remounting. During a *theme*
+  toggle this 280 ms widens to 500 ms under `html.theme-anim` so tokens settle in step
+  with the page background — see [Dark Mode](dark-mode.md#synchronized-transitions-htmltheme-anim).
 - **`.merge-zone`** — the full-width line break. It is a real element at `height: 0` in
   link/view (still forcing a flex wrap, so it doubles as the plain line break) and
   transitions to `height: 1.5rem` when `.line-active`. That height transition is what
@@ -59,7 +89,7 @@ What changes between modes is *attributes*, not *which elements are mounted*:
 
 Two parties want to own the scroll box's height:
 
-1. the [token store](token-store.md#the-unified-flip-splitmerge-animation), which pins
+1. the [token store](token-store.md#the-line-edit-animation-splitmerge), which pins
    an explicit pixel height *during* a split/merge tween (`animating === true`);
 2. everything else, which wants `height: auto` so the box follows content in flow —
    including the `.merge-zone` height transitions above.

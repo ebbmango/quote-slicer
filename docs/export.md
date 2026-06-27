@@ -68,17 +68,25 @@ By default the export would look like a generic code preview. To make it feel na
 Shiki's `codeToTokens({ lang, theme, colorReplacements })`. The base theme is
 **dracula** (chosen because its token colors are well-known hex values, easy to
 target), and `JsonExportPanel` passes a map that swaps dracula's hexes for the app's
-mapping palette:
+mapping palette. The map is **theme-aware** — `mode = appTheme.current` selects the
+light or dark variant — so the export tracks the app's [dark mode](dark-mode.md):
 
 | Role | dracula hex(es) | replaced with |
 |------|-----------------|---------------|
-| strings | `#f1fa8c`, `#e9f284` | `colors.compostella.base` |
-| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | flat `#A8A8A8` |
-| numbers | `#bd93f9` | `colors.azure.base` |
-| `undefined` literal | `#ff5555` | `colors.sugar.base` |
+| strings | `#f1fa8c`, `#e9f284` | `colors.compostella[mode].base` |
+| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey |
+| numbers | `#bd93f9` | `colors.azure[mode].base` |
+| `undefined` literal | `#ff5555` | `colors.sugar[mode].base` |
 
 This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
 alongside the index-keyed array — the recolor wants *specific* palette entries.
+
+`JsonExportPanel` hoists `colorReplacements` to a module-level `$derived` rather than
+passing an inline object literal: Svelte 5 wraps an inline `ObjectExpression` in
+`$.derived()` and produces a **new reference every render**, which would re-trigger
+Shiki's `codeToTokens()` on every alignment change even when the palette is unchanged.
+`HighlightedCode` correspondingly reads both `code` *and* `colorReplacements` inside its
+tokenizing `$effect`, so Svelte tracks the palette as a reactive dependency.
 
 > **Fragility:** the replacement is literal hex-string matching against a fixed theme.
 > If Shiki updates the dracula palette, or the base theme changes, these swaps silently

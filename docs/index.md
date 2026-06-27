@@ -27,13 +27,16 @@ Then the feature-specific pages as you need them.
 |------|----------------|
 | [Overview](overview.md) | Product description, the four modes, responsive layout |
 | [Data Model](data-model.md) | `SourceToken`, `TargetToken`, `Mapping`, `TokenState`, `MappingView`, export types; stable token IDs |
-| [Tokenization](tokenization.md) | Source/target tokenizers, line stamping, whitespace strategy |
-| [Token Store](token-store.md) | The single token owner: text-keyed cache, pinyin overlay, the unified Flip |
-| [Link Mode](link-mode.md) | `Alignment`, the click state machine, mapping lifecycle, pinyin, whitespace bridging |
-| [Line Mode](line-mode.md) | Split/merge functions, the line-tool affordances, the split/merge animation |
-| [Mode Transitions](mode-transitions.md) | How the workbench animates between text/link/line/view (persistent DOM, the arrow launch, sidebar slide) |
-| [Keyboard & Navigation](keyboard-navigation.md) | `tokenGridNav`, visual-neighbour math, the mouse/keyboard interaction sensor |
-| [Export](export.md) | The export data shape, the JSON pretty-printer, the syntax-highlighted panel |
+| [Tokenization](tokenization.md) | Source/target tokenizers, source punctuation grouping, line stamping, whitespace strategy |
+| [Token Store](token-store.md) | The single token owner: text-keyed cache, pinyin overlay, the line-edit animation |
+| [Link Mode](link-mode.md) | `Alignment`, the click state machine, mapping lifecycle, canonical pinyin, whitespace bridging |
+| [Line Mode](line-mode.md) | Split/merge functions, the line-tool affordances, two-tap touch, the split/merge animation |
+| [View Mode](view-mode.md) | The read-only layer and the `ViewHighlight` hover/tap mapping highlight |
+| [Mode Transitions](mode-transitions.md) | How the workbench animates between text/link/line/view (arrow launch, seamless handoff, persistent DOM, sidebar slide) |
+| [Keyboard & Navigation](keyboard-navigation.md) | `tokenGridNav`, the grid DOM contract, visual-neighbour math, the interaction sensor |
+| [Export](export.md) | The export data shape, the JSON pretty-printer, the theme-aware syntax-highlighted panel |
+| [Mappings List](mappings-list.md) | The sidebar card GSAP Flip animations, swipe-to-delete, the `$state` re-entrancy rule |
+| [Dark Mode](dark-mode.md) | No-flash prepaint, cross-tab theme controller, per-scheme palette, synchronized transitions |
 | [UI Architecture](ui-architecture.md) | Component tree, responsibilities, context wiring, the responsive data panels/modal |
 | [Build & Deploy](build-and-deploy.md) | Static prerender, base path, the GitHub Pages pipeline, the proprietary icons secret |
 | [File Map](file-map.md) | Every source file and its responsibility |

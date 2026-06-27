@@ -80,11 +80,12 @@ reverse maps at runtime:
 - `targetIdToIndex: Map<tokenId, arrayIndex>`
 
 These are `$derived` and rebuild whenever the token arrays change. The
-**index → mapping** lookups `sourceMappingIndex` / `targetMappingIndex` are derived
-from them in turn. If a token ID is ever *not* found in the current array, it simply
-drops out of the derived maps — no corruption, no error. This means a future feature
-that removes tokens (e.g. editing the source text after linking) cannot leave
-dangling references inside a mapping.
+**index → mapping** lookups `sourceMappingIndex` / `targetMappingIndex` are built from
+them in turn by `buildMappingIndex` (see [TokenState](#tokenstate--per-token-display-state)).
+If a token ID is ever *not* found in the current array, it simply drops out of the
+derived maps — no corruption, no error. This means a future feature that removes tokens
+(e.g. editing the source text after linking) cannot leave dangling references inside a
+mapping.
 
 ## TokenState — per-token display state
 
@@ -97,6 +98,22 @@ type TokenState =
   | { kind: 'idle';   color: string } // in a mapping, but that mapping isn't selected
   | { kind: 'active'; color: string }; // in the currently selected (active) mapping
 ```
+
+Both derive functions take the per-token-index→`Mapping` map, the active mapping ID,
+and a `mode: 'light' | 'dark'` (which selects the light/dark colour variant — see
+[Dark Mode](dark-mode.md)). `deriveTargetTokenState` also takes the target token array
+so it can apply [whitespace bridging](link-mode.md#whitespace-bridging).
+
+### `buildMappingIndex`
+
+The index those functions consume is built by `buildMappingIndex(mappings, idToIndex,
+tokenIds)` — a pure function that returns `Map<number, Mapping>` (token array index →
+the `Mapping` that claims it). It stores the **`Mapping` object**, not a `MappingId`
+string: an earlier version stored the ID and made the derive functions do an O(n)
+`mappings.find(...)` per token per render to resolve it. Storing the object eliminates
+that scan and makes the index a first-class source of truth — whitespace bridging can
+then compare `Mapping` references by identity (`left === right`), safe because the
+builder stores exactly one object per mapping.
 
 These functions are framework-free (no Svelte imports), so they're unit-testable —
 see `tokenState.spec.ts`.
@@ -111,13 +128,19 @@ reads a **`MappingView`**: a derived, read-only snapshot built for display
 type MappingView = {
   id: MappingId;
   colorIndex: number;
-  sourceEntries: { tokenIndex: number; text: string; pinyin: string }[];
+  sourceEntries: { tokenId: number; tokenIndex: number; text: string; pinyin: string }[];
   targetText: string;
 };
 ```
 
-- `sourceEntries[].pinyin` resolves to `SourceToken.pinyin ?? ''` — pinyin lives on
-  the token, not on the mapping.
+- Each `sourceEntries` row carries both `tokenId` (the stable identity) and
+  `tokenIndex` (the current array position). `tokenId` is the stable key used to look
+  up display pinyin in the memoized `sourceDisplayPinyin` array; `tokenIndex` is what
+  the card needs to address the live token.
+- `sourceEntries[].pinyin` is the **diacritic display form** (`"zhī"`), converted from
+  the token's stored canonical pinyin (`"zhi1"`) — see
+  [Link Mode → Pinyin](link-mode.md#pinyin-auto-fill-and-canonical-storage). Pinyin
+  lives on the token, not on the mapping.
 - `targetText` is built by `buildTargetText()`, which stitches contiguous runs of the
   mapping's target tokens into phrases (bridging short whitespace/punctuation gaps of
   ≤ 5 tokens) and joins non-contiguous runs with `, `.
@@ -151,11 +174,17 @@ alignment data.
 
 The palette lives in `src/lib/constants/colors.ts`: `MAPPING_COLORS` is an array of 9
 named palettes (`applesour`, `lush`, `seabreeze`, `azure`, `compostella`, `sugar`,
-`strawberry`, `maple`, `beeswax`). Each entry is a `MappingColor` with many roles —
-`source`/`target` (token text colors used by the interactive panels) plus a dozen
-card colors (backdrop, badge, bottom bar, etc.) used by `Mapping.svelte`.
+`strawberry`, `maple`, `beeswax`). Each entry is a `MappingColor`, a `{ light, dark }`
+wrapper around two `MappingColorVariant`s. The **variant** is what holds the roles —
+`source`/`target` (token text colours used by the interactive panels) plus a dozen
+card colours (backdrop, badge, bottom bar, etc.) used by `Mapping.svelte`. The light/
+dark split lives in the data because card colours are applied as inline `style`
+attributes that a CSS `.dark` class can't reach (see [Dark Mode](dark-mode.md)).
 
 A mapping's `colorIndex` indexes this array modulo its length, so the palette cycles
-if more than 9 mappings exist. A parallel `colors` lookup (keyed by name, e.g.
-`colors.azure.base`) is exported for code that wants a *specific* palette entry rather
-than the Nth — used by the [export panel recolor](export.md).
+if more than 9 mappings exist. A parallel `colors` lookup (keyed by name) is exported
+for code that wants a *specific* palette entry rather than the Nth — e.g.
+`colors.azure.light.base`, used by the [export panel recolor](export.md). `colors.ts`
+also exports `HIGHLIGHT_COLOR` (the flat [view-mode highlight](view-mode.md) red) and
+`divisorColor(ordinal, field, mode)` (the [line-mode divisor](line-mode.md) palette
+sweep).

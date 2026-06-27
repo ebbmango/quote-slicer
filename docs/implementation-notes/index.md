@@ -19,38 +19,54 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-| Date | Note | Commits | Summary |
-|------|------|---------|---------|
-| 2026-06-26 | [Alignment concern split: ViewHighlight and colouring index](./26-06-26-alignment-concern-split.md) | `d998e63` | ViewHighlight extracted from Alignment for fake-timer testability; buildMappingIndex moved to tokenState.ts as pure fn; index value changed from MappingId to Mapping, eliminating O(n) mappings.find() per render |
-| 2026-06-26 | [Line-edit animation overhaul](./26-06-26-line-edit-animation-overhaul.md) | `a2e434e` | LineDivisor extraction (~505 lines deduped); single nested GSAP Flip over full vertical layout; clearProps fix for double-counting bug that caused auth and opposite panel to jump on first frame in unconstrained viewports |
-| 2026-06-25 | [Theme transition synchronization](./26-06-25-theme-transition-synchronization.md) | `eb941ed` | html.theme-anim gating window syncs fast token transitions to 500ms page background; placeholder color fixed with currentColor; JsonExportPanel dark palette derived from appTheme.current; colorReplacements hoisted to $derived |
-| 2026-06-23 | [Delete button color flash fix](./26-06-23-delete-button-flash-fix.md) | `296de30` | Three-layer bug: SVG fill transition, focus-before-click color mismatch, stale GPU texture on hidden element after theme switch; fixed by removing fill transition, decoupling delete colors from isActive, and {#key isDark} for fresh raster |
-| 2026-06-21 | [Mapping palette dark variants](./26-06-21-mapping-palette-dark-variants.md) | `57ec2e9`, `e343e9b`, `8f4befd`, `f1665d9`, `ccebbb8` | MappingColor wraps light/dark MappingColorVariant; Mapping.svelte selects variant from appTheme.current; iterative color tuning for inactive cards, tag text, and bot-bar in dark mode |
-| 2026-06-21 | [Dark mode infrastructure](./26-06-21-dark-mode-infrastructure.md) | `0a90f89`, `247b60c` | No-flash prepaint script, cross-tab theme controller with OS-adaptive state semantics, animated orbit toggle button; Firefox clip-path repaint bug worked around with overflow:hidden |
-| 2026-06-20 | [Punctuation atomic for line splitting](./26-06-20-punctuation-atomic-line-splitting.md) | `1898c48` | Removes intra-group split-zone divisors so a base token and its glued punctuation can never be split onto different lines; adds focus-restore fallback for the keyboard-merge edge case where the merged divisor vanishes |
-| 2026-06-20 | [Swipe-to-delete on touch](./26-06-20-swipe-to-delete.md) | `31e080c` | Horizontal swipe replaces delete button on coarse-pointer devices; angle-check + deadzone gesture recognition; column-aware direction constraint; stamped `dataset.swipeFlyoff` marker fixes confirmed bug where button-deleted cards carried a GSAP transform and flew off in wrong direction |
-| 2026-06-20 | [MappingsList animation polish](./26-06-20-mappings-list-animation-polish.md) | `a59c47d`, `c70f089` | `listAnimating` guard throttles mutations during card animations; empty-state overlay crossfades concurrently with the last card's slide-out instead of gating on `outroing` |
-| 2026-06-19 | [MappingsList GSAP Flip animations](./26-06-19-mappings-list-gsap-flip-animations.md) | `4d7a123` … `3315995` | Two-phase add (make-way Flip + slide-in) and exit-slide + gap-close ripple for mapping cards; column-aware direction; interruption safety; fixes re-entrant `$state` write in GSAP `onComplete` that silently killed Svelte's reactive scheduler |
-| 2026-06-17 | [Line-mode redistribution CSS @property fix](./26-06-17-line-mode-redistribution-css-property.md) | `a83a715`, `34b50d8` | `@property` registration for `--rd-x` gives it a concrete `0px` initial so cross-row spread/collapse transitions are always explicit→explicit and animate instead of snap |
-| 2026-06-17 | [CI guard for ICONS_JSON_B64 secret](./26-06-17-ci-icons-secret-guard.md) | `7b37ba2` | Pre-build CI step enumerates required icon keys and fails fast when secret is stale; introduced after a prod outage where missing icon keys produced a broken deploy with no build error |
-| 2026-06-17 | [Toolbar touch sticky hover/focus fix](./26-06-17-toolbar-touch-sticky-hover.md) | `3c5412f` | `blur()` on touch `pointerup` clears `:focus-visible`; `@media (hover: hover)` prevents iOS sticky hover on modal toolbar buttons |
-| 2026-06-17 | [Authorship browser restoration fix](./26-06-17-authorship-browser-restoration.md) | `4670950` | `autocomplete="off"` on authorship textarea suppresses browser form restoration; intentional fix for DOM-lifecycle asymmetry between persistent and conditionally-mounted textareas |
-| 2026-06-17 | [Seamless text→token handoff](./26-06-17-text-token-seamless-handoff.md) | `4921932`, `62c5de3` | Textareas pre-match token-mode geometry and colour during the 450ms arrow launch so the DOM swap lands with nothing left to snap; per-field morph strategies avoid compounding opacity multipliers |
-| 2026-06-17 | [Source token punctuation grouping](./26-06-17-source-punctuation-grouping.md) | `1523814` | `groupSourceTokens()` glues punctuation to its base token using Unicode property classes; `.tok-group` inline-flex wrapper prevents orphan wraps without affecting token IDs, mapping, or divisor logic |
-| 2026-06-16 | [Viewport-height layout overhaul](./26-06-16-viewport-height-layout-overhaul.md) | `e501cb5`, `6841fe1`, `38386ff` | Replaced vh-clamp caps with flex min-h-0 chain; safe-center scroll layer; DataModal as band sibling; CSS fade-y on panels; text-mode textareas aligned to view-mode metrics |
-| 2026-06-16 | [View-mode mapping highlight](./26-06-16-view-mode-mapping-highlight.md) | `793e0d6` | Hover/tap highlights full mapping group across both panels; cold/warm delay kills flicker; touch tap-toggles; QuoteWorkbench owns reset + timer cleanup |
-| 2026-06-16 | [Line-mode two-tap touch](./26-06-16-line-mode-two-tap-touch.md) | `a35bf6e` | Two-tap touch model for split/merge zones; first tap highlights + spreads, second activates; single shared state in QuoteWorkbench prevents cross-panel conflicts |
-| 2026-06-16 | [Line-mode divisor visual affordances](./26-06-16-line-mode-divisor-styling.md) | `87d3622` … `55425cc` | Running-palette coloring across both panels, slanted source glyphs, ~1em hit zones, indicator-only slide animation, fade-out on mode exit |
-| 2026-06-15 | [Line-mode divisor hover redistribution](./26-06-15-line-mode-divisor-redistribution.md) | `df21f7a` … `dba9d7f` | Hover feedback on split/merge divisors moved from width-grow to pure-transform gap redistribution; fixes wobble against GSAP Flip |
-| 2026-06-15 | [Canonical pinyin storage](./26-06-15-canonical-pinyin-storage.md) | `96ada2f`, `2c98dae` | Pinyin stored as canonical numbered form, displayed as diacritic, via new `pinyinConvert.ts` and `PinyinInput.svelte` |
-| 2026-06-15 | [Cross-zone nav scoping fix](./26-06-15-cross-zone-nav-scoping.md) | `5271beb` | Fixes `findDefaultEl` zone-scoping bug for comma-separated selectors; unifies cross-zone Alt+Enter/Arrow jumps across modes |
+_None — everything is folded into the docs._
 
 ## Archived notes (already parsed into the docs)
 
-Folded into the docs on **2026-06-14**. They cover the token store, the target
-tokenizer, link/line mode, the responsive data panels and modal, the JSON export
-pipeline, the page-component decomposition, the interaction-mode sensor, and the
-GitHub Pages deploy.
+### Folded in on 2026-06-27
+
+This pass consumed the 2026-06-15 → 2026-06-27 run. It added three new docs pages —
+[Dark Mode](../dark-mode.md), [View Mode](../view-mode.md), and
+[Mappings List](../mappings-list.md) — and revised the data model, tokenization, token
+store, link/line modes, mode transitions, keyboard navigation, export, UI architecture,
+and build/deploy pages to match the current code (canonical pinyin, the `gridDom`
+contract, `buildMappingIndex`, the line-edit animation's dual regime, the removal of
+`crossZoneJump`, and more).
+
+| Date | Note | Commits |
+|------|------|---------|
+| 2026-06-15 | [Canonical pinyin storage](./old/26-06-15-canonical-pinyin-storage.md) (+ [review](./old/canonical-pinyin-storage-review.md)) | `96ada2f`, `2c98dae` |
+| 2026-06-15 | [Cross-zone nav scoping fix](./old/26-06-15-cross-zone-nav-scoping.md) | `5271beb` |
+| 2026-06-15 | [Line-mode divisor hover redistribution](./old/26-06-15-line-mode-divisor-redistribution.md) | `df21f7a` … `dba9d7f` |
+| 2026-06-16 | [Viewport-height layout overhaul](./old/26-06-16-viewport-height-layout-overhaul.md) | `e501cb5`, `6841fe1`, `38386ff` |
+| 2026-06-16 | [View-mode mapping highlight](./old/26-06-16-view-mode-mapping-highlight.md) | `793e0d6` |
+| 2026-06-16 | [Line-mode two-tap touch](./old/26-06-16-line-mode-two-tap-touch.md) | `a35bf6e` |
+| 2026-06-16 | [Line-mode divisor visual affordances](./old/26-06-16-line-mode-divisor-styling.md) | `87d3622` … `55425cc` |
+| 2026-06-17 | [Source token punctuation grouping](./old/26-06-17-source-punctuation-grouping.md) | `1523814` |
+| 2026-06-17 | [Seamless text→token handoff](./old/26-06-17-text-token-seamless-handoff.md) | `4921932`, `62c5de3` |
+| 2026-06-17 | [Authorship browser restoration fix](./old/26-06-17-authorship-browser-restoration.md) | `4670950` |
+| 2026-06-17 | [Toolbar touch sticky hover/focus fix](./old/26-06-17-toolbar-touch-sticky-hover.md) | `3c5412f` |
+| 2026-06-17 | [CI guard for ICONS_JSON_B64 secret](./old/26-06-17-ci-icons-secret-guard.md) | `7b37ba2` |
+| 2026-06-17 | [Line-mode redistribution CSS @property fix](./old/26-06-17-line-mode-redistribution-css-property.md) | `a83a715`, `34b50d8` |
+| 2026-06-19 | [MappingsList GSAP Flip animations](./old/26-06-19-mappings-list-gsap-flip-animations.md) | `4d7a123` … `3315995` |
+| 2026-06-20 | [MappingsList animation polish](./old/26-06-20-mappings-list-animation-polish.md) | `a59c47d`, `c70f089` |
+| 2026-06-20 | [Swipe-to-delete on touch](./old/26-06-20-swipe-to-delete.md) | `31e080c` |
+| 2026-06-20 | [Punctuation atomic for line splitting](./old/26-06-20-punctuation-atomic-line-splitting.md) | `1898c48` |
+| 2026-06-21 | [Dark mode infrastructure](./old/26-06-21-dark-mode-infrastructure.md) | `0a90f89`, `247b60c` |
+| 2026-06-21 | [Mapping palette dark variants](./old/26-06-21-mapping-palette-dark-variants.md) | `57ec2e9` … `ccebbb8` |
+| 2026-06-23 | [Delete button color flash fix](./old/26-06-23-delete-button-flash-fix.md) | `296de30` |
+| 2026-06-25 | [Theme transition synchronization](./old/26-06-25-theme-transition-synchronization.md) | `eb941ed` |
+| 2026-06-26 | [Alignment concern split: ViewHighlight and colouring index](./old/26-06-26-alignment-concern-split.md) | `d998e63` |
+| 2026-06-26 | [Line-edit animation overhaul](./old/26-06-26-line-edit-animation-overhaul.md) | `a2e434e` |
+| 2026-06-26 | [MappingsList scroll-before-animate and concurrent delete guard](./old/26-06-27-mappingslist-scroll-perf.md) | `4a13b11` |
+| 2026-06-27 | [Grid DOM contract module and layout knowledge consolidation](./old/26-06-27-dom-contract-module.md) | `a24fa85`, `af17a04`, `3e2681d` |
+| 2026-06-27 | [Pure module and action extraction wave](./old/26-06-27-pure-module-extraction.md) | `7af4805`, `bedc35a`, `d6c5181` |
+
+### Folded in on 2026-06-14
+
+These cover the token store, the target tokenizer, link/line mode, the responsive data
+panels and modal, the JSON export pipeline, the page-component decomposition, the
+interaction-mode sensor, and the GitHub Pages deploy.
 
 | Date | Note | Commits |
 |------|------|---------|

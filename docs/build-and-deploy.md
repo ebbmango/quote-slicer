@@ -42,10 +42,23 @@ In CI the file is restored from a repo secret before install/build:
 
 `ICONS_JSON_B64` is the file's contents, base64-encoded.
 
-> If `ICONS_JSON_B64` is missing or stale, CI fails on the missing `icons.json` import
-> — the same failure mode as a local checkout without the file. Anyone who changes
-> `icons.json` locally must re-encode and update the secret, or CI builds use the old
-> icons.
+### The required-keys guard
+
+A *missing* secret fails the build outright (the `icons.json` import can't resolve). But
+a **stale or incomplete** secret — the file present, yet missing the keys a newer
+component references — used to slip through: the build succeeded, the deploy succeeded,
+and only on prod did the affected icons render as nothing (the lookup returned
+`undefined` with no error). This actually shipped once, breaking the toolbar in
+production with no build-time signal.
+
+So `deploy.yml` runs a guard step **after** restoring `icons.json` but **before**
+`npm ci` (failing before the costly install/build): it reads the restored JSON with
+`node -e` and checks every required icon key, exiting non-zero with a message listing any
+that are absent.
+
+> The guard is the *enforcement*, not the source of truth. When you add a new icon to a
+> component you must update the `ICONS_JSON_B64` secret **and** add the key to the
+> guard's required-keys list — otherwise the guard can't catch a stale secret.
 
 ## The GitHub Pages pipeline
 
@@ -53,7 +66,8 @@ In CI the file is restored from a repo secret before install/build:
 manual `workflow_dispatch`). Two jobs:
 
 1. **build** — checkout → setup Node 20 (npm cache) → restore `icons.json` from the
-   secret → `npm ci` → `npm run build` → upload `./build` as a Pages artifact.
+   secret → **guard required icon keys** → `npm ci` → `npm run build` → upload `./build`
+   as a Pages artifact.
 2. **deploy** — `actions/deploy-pages@v4` publishes the artifact to the `github-pages`
    environment.
 
@@ -81,8 +95,14 @@ npm test             # unit (run) + e2e
 The framework-free logic is unit-tested with vitest:
 
 - `src/lib/vitest-examples/tokenize.spec.ts` — the target tokenizer's punctuation rules.
+- `src/lib/vitest-examples/pinyinConvert.spec.ts` — canonical↔diacritic pinyin conversion.
 - `src/lib/tokenState.spec.ts` — token-state derivation.
+- `src/lib/tokenPresentation.spec.ts` — per-token colour/opacity/weight output.
 - `src/lib/exportFormat.spec.ts` — the JSON pretty-printer.
+- `src/lib/themeState.spec.ts` — theme resolution / continuity logic.
+- `src/lib/actions/rowSpread.spec.ts` — the hover-spread offset math.
 - `src/lib/navigation/visualNeighbor.spec.ts` — the visual-neighbour math.
 
-End-to-end flows are covered by Playwright (`src/routes/*.e2e.ts`).
+End-to-end flows are covered by Playwright (`src/routes/*.e2e.ts`), including
+`line-split-overflow.e2e.ts` (the constrained/overflow line-edit regime) and
+`rapid-click.e2e.ts` (the mapping-list re-entrancy guard).

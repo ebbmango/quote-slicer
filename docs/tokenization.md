@@ -34,6 +34,28 @@ input field filters input in real time against `SOURCE_INPUT_RE` (`tokenize.ts`)
 which only allows Han characters, CJK punctuation blocks, and newlines. (The filter is
 IME-aware — see [UI Architecture](ui-architecture.md).)
 
+### Source punctuation grouping
+
+`groupSourceTokens(tokens)` (also in `tokenize.ts`) is a **display grouping** over the
+already-tokenized source array — it returns `number[][]`, arrays of token *indices*,
+one per group. It does **not** create new tokens or touch IDs, mapping, or pinyin; it
+only tells the renderer which tokens to keep on the same visual unit.
+
+Why: classical Chinese punctuation is semantically attached to an adjacent character —
+terminal marks (`。，！？`) and closing brackets trail the preceding character; opening
+brackets (`「『《【（`) lead the following one. When the source panel wraps, a mark that
+follows the last character on a line can orphan onto the next line. Each group is a base
+character plus its glued punctuation, so the renderer can wrap each group as one
+non-breaking unit (`.tok-group`).
+
+The side a mark binds to is derived from the character itself via Unicode property
+escapes — `\p{Ps}` (opening brackets) and `\p{Pi}` (initial quotes) bind to the token
+that *follows*; everything else binds to the token that *precedes* — rather than a
+hand-maintained list. **Grouping never crosses a `.line` boundary**, so a line split
+that lands between a character and its punctuation simply puts them in different groups,
+and this invariant is what makes the [line-mode no-split rule](line-mode.md#source-panel-interactivesourcetext)
+safe.
+
 ## Target tokenizer
 
 `tokenizeTarget(text: string): TargetToken[]`
@@ -112,7 +134,8 @@ specially:
 - **Never stored in a mapping** — no `Mapping` will ever hold a whitespace token ID.
 - **Bridged visually** — a whitespace token flanked on both sides by tokens from the
   *same* mapping inherits that mapping's color, so a multi-word phrase reads as one
-  continuous highlight. The rule is `findBridgeMappingId()` in `tokenState.ts`; see
+  continuous highlight. The rule is `findBridgeMapping()`, an internal helper in
+  `tokenState.ts` used by `deriveTargetTokenState`; see
   [Link Mode](link-mode.md#whitespace-bridging).
 - **Bridged in text output** — `buildTargetText()` treats short gaps (≤ 5 tokens, all
   whitespace/punctuation) as contiguous, so a mapping's `targetText` renders as a
