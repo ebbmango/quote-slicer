@@ -5,7 +5,8 @@
 	import { longpress } from '$lib/actions/longpress';
 	import { clearRedistribute } from '$lib/actions/redistribute';
 	import LineDivisor from '$lib/components/LineDivisor.svelte';
-	import { divisorColor, HIGHLIGHT_COLOR, type MappingColorVariant } from '$lib/constants/colors';
+	import { divisorColor, type MappingColorVariant } from '$lib/constants/colors';
+	import { tokenPresentation } from '$lib/tokenPresentation';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
 	import { theme as appTheme } from '$lib/theme';
 
@@ -103,34 +104,19 @@
 		}
 	}
 
-	function tokenStyle(i: number): string {
-		// View mode: hovered mapping lights up in the flat highlight color.
-		if (isViewMode) return alignment.isSourceHighlighted(i) ? `color: ${HIGHLIGHT_COLOR};` : '';
-		// Color only in link mode; leaving link mode unsets color so the span
-		// transitions back to the default text color (see the `.tok` transition).
-		if (!isLinkMode) return '';
+	// Resolved color/opacity for token `i` (see tokenPresentation). Color and the
+	// active/idle/unmapped ladder only apply in link mode, so state is read only
+	// there (and never for punctuation, which can't anchor a mapping).
+	function pres(i: number) {
 		const token = tokens[i];
-		if (token.type === 'punctuation') return '';
-		const s = alignment.stateOfSource(i);
-		const focused = focusedIndex === i;
-		if (s.kind === 'active' && focused) return `color: ${s.color}; filter: brightness(0.75);`;
-		if (s.kind === 'active') return `color: ${s.color};`;
-		if (s.kind === 'idle' && focused) return `color: ${s.color};`;
-		return '';
-	}
-
-	function tokenOpacity(i: number): string {
-		if (isLineMode) return 'opacity-70';
-		// view: hovered mapping pops to full opacity, rest stays at the flat resting level
-		if (isViewMode) return alignment.isSourceHighlighted(i) ? 'opacity-100' : VIEW_TOKEN_OPACITY;
-		if (!isLinkMode) return VIEW_TOKEN_OPACITY; // view
-		const token = tokens[i];
-		if (token.type === 'punctuation') return 'opacity-30';
-		const s = alignment.stateOfSource(i);
-		const focused = focusedIndex === i;
-		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
-		if (s.kind === 'idle') return 'opacity-70';
-		return '';
+		return tokenPresentation({
+			mode: isLinkMode ? 'link' : isLineMode ? 'line' : 'view',
+			state: isLinkMode && token.type !== 'punctuation' ? alignment.stateOfSource(i) : null,
+			focused: focusedIndex === i,
+			highlighted: isViewMode && alignment.isSourceHighlighted(i),
+			viewOpacity: VIEW_TOKEN_OPACITY,
+			fontWeight: false
+		});
 	}
 </script>
 
@@ -159,6 +145,7 @@
 		{#snippet tokenSpan(i)}
 			{@const token = tokens[i]}
 			{@const interactive = isLinkMode && token.type !== 'punctuation'}
+			{@const p = pres(i)}
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<span
 				data-flip-id="src-{i}"
@@ -167,8 +154,8 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? alignment.stateOfSource(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}
-				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
-				style={tokenStyle(i)}
+				class={'tok ' + p.opacityClass + (interactive ? ' cursor-pointer outline-none' : '')}
+				style={p.style}
 				onclick={(e) => handleClick(e, i)}
 				onmouseenter={() => {
 					if (isViewMode && !isTouch) alignment.hoverSource(i);

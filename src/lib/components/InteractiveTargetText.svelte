@@ -4,7 +4,8 @@
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { clearRedistribute } from '$lib/actions/redistribute';
 	import LineDivisor from '$lib/components/LineDivisor.svelte';
-	import { divisorColor, HIGHLIGHT_COLOR, type MappingColorVariant } from '$lib/constants/colors';
+	import { divisorColor, type MappingColorVariant } from '$lib/constants/colors';
+	import { tokenPresentation } from '$lib/tokenPresentation';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
 	import { theme as appTheme } from '$lib/theme';
 
@@ -110,31 +111,18 @@
 		}
 	}
 
-	function tokenStyle(i: number): string {
-		// View mode: hovered mapping lights up in the flat highlight color.
-		if (isViewMode) return alignment.isTargetHighlighted(i) ? `color: ${HIGHLIGHT_COLOR};` : '';
-		// Color/weight only in link mode; the `.tok` transition crossfades back to
-		// the default when leaving link mode.
-		if (!isLinkMode) return '';
-		const s = alignment.stateOfTarget(i);
-		const focused = focusedIndex === i;
-		if (s.kind === 'active' && focused)
-			return `color: ${s.color}; font-weight: 600; filter: brightness(0.75);`;
-		if (s.kind === 'active') return `color: ${s.color}; font-weight: 600;`;
-		if (s.kind === 'idle' && focused) return `color: ${s.color}; font-weight: 350;`;
-		return `font-weight: 350;`;
-	}
-
-	function tokenOpacity(i: number): string {
-		if (isLineMode) return 'opacity-70';
-		// view: hovered mapping pops to full opacity, rest stays at the flat resting level
-		if (isViewMode) return alignment.isTargetHighlighted(i) ? 'opacity-100' : VIEW_TOKEN_OPACITY;
-		if (!isLinkMode) return VIEW_TOKEN_OPACITY; // view
-		const s = alignment.stateOfTarget(i);
-		const focused = focusedIndex === i;
-		if (s.kind === 'unmapped') return focused ? 'opacity-50' : 'opacity-30';
-		if (s.kind === 'idle') return 'opacity-70';
-		return '';
+	// Resolved color/opacity/weight for token `i` (see tokenPresentation). The
+	// color + font-weight ladder only applies in link mode, so state is read only
+	// there. Unlike the source panel, target keeps a resting 350 weight (fontWeight).
+	function pres(i: number) {
+		return tokenPresentation({
+			mode: isLinkMode ? 'link' : isLineMode ? 'line' : 'view',
+			state: isLinkMode ? alignment.stateOfTarget(i) : null,
+			focused: focusedIndex === i,
+			highlighted: isViewMode && alignment.isTargetHighlighted(i),
+			viewOpacity: VIEW_TOKEN_OPACITY,
+			fontWeight: true
+		});
 	}
 </script>
 
@@ -193,6 +181,7 @@
 			/>
 		{:else}
 			{@const interactive = isLinkMode}
+			{@const p = pres(i)}
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<span
 				data-flip-id="tgt-{i}"
@@ -201,8 +190,8 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? alignment.stateOfTarget(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}
-				class={'tok ' + tokenOpacity(i) + (interactive ? ' cursor-pointer outline-none' : '')}
-				style={tokenStyle(i)}
+				class={'tok ' + p.opacityClass + (interactive ? ' cursor-pointer outline-none' : '')}
+				style={p.style}
 				onclick={() => handleClick(i)}
 				onmouseenter={() => {
 					if (isViewMode && !isTouch) alignment.hoverTarget(i);
