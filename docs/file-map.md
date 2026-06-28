@@ -19,7 +19,7 @@ linked per area.
 | File | Responsibility |
 |------|----------------|
 | `src/lib/tokenize.ts` | `SourceToken` / `TargetToken` types; `tokenizeSource()`, `tokenizeTarget()`; `SOURCE_INPUT_RE` ([Tokenization](tokenization.md)) |
-| `src/lib/line.ts` | `splitAfterToken()`, `mergeLines()`, `groupByLine()` — pure generics over `T extends { line: number }` ([Line Mode](line-mode.md)) |
+| `src/lib/line.ts` | `splitAfterToken()`, `mergeLines()` — pure generics over `T extends { line: number }` ([Line Mode](line-mode.md)) |
 | `src/lib/tokenState.ts` | `Mapping`, `MappingId`, `TokenState`, `QuoteExport*` types; `buildMappingIndex()`, `deriveSourceTokenState()`, `deriveTargetTokenState()`, `buildTargetText()`; internal `findBridgeMapping()` ([Data Model](data-model.md)) |
 | `src/lib/tokenPresentation.ts` | `tokenPresentation()` — shared per-token colour/opacity/weight → `{ style, opacityClass }` ([Mode Transitions](mode-transitions.md)) |
 | `src/lib/pinyinConvert.ts` | `toCanonical()` / `toDisplay()` + the 407-syllable table — numbered↔diacritic pinyin ([Link Mode](link-mode.md#pinyin-auto-fill-and-canonical-storage)) |

@@ -14,17 +14,3 @@ export function mergeLines<T extends { line: number }>(tokens: T[], lineN: numbe
 		return token;
 	});
 }
-
-export function groupByLine<T extends { line: number }>(
-	tokens: T[]
-): { lineNum: number; group: { token: T; globalIndex: number }[] }[] {
-	const map = new Map<number, { token: T; globalIndex: number }[]>();
-	tokens.forEach((token, i) => {
-		const arr = map.get(token.line) ?? [];
-		arr.push({ token, globalIndex: i });
-		map.set(token.line, arr);
-	});
-	return [...map.entries()]
-		.sort(([a], [b]) => a - b)
-		.map(([lineNum, group]) => ({ lineNum, group }));
-}

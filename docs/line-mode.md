@@ -31,17 +31,6 @@ Neither function adds or removes tokens, so **token IDs are invariant** across l
 edits — this is the whole reason mappings (which store IDs) survive them. See
 [Data Model](data-model.md#stable-token-ids).
 
-### `groupByLine(tokens)`
-
-Buckets a flat token array by line, preserving each token's original flat-array index
-as `globalIndex`:
-
-```ts
-{ lineNum: number; group: { token: T; globalIndex: number }[] }[]
-```
-
-A utility for any consumer that needs to render or reason about lines as units.
-
 ## The line-tool affordances
 
 The source and target panels expose split/merge differently, because their token
