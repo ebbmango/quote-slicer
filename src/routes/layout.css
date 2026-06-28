@@ -81,19 +81,24 @@
 	--line-tool-opacity-hover: 0.7;
 }
 
-/* Light/dark page chrome. light-dark() resolves from `color-scheme`. With JS,
-   the theme controller (and the no-flash prepaint script) sets `color-scheme`
-   inline to "light"/"dark" alongside the .dark class. Without JS, the base
-   `light dark` below makes the page follow the OS preference. */
+/* Light/dark page chrome. Driven off the .dark class (set by the no-flash
+   prepaint script + theme controller), NOT light-dark()/color-scheme:
+   Firefox Android with app theme = Dark forces the resolved color-scheme to
+   dark and overrides the author's inline `color-scheme: light`, so a
+   light-dark() palette ignored the user's toggle. The class is ours and wins.
+   color-scheme stays set for native form controls/scrollbars. */
 html {
-	color-scheme: light dark;
-	--page-bg: light-dark(#ffffff, #1b1b1b);
-	--page-fg: light-dark(#1b1b1b, #f4f4f4);
-	--panel-bg: light-dark(#f9f9f9, #262626);
+	color-scheme: light;
+	--page-bg: #ffffff;
+	--page-fg: #1b1b1b;
+	--panel-bg: #f9f9f9;
 }
 
 html.dark {
 	color-scheme: dark;
+	--page-bg: #1b1b1b;
+	--page-fg: #f4f4f4;
+	--panel-bg: #262626;
 }
 
 html,
