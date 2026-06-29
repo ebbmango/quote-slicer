@@ -28,7 +28,10 @@
 	in:fade={{ duration: 300, delay: 250 }}
 >
 	<!-- aside variant: tablet + medium toggle which view the left aside shows -->
-	<div class="subtools-aside gap-2">
+	<!-- data-keep-selection: swapping maps/json must not deselect the active mapping
+	     (globalShortcuts click-to-deselect). The link/line/view group below is NOT
+	     marked, so switching tool still deselects. -->
+	<div class="subtools-aside gap-2" data-keep-selection>
 		<IconToggleButton
 			icon={mapsIcon}
 			label="maps"
@@ -45,7 +48,7 @@
 		/>
 	</div>
 	<!-- modal variant: minimal viewport opens/toggles the data modal -->
-	<div class="subtools-modal gap-2">
+	<div class="subtools-modal gap-2" data-keep-selection>
 		<IconToggleButton
 			icon={mapsIcon}
 			label="maps"

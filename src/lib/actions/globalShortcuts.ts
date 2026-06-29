@@ -21,6 +21,12 @@ export function initAlignmentShortcuts(alignment: Alignment): () => void {
 		// Either token panel — identified by data-zone, like every other reader
 		// (was two aria-label matches; the panel wrapper carries the zone in all modes).
 		if (target.closest(PANEL_SELECTOR)) return;
+		// Presentation controls opt out of deselect-on-click via data-keep-selection
+		// (theme toggle, maps/json panel toggle). They don't change the editing mode,
+		// so nuking the active mapping when you flip the theme or swap the side panel
+		// is just lost work. Mode switches (link/line/view) are deliberately NOT marked
+		// — switching tool still deselects, as does a click on bare canvas.
+		if (target.closest('[data-keep-selection]')) return;
 		alignment.deselect();
 	}
 

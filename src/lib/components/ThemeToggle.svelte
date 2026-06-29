@@ -65,6 +65,7 @@
 		class="theme-clip"
 		style={`--theme-toggle-rotation: ${rotation}deg; --theme-toggle-counter-rotation: ${-rotation}deg;`}
 		data-hydrated={hasHydrated ? 'true' : undefined}
+		data-keep-selection
 		role="group"
 		aria-label="Theme toggle"
 	>
