@@ -28,7 +28,7 @@ The bundle of DOM refs a single line edit animates over — each panel's wrapper
 _Avoid_: animation context, refs, targets
 
 **ViewHighlight**:
-The view-mode hover-highlight timer state machine, extracted from `Alignment`. Owns `hoveredMappingId` (`$state`), the cold/warm/grace delay logic, and the mouse/touch input methods (`hoverSource`, `hoverTarget`, `hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`, `clearHighlight`). `Alignment` constructs one internally and passes a resolver closure over its live `sourceMappingIndex`/`targetMappingIndex` maps; callers access the surface through `Alignment` unchanged. Located at `src/lib/context/viewHighlight.svelte.ts`.
+The view-mode hover-highlight timer state machine, extracted from `Alignment`. Owns `hoveredMappingId` (`$state`), the cold/warm/grace delay logic, and the mouse/touch input methods (`hoverSource`, `hoverTarget`, `hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`, `clearHighlight`). `Alignment` constructs one internally and passes a resolver closure over its live `sourceMappingIndex`/`targetMappingIndex` maps, then exposes it as a `readonly highlight` field; callers reach it directly (`alignment.highlight.hoverSource(i)`) rather than through pass-through forwarders. Located at `src/lib/context/viewHighlight.svelte.ts`.
 _Avoid_: "hover state", "highlight machine"
 
 **token-grid DOM contract**:

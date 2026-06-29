@@ -25,10 +25,10 @@ A standalone Svelte 5 reactive class. Its only dependency is a `MappingAtResolve
 a `(zone, i) => MappingId | null` closure injected via the constructor. `Alignment`
 constructs one internally and provides the closure, pointing it at the live `$derived`
 `sourceMappingIndex` / `targetMappingIndex` maps, so the resolver always reflects the
-current token layout. `Alignment`'s public surface (`hoverSource`, `hoverTarget`,
-`hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`,
-`clearHighlight`, `hoveredMappingId`) is a set of thin delegates to the internal
-instance — no caller had to change when the machine moved out.
+current token layout. `Alignment` exposes the instance directly as a `readonly highlight`
+field; callers reach the machine through `alignment.highlight.hoverSource(i)` and the
+like. (Earlier this surface was re-published as nine pass-through forwarders on
+`Alignment` — deleted, since they added no behaviour over the already-named module.)
 
 > Because `ViewHighlight` takes a resolver closure rather than owning the index maps,
 > the coupling to `Alignment` is a single call-time function, not a structural

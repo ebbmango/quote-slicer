@@ -89,7 +89,7 @@
 			// Tapping a token in line mode clears any touch highlight.
 			if (isLineMode) onClearTouchDivisor();
 			// View mode: tap-to-highlight on touch (mouse uses hover).
-			else if (isTouch) alignment.tapSource(i);
+			else if (isTouch) alignment.highlight.tapSource(i);
 			return;
 		}
 		alignment.toggleSource(i, { force: e.metaKey || e.ctrlKey });
@@ -100,7 +100,7 @@
 			onClearTouchDivisor();
 			alignment.deselect();
 			// View mode: tapping empty space clears the highlight.
-			if (isViewMode && isTouch) alignment.clearHighlight();
+			if (isViewMode && isTouch) alignment.highlight.clearHighlight();
 		}
 	}
 
@@ -113,7 +113,7 @@
 			mode: isLinkMode ? 'link' : isLineMode ? 'line' : 'view',
 			state: isLinkMode && token.type !== 'punctuation' ? alignment.stateOfSource(i) : null,
 			focused: focusedIndex === i,
-			highlighted: isViewMode && alignment.isSourceHighlighted(i),
+			highlighted: isViewMode && alignment.highlight.isSourceHighlighted(i),
 			viewOpacity: VIEW_TOKEN_OPACITY,
 			fontWeight: false
 		});
@@ -139,10 +139,10 @@
 		class:flipping={animating}
 		onclick={handleContainerClick}
 		onmouseleave={() => {
-			if (isViewMode && !isTouch) alignment.hoverOut();
+			if (isViewMode && !isTouch) alignment.highlight.hoverOut();
 		}}
 	>
-		{#snippet tokenSpan(i)}
+		{#snippet tokenSpan(i: number)}
 			{@const token = tokens[i]}
 			{@const interactive = isLinkMode && token.type !== 'punctuation'}
 			{@const p = pres(i)}
@@ -158,7 +158,7 @@
 				style={p.style}
 				onclick={(e) => handleClick(e, i)}
 				onmouseenter={() => {
-					if (isViewMode && !isTouch) alignment.hoverSource(i);
+					if (isViewMode && !isTouch) alignment.highlight.hoverSource(i);
 				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;

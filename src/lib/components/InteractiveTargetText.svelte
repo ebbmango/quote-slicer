@@ -96,7 +96,7 @@
 			// Tapping a token in line mode clears any touch highlight.
 			if (isLineMode) onClearTouchDivisor();
 			// View mode: tap-to-highlight on touch (mouse uses hover).
-			else if (isTouch) alignment.tapTarget(i);
+			else if (isTouch) alignment.highlight.tapTarget(i);
 			return;
 		}
 		alignment.toggleTarget(i);
@@ -107,7 +107,7 @@
 			onClearTouchDivisor();
 			alignment.deselect();
 			// View mode: tapping empty space clears the highlight.
-			if (isViewMode && isTouch) alignment.clearHighlight();
+			if (isViewMode && isTouch) alignment.highlight.clearHighlight();
 		}
 	}
 
@@ -119,7 +119,7 @@
 			mode: isLinkMode ? 'link' : isLineMode ? 'line' : 'view',
 			state: isLinkMode ? alignment.stateOfTarget(i) : null,
 			focused: focusedIndex === i,
-			highlighted: isViewMode && alignment.isTargetHighlighted(i),
+			highlighted: isViewMode && alignment.highlight.isTargetHighlighted(i),
 			viewOpacity: VIEW_TOKEN_OPACITY,
 			fontWeight: true
 		});
@@ -144,7 +144,7 @@
 	class:flipping={animating}
 	onclick={handleContainerClick}
 	onmouseleave={() => {
-		if (isViewMode && !isTouch) alignment.hoverOut();
+		if (isViewMode && !isTouch) alignment.highlight.hoverOut();
 	}}
 >
 	{#each tokens as token, i (i)}
@@ -194,7 +194,7 @@
 				style={p.style}
 				onclick={() => handleClick(i)}
 				onmouseenter={() => {
-					if (isViewMode && !isTouch) alignment.hoverTarget(i);
+					if (isViewMode && !isTouch) alignment.highlight.hoverTarget(i);
 				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;

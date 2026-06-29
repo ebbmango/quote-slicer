@@ -47,7 +47,10 @@ export class Alignment {
 	// The token store is the single owner of the token arrays (with pinyin and the
 	// split/merge cache). Alignment reads them as live derivations of the store
 	// keyed by the current text — it no longer holds its own copy to keep in sync.
-	private highlight: ViewHighlight;
+	// The view-mode hover/tap highlight machine. Exposed directly (callers use
+	// `alignment.highlight.hoverSource(i)` etc.) — it's a CONTEXT.md term in its own
+	// right, so re-wrapping its whole surface in pass-through forwarders earned nothing.
+	readonly highlight: ViewHighlight;
 
 	constructor(private store: TokenAccess) {
 		this.highlight = new ViewHighlight((zone, i) => {
@@ -272,19 +275,6 @@ export class Alignment {
 		);
 	}
 
-	// ── View-mode hover highlight ──────────────────────────────────────────────
-	// Delegated to ViewHighlight. The resolver closure reads the live $derived
-	// index maps at call time, so it always reflects the current token layout.
-	get hoveredMappingId(): MappingId | null { return this.highlight.hoveredMappingId; }
-
-	hoverSource(i: number): void { this.highlight.hoverSource(i); }
-	hoverTarget(i: number): void { this.highlight.hoverTarget(i); }
-	hoverOut(): void { this.highlight.hoverOut(); }
-	tapSource(i: number): void { this.highlight.tapSource(i); }
-	tapTarget(i: number): void { this.highlight.tapTarget(i); }
-	isSourceHighlighted(i: number): boolean { return this.highlight.isSourceHighlighted(i); }
-	isTargetHighlighted(i: number): boolean { return this.highlight.isTargetHighlighted(i); }
-	clearHighlight(): void { this.highlight.clearHighlight(); }
 }
 
 export function setAlignmentContext(store: TokenAccess): Alignment {
