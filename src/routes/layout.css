@@ -110,6 +110,54 @@ body {
 		color 500ms ease;
 }
 
+/* Persistent token spans (.tok) in both interactive panels crossfade
+   colour/opacity/weight on a mode change instead of snapping — only possible
+   because the span is never swapped between modes. --rd-x is the per-token
+   line-mode hover-spread offset (actions/redistribute.ts); resting value 0.
+   ponytail: one global rule replaces two byte-identical component copies. The
+   source copy omitted `font-weight` from the transition, but it's inert there —
+   source tokens never change weight (tokenPresentation fontWeight:false) — so
+   the unified rule is safe. Keep the timings here so the crossfade / theme-flip
+   widths change in one place, not two. */
+.tok {
+	cursor: default;
+	transform: translateX(var(--rd-x, 0));
+	transition:
+		color 280ms ease,
+		opacity 280ms ease,
+		font-weight 280ms ease,
+		transform 150ms ease;
+}
+
+/* On a theme flip the page background eases over 500ms; widen the token colour
+   transition to match so the inherited text colour doesn't settle ~220ms early.
+   Scoped to the theme-switch window, so the 280ms mode-crossfade is untouched.
+   See systemTheme flashThemeTransition. */
+html.theme-anim .tok {
+	transition:
+		color 500ms ease,
+		opacity 280ms ease,
+		font-weight 280ms ease,
+		transform 150ms ease;
+}
+
+/* During a split/merge GSAP Flip drives `transform` on the tokens (and, in the
+   target panel, the divisors). The redistribution's own transform transition
+   would ease toward each Flip frame, so the row chased its target and wobbled —
+   drop it for the Flip's duration. `.flipping` lives on the panel's row container. */
+.flipping .tok {
+	transition:
+		color 280ms ease,
+		opacity 280ms ease,
+		font-weight 280ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tok {
+		transition: none;
+	}
+}
+
 @utility no-scrollbar {
 	scrollbar-width: none;
 	-ms-overflow-style: none;

@@ -230,44 +230,7 @@
 		);
 	}
 
-	.tok {
-		cursor: default;
-		/* --rd-x: per-token offset for the line-mode divisor-hover redistribution
-		   (see actions/redistribute.ts). Resting value is 0. */
-		transform: translateX(var(--rd-x, 0));
-		transition:
-			color 280ms ease,
-			opacity 280ms ease,
-			font-weight 280ms ease,
-			transform 150ms ease;
-	}
-
-	/* On a theme flip the page background eases over 500ms; widen the token's own
-	   colour transition to match so the (inherited) text colour doesn't settle
-	   ~220ms early. Scoped to the theme-switch window only, so the 280ms
-	   mode-crossfade above is untouched. See systemTheme flashThemeTransition. */
-	:global(html.theme-anim) .tok {
-		transition:
-			color 500ms ease,
-			opacity 280ms ease,
-			font-weight 280ms ease,
-			transform 150ms ease;
-	}
-
-	/* During a split/merge GSAP Flip drives `transform` on the tokens and divisors.
-	   The redistribution's own `transform` transition would ease toward each Flip
-	   frame, so the row chased its target and wobbled. Drop the transform
-	   transition for the duration of the Flip. */
-	.flipping .tok {
-		transition:
-			color 280ms ease,
-			opacity 280ms ease,
-			font-weight 280ms ease;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.tok {
-			transition: none;
-		}
-	}
+	/* Token spans (.tok), the theme-flip widening, the .flipping transform-drop,
+	   and reduced-motion all live in routes/layout.css now — one global rule
+	   shared with the source panel instead of a byte-identical copy here. */
 </style>
