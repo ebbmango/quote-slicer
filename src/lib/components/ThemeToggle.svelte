@@ -8,9 +8,9 @@
 	const moon = icons['moon'];
 
 	// Rotation drives the orbit: 0deg shows the sun (light), 180deg shows the moon
-	// (dark). The two controls are stacked moon-on-top / sun-on-bottom and the whole
-	// stack rotates about its centre, so each toggle swings the hidden icon up and
-	// over the top of the clip window while the other arcs into view.
+	// (dark). The stack is moon-on-top / sun-on-bottom and rotates about its centre,
+	// which sits at the page's top edge. Each toggle swings the hidden icon down into
+	// view while the other arcs up and off the top of the page (clipped by .layout).
 	const initialMode = theme.current;
 	let displayedMode = initialMode;
 	let rotation = $state(initialMode === 'dark' ? 180 : 0);
@@ -60,77 +60,65 @@
 	});
 </script>
 
-<div class="flex w-full justify-center">
+<div class="flex w-full justify-center relative">
 	<div
-		class="theme-clip"
+		class="orbit"
 		style={`--theme-toggle-rotation: ${rotation}deg; --theme-toggle-counter-rotation: ${-rotation}deg;`}
 		data-hydrated={hasHydrated ? 'true' : undefined}
 		data-keep-selection
 		role="group"
 		aria-label="Theme toggle"
 	>
-		<div class="theme-toggle">
-			<button
-				bind:this={moonButton}
-				class="theme-control is-moon"
-				onclick={toggle}
-				type="button"
-				aria-label="Switch to light mode"
-				tabindex={theme.current === 'dark' ? 0 : -1}
-			>
-				<span class="theme-counter">
-					<svg viewBox={moon.viewBox} aria-hidden="true" width="24" height="24" fill="currentColor">
-						<path d={moon.sharp.light} />
-					</svg>
-				</span>
-			</button>
-			<button
-				bind:this={sunButton}
-				class="theme-control is-sun"
-				onclick={toggle}
-				type="button"
-				aria-label="Switch to dark mode"
-				tabindex={theme.current === 'light' ? 0 : -1}
-			>
-				<span class="theme-counter">
-					<svg viewBox={sun.viewBox} aria-hidden="true" width="24" height="24" fill="currentColor">
-						<path d={sun.sharp.light} />
-					</svg>
-				</span>
-			</button>
-		</div>
+		<button
+			bind:this={moonButton}
+			class="control is-moon"
+			onclick={toggle}
+			type="button"
+			aria-label="Switch to light mode"
+			tabindex={theme.current === 'dark' ? 0 : -1}
+		>
+			<span class="counter">
+				<svg viewBox={moon.viewBox} aria-hidden="true" width="24" height="24" fill="currentColor">
+					<path d={moon.sharp.light} />
+				</svg>
+			</span>
+		</button>
+		<button
+			bind:this={sunButton}
+			class="control is-sun"
+			onclick={toggle}
+			type="button"
+			aria-label="Switch to dark mode"
+			tabindex={theme.current === 'light' ? 0 : -1}
+		>
+			<span class="counter">
+				<svg viewBox={sun.viewBox} aria-hidden="true" width="24" height="24" fill="currentColor">
+					<path d={sun.sharp.light} />
+				</svg>
+			</span>
+		</button>
 	</div>
 </div>
 
 <style>
-	/* Visible window (64px tall): the bottom 24px frames the live icon, the upper 40px
-	   is the on-screen arc band the orbit sweeps through. The box is 120px wide — wide
-	   enough that the icon's ~48px sideways swing never reaches the left/right edges —
-	   and uses plain `overflow: hidden` rather than `clip-path`. Firefox fails to
-	   repaint a clip-path region when its descendant is being transformed (the orbit),
-	   which dropped the leaving icon on alternate toggles; overflow clipping is repaint-
-	   safe. The top edge is the hide line: anything above it (the resting icon) is cut. */
-	.theme-clip {
-		display: flex;
-		justify-content: center;
-		align-items: flex-end;
-		width: 7.5rem;
-		height: 4rem;
-		overflow: hidden;
-		mask-image: linear-gradient(to bottom, transparent 0%, black 50%);
-		-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50%);
-	}
+	/* Orbit geometry. The stack is taller than one glyph — moon at the top end, sun at
+	   the bottom end (justify-between). It is absolutely positioned in the 0-height anchor
+	   at content-top and pinned so the *sun* rests exactly at content-top, with the stack
+	   overflowing upward: the pivot (stack centre) lands ~at the page's top edge and the
+	   moon parks above it, out of the page, clipped by .layout's overflow:hidden.
 
-	/* The rotating stack: moon (top) / sun (bottom), pushed to the ends. Taller than the
-	   window and bottom-aligned, so its top overflows above the hide line (clipped) and
-	   its centre (the orbit pivot) sits 16px below the hide line. That margin keeps the
-	   24px icon fully below the edge through the whole 0->90deg sweep — it only crosses
-	   the edge past 90deg, on its way out, by which point the crossfade has dimmed it. */
-	.theme-toggle {
+	   Tuning knobs: --glyph is the icon box; --orbit-gap is the centre-to-centre distance
+	   between sun and moon (== 2x orbit radius). Bumping --orbit-gap keeps the sun pinned
+	   at content-top and pushes the moon further up / widens the arc. */
+	.orbit {
+		--glyph: 1.5rem;
+		--orbit-gap: 4.5rem;
+
+		position: absolute;
+		top: calc(-1 * var(--orbit-gap));
 		display: flex;
-		flex: none;
-		width: 1.5rem;
-		height: 6rem;
+		width: var(--glyph);
+		height: calc(var(--orbit-gap) + var(--glyph));
 		flex-direction: column;
 		align-items: center;
 		justify-content: space-between;
@@ -140,56 +128,52 @@
 	   Scoped to :not([data-hydrated]) so these rules vanish the moment onMount fires.
 	   If they kept applying after hydration, html.dark toggling would write a competing
 	   rotate value synchronously (before Svelte flushes --theme-toggle-rotation),
-	   causing Firefox to start the transition from the wrong origin every other toggle. */
-	.theme-clip:not([data-hydrated]) .theme-toggle { rotate: 0deg; }
-	:global(html.dark) .theme-clip:not([data-hydrated]) .theme-toggle { rotate: 180deg; }
-	.theme-clip:not([data-hydrated]) .theme-counter { rotate: 0deg; }
-	:global(html.dark) .theme-clip:not([data-hydrated]) .theme-counter { rotate: -180deg; }
+	   causing the transition to start from the wrong origin every other toggle. */
+	.orbit:not([data-hydrated]) { rotate: 0deg; }
+	:global(html.dark) .orbit:not([data-hydrated]) { rotate: 180deg; }
+	.orbit:not([data-hydrated]) .counter { rotate: 0deg; }
+	:global(html.dark) .orbit:not([data-hydrated]) .counter { rotate: -180deg; }
 
-	/* Post-hydration: JS owns rotate exclusively — no other rule touches it, so
-	   the html.dark class change never interferes with the in-flight transition. */
-	.theme-clip[data-hydrated='true'] .theme-toggle {
+	/* Post-hydration: JS owns rotate exclusively — no other rule touches it, so the
+	   html.dark class change never interferes with the in-flight transition. */
+	.orbit[data-hydrated='true'] {
 		rotate: var(--theme-toggle-rotation);
 		transition: rotate 800ms;
 	}
 
-	/* Counter-rotate the glyph by the inverse so it stays upright through the orbit.
-	   Opacity 0.2 at rest, brightens to 1 on hover/focus. */
-	.theme-counter {
-		display: flex;
-		opacity: 0.2;
-		transition: opacity 180ms;
-	}
-
-	.theme-clip[data-hydrated='true'] .theme-counter {
+	.orbit[data-hydrated='true'] .counter {
 		rotate: var(--theme-toggle-counter-rotation);
 		transition:
 			rotate 800ms,
 			opacity 180ms;
 	}
 
-	/* Crossfade layer: live icon opaque, hidden icon 0. Both states are explicit on
-	   both icons so Firefox always has a concrete from→to pair to transition (no :not()
-	   dropping out, which Firefox treats as an instant reset rather than a transition). */
-	.theme-control {
+	/* Crossfade layer: live icon opaque, hidden icon 0. Both states are explicit on both
+	   icons so there is always a concrete from→to pair to transition. */
+	.control {
 		display: flex;
-		width: 1.5rem;
-		height: 1.5rem;
+		width: var(--glyph);
+		height: var(--glyph);
 		outline: 0;
 		transition: opacity 800ms;
 	}
 
-	/* Light mode */
 	.is-sun { opacity: 1; }
 	.is-moon { opacity: 0; }
 
-	/* Dark mode */
 	:global(html.dark) .is-sun { opacity: 0; }
 	:global(html.dark) .is-moon { opacity: 1; }
 
-	/* Hover/focus brightens the live icon (the dim layer goes 0.2 -> 1). */
-	.theme-clip:hover .theme-counter,
-	.theme-clip:has(.theme-control:focus-visible) .theme-counter {
+	/* Counter-rotate the glyph by the inverse so it stays upright through the orbit.
+	   Opacity 0.2 at rest, brightens to 1 on hover/focus. */
+	.counter {
+		display: flex;
+		opacity: 0.2;
+		transition: opacity 180ms;
+	}
+
+	.orbit:hover .counter,
+	.orbit:has(.control:focus-visible) .counter {
 		opacity: 1;
 	}
 </style>
