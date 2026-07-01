@@ -2,8 +2,8 @@
 
 The right side of the app shows a **live JSON export** of the alignment — the same data
 structure the app is built to produce, rendered as syntax-highlighted, column-aligned
-JSON. It updates as the user works. Three pieces make it: the export *data*, the
-*formatter*, and the *panel*.
+JSON. It updates as the user works. Three pieces make it: the export _data_, the
+_formatter_, and the _panel_.
 
 ## The export data
 
@@ -28,7 +28,7 @@ Two deliberate transforms:
 
 ## The formatter — `formatExport()`
 
-`src/lib/exportFormat.ts`. A recursive pretty-printer (`formatJson`) that is *almost*
+`src/lib/exportFormat.ts`. A recursive pretty-printer (`formatJson`) that is _almost_
 `JSON.stringify(v, null, 2)`, with two purpose-built differences that make the output
 readable:
 
@@ -64,29 +64,38 @@ and column omission).
 ### Recoloring Shiki to the app palette
 
 By default the export would look like a generic code preview. To make it feel native,
-`HighlightedCode` takes an optional `colorReplacements` prop, forwarded straight to
-Shiki's `codeToTokens({ lang, theme, colorReplacements })`. The base theme is
-**dracula** (chosen because its token colors are well-known hex values, easy to
+`HighlightedCode` takes an optional `colorMap` prop — a flat `raw hex → app hex` lookup
+applied **at render**, `style="color: {colorMap[token.color] ?? token.color}"`. The base
+theme is **dracula** (chosen because its token colors are well-known hex values, easy to
 target), and `JsonExportPanel` passes a map that swaps dracula's hexes for the app's
 mapping palette. The map is **theme-aware** — `mode = appTheme.current` selects the
 light or dark variant — so the export tracks the app's [dark mode](dark-mode.md):
 
-| Role | dracula hex(es) | replaced with |
-|------|-----------------|---------------|
-| strings | `#f1fa8c`, `#e9f284` | `colors.compostella[mode].base` |
-| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey |
-| numbers | `#bd93f9` | `colors.azure[mode].base` |
-| `undefined` literal | `#ff5555` | `colors.sugar[mode].base` |
+| Role                           | dracula hex(es)                            | replaced with                   |
+| ------------------------------ | ------------------------------------------ | ------------------------------- |
+| strings                        | `#f1fa8c`, `#e9f284`                       | `colors.compostella[mode].base` |
+| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey           |
+| numbers                        | `#bd93f9`                                  | `colors.azure[mode].base`       |
+| `undefined` literal            | `#ff5555`                                  | `colors.sugar[mode].base`       |
 
 This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
-alongside the index-keyed array — the recolor wants *specific* palette entries.
+alongside the index-keyed array — the recolor wants _specific_ palette entries.
 
-`JsonExportPanel` hoists `colorReplacements` to a module-level `$derived` rather than
-passing an inline object literal: Svelte 5 wraps an inline `ObjectExpression` in
-`$.derived()` and produces a **new reference every render**, which would re-trigger
-Shiki's `codeToTokens()` on every alignment change even when the palette is unchanged.
-`HighlightedCode` correspondingly reads both `code` *and* `colorReplacements` inside its
-tokenizing `$effect`, so Svelte tracks the palette as a reactive dependency.
+**Why a render-time map, not Shiki's `colorReplacements`.** The earlier design passed
+`colorReplacements` into `codeToTokens()`, so a theme flip re-ran the (async) tokenizer
+to bake new inline colours in. That made the JSON panel recolour a frame _late_ — it
+snapped after the rest of the page had already started easing. Now tokenization depends
+only on `code`/`lang`/`theme` (all theme-independent), so it runs **once**; the light↔dark
+swap is just `colorMap` changing, which updates the inline `style` colours synchronously
+in the same frame as everything else and rides the `theme-anim` colour transition (see
+[dark mode → synchronized transitions](dark-mode.md#synchronized-transitions-htmltheme-anim)).
+The lookup lower-cases `token.color` first — Shiki emits some theme hexes upper-cased, and
+a case-sensitive miss would fall through to the raw dracula colour.
+
+`JsonExportPanel` builds `colorMap` as a module-level `$derived` rather than an inline
+object literal: Svelte 5 wraps an inline `ObjectExpression` in `$.derived()` and produces
+a **new reference every render**, so passing an identifier keeps the prop stable across
+unrelated alignment updates.
 
 > **Fragility:** the replacement is literal hex-string matching against a fixed theme.
 > If Shiki updates the dracula palette, or the base theme changes, these swaps silently
@@ -98,7 +107,7 @@ tokenizing `$effect`, so Svelte tracks the palette as a reactive dependency.
 
 `HighlightedCode` lazy-imports `shiki` inside an `$effect` and tokenizes on every
 `code` change. The output is a `<pre>` with `width: max-content` so the box grows to the
-longest line — important because the panel's horizontal padding must sit *past* the
+longest line — important because the panel's horizontal padding must sit _past_ the
 longest line, not behind it, when content overflows. The markup is kept on as few
 source lines as possible (inside `<pre>`, every literal whitespace char would render).
 

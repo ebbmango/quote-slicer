@@ -16,7 +16,13 @@
 	const isDark = $derived(appTheme.current === 'dark');
 	const shade = $derived(isDark ? 'dark' : 'light');
 	const neutral = $derived(isDark ? '#8a8a8a' : '#A8A8A8');
-	const dracula = $derived({
+	// Raw dracula colour → app-palette colour. HighlightedCode tokenizes with the raw
+	// dracula theme (theme-independent) and applies this map synchronously at render,
+	// so a theme flip recolours the JSON in the same frame as the rest of the page and
+	// rides the theme-anim colour transition instead of snapping a frame late.
+	// Kept as a $derived Identifier so the prop passed to HighlightedCode stays stable
+	// across unrelated parent updates (an inline object literal would be a new ref each render).
+	const colorMap = $derived({
 		// strings
 		'#f1fa8c': colors.compostella[shade].base,
 		'#e9f284': colors.compostella[shade].base,
@@ -31,19 +37,22 @@
 		// undefined
 		'#ff5555': colors.sugar[shade].base
 	});
-	// Pre-build as $derived so the prop passes a simple Identifier to HighlightedCode.
-	// An inline object literal ({ dracula }) is an ObjectExpression — Svelte 5 wraps it
-	// in $.derived() and re-evaluates it on every parent update, creating a new reference
-	// even when dracula hasn't changed and triggering a spurious codeToTokens() call.
-	const colorReplacements = $derived({ dracula });
 </script>
 
 <div class="shiki-export h-full w-full overflow-auto p-6 text-xs no-scrollbar">
-	<HighlightedCode code={exportJson} {colorReplacements} />
+	<HighlightedCode code={exportJson} {colorMap} />
 </div>
 
 <style lang="postcss">
 	.shiki-export :global(pre) {
 		background: transparent !important;
+	}
+
+	/* Shiki spans carry an explicit inline colour (the app palette, per theme), so
+	   unlike inherited text they must transition their OWN colour on a theme flip —
+	   scoped to the theme-anim window so live export edits still recolour instantly.
+	   Explicit colour = no inheritance compounding, so this is flicker-free. */
+	:global(html.theme-anim) .shiki-export :global(span) {
+		transition: color 500ms ease;
 	}
 </style>

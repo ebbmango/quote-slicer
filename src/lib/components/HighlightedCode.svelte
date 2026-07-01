@@ -5,30 +5,33 @@
 		code,
 		lang = 'json',
 		theme = 'dracula',
-		colorReplacements
+		colorMap
 	}: {
 		code: string;
 		lang?: BundledLanguage;
 		theme?: BundledTheme;
-		colorReplacements?: Record<string, Record<string, string>>;
+		// Synchronous recolour: raw theme colour → app-palette colour, applied at
+		// render, so a light↔dark swap changes inline colours in the same frame.
+		colorMap?: Record<string, string>;
 	} = $props();
 
 	let lines: ThemedToken[][] = $state([]);
 
 	$effect(() => {
-		// Read every tokenizer input synchronously so the effect re-runs when any
-		// of them change (theme toggle swaps colorReplacements). Reads inside the
-		// async .then below would not be tracked as dependencies.
+		// Tokenize with the raw theme only — structure and base colours depend on
+		// code/lang/theme, never on the palette. The light↔dark recolour is applied
+		// synchronously at render via colorMap, NOT here: re-tokenizing on a theme flip
+		// was async, so the JSON panel's colours snapped ~one frame late while the rest
+		// of the page eased. Theme-independent tokenization lets the flip recolour in
+		// the same frame and ride the theme-anim transition.
 		const currentCode = code;
 		const currentLang = lang;
 		const currentTheme = theme;
-		const currentReplacements = colorReplacements;
 		import('shiki')
 			.then(({ codeToTokens }) =>
 				codeToTokens(currentCode, {
 					lang: currentLang,
-					theme: currentTheme,
-					colorReplacements: currentReplacements
+					theme: currentTheme
 				})
 			)
 			.then((result) => {
@@ -37,10 +40,11 @@
 	});
 </script>
 
-<!-- prettier-ignore -->
 <!-- Inside <pre>, every whitespace char is rendered literally — keep this on as few
-     lines as possible. Reformatting adds newlines/indentation between tokens. -->
-<pre class="highlighted-code"><code>{#each lines as line, i (i)}{#each line as token, j (j)}<span style="color: {token.color}">{token.content}</span>{/each}
+     lines as possible. Reformatting adds newlines/indentation between tokens, which
+     then render as broken indentation in the export, so prettier-ignore guards it. -->
+<!-- prettier-ignore -->
+<pre class="highlighted-code"><code>{#each lines as line, i (i)}{#each line as token, j (j)}<span style="color: {colorMap?.[(token.color ?? '').toLowerCase()] ?? token.color}">{token.content}</span>{/each}
 {/each}</code></pre>
 
 <style>

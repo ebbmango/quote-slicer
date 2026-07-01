@@ -20,7 +20,7 @@
 	aria-label={label}
 	data-testid={testid}
 	{tabindex}
-	class="size-6 outline-0 duration-150"
+	class="size-6 outline-0 transition-opacity duration-150"
 	class:opacity-20={!active}
 	{onclick}
 	onpointerup={(e) => { if (e.pointerType === 'touch') (e.currentTarget as HTMLButtonElement).blur(); }}

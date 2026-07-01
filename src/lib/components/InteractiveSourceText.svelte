@@ -154,7 +154,7 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? alignment.stateOfSource(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}
-				class={'tok ' + p.opacityClass + (interactive ? ' cursor-pointer outline-none' : '')}
+				class={'tok ' + p.opacityClass + (p.style.includes('color:') ? ' tok-tinted' : '') + (interactive ? ' cursor-pointer outline-none' : '')}
 				style={p.style}
 				onclick={(e) => handleClick(e, i)}
 				onmouseenter={() => {

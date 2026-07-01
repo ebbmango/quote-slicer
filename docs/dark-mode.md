@@ -61,7 +61,7 @@ was showing when the state was written). On load:
   reload) and the stored `systemMode` still matches the current OS, the stored `mode`
   is used — so an explicit "dark" choice survives reloads.
 - If the OS preference changed since the state was written (`storedState.systemMode !==
-  currentSystemMode`), the preference is **stale** and discarded in favour of the new
+currentSystemMode`), the preference is **stale** and discarded in favour of the new
   OS default. (A user who chose dark on a light OS thus loses that choice if they
   switch the OS to dark — an accepted edge case.)
 - Without continuity, stored preferences are cleared and the OS default applies.
@@ -135,7 +135,7 @@ Three independent bugs combined; all three are fixed:
 2. **Colours coupled to `isActive`, but focus fires before click.** The button is
    revealed on `onfocus` (mousedown) but `isActive` flips on `onclick` (mouseup), so
    for that interval it showed the inactive palette, then snapped. Fix: the delete
-   button is an *action affordance*, not a state indicator — its colours now derive
+   button is an _action affordance_, not a state indicator — its colours now derive
    directly from `colorVariant` (always the active palette), regardless of `isActive`.
    There is no inactive→active change left to flash.
 3. **Stale GPU texture after a theme switch.** Chrome paint-culls an `opacity-0`
@@ -146,32 +146,117 @@ Three independent bugs combined; all three are fixed:
    delete button during the swap. (This relies on delete buttons being hidden at theme
    switch — see the code comment if a keyboard theme shortcut is ever added.)
 
-## Synchronized transitions (`html.theme-anim`)
+## Synchronized transitions
 
-The page background transitions over 500 ms. Token `<span>`s deliberately use a faster
-**280 ms** colour transition for the mode-crossfade feel during the
-[arrow launch](mode-transitions.md#the-arrow-launch-text--link); on a *theme* toggle,
-that faster timing made the tokens settle 220 ms ahead of the background.
+Every visible colour on the page must settle on its new value at the same rate on a
+theme flip — no element finishing ahead of or behind the page background.
 
-`systemTheme.ts` calls `flashThemeTransition()` whenever the mode actually changes,
-adding `theme-anim` to `<html>` for exactly 500 ms (debounced — a second toggle
-restarts the timer). Elements that normally transition faster opt in with a scoped
-rule that widens them to 500 ms for the duration of the window:
+### Never change `color-scheme` during the flip (Chrome throttle)
 
-```css
-:global(html.theme-anim) .my-element { transition: color 500ms ease; }
-```
+The single most important rule, and the least obvious. Chrome runs a
+`background-color` transition on the **compositor** but a `color` transition on the
+**main thread** — and it _throttles the `color` transition to roughly half rate when
+`color-scheme` changes in the same frame as the flip._ With the old code
+(`applyDocumentTheme` set `document.documentElement.style.colorScheme = mode` inline on
+every toggle, and `.dark` also carried `color-scheme: dark`), the background settled in
+~500 ms while all text dragged to ~900 ms — text visibly "caught up" late. It was not
+paint jank and not DOM size: a bare test page synced fine, and toggling only the `.dark`
+class (leaving `color-scheme` alone) synced fine; adding the `color-scheme` change was
+the sole trigger.
 
-The token spans and the `morph-target` textarea use this; the 280 ms mode-crossfade is
-untouched for normal arrow-launch transitions. Two related fixes landed alongside:
+Fix: `color-scheme` is no longer set via CSS (removed from `html` / `html.dark`) or
+synchronously on a flip. `systemTheme.ts` applies it inline **after** the transition
+window (`scheduleColorScheme`, debounced to `THEME_ANIM_MS + 60`), so no `color`
+transition is running when it changes. The initial value is still stamped inline by the
+app.html prepaint (pre-paint, no transition) and re-asserted once on controller init.
+Native form controls / scrollbars therefore adopt the new scheme ~560 ms after a flip
+instead of instantly — imperceptible, and the whole page now transitions in lockstep.
+
+### The load-bearing rule: transition colour once, at the root, and inherit
+
+`html, body` transition `background-color` and `color` over 500 ms. **That single
+`color` transition is what carries every piece of text.** `color` is inherited, and all
+three engines (Firefox, WebKit, Chromium) repaint a descendant in lockstep with an
+ancestor's _animating_ inherited colour — **but only if the descendant has no `color`
+transition of its own.** So the authorship line, "No mappings", plain tokens, toolbar
+and toggle glyphs (SVG `fill: currentColor`) all just inherit `<body>`'s transition and
+settle with it, on every engine, for free.
+
+> **The one rule that matters:** never put a `color` transition on an element that takes
+> its colour by inheritance. If a descendant _also_ transitions `color`, it eases toward
+> `<body>`'s already-easing value, so the lag **compounds with DOM depth** — and if the
+> transition definition is swapped mid-flight (e.g. a `.theme-anim` rule being removed),
+> the descendant snaps to its ancestor's lagging value. That is exactly the flicker /
+> "text reappears at different speeds" bug this section exists to prevent. Transition
+> `color` **only** on elements that set an explicit colour of their own.
+
+### What legitimately transitions its own colour
+
+- **Tinted tokens.** A `.tok` only sets an explicit `color` when it carries a mapping
+  tint (active / focused — see `tokenPresentation`); those spans get a `.tok-tinted`
+  class (added in `Interactive{Source,Target}Text` when `p.style` contains `color:`).
+  `.tok-tinted` transitions colour (280 ms for the link-mode activate crossfade, widened
+  to 500 ms under `.theme-anim`). Untinted tokens get **no** colour transition and ride
+  `<body>` by inheritance.
+- **Shiki JSON spans.** Each carries an explicit inline palette colour, so a theme flip
+  must transition their own `color` — `JsonExportPanel` scopes a 500 ms colour transition
+  to `:global(html.theme-anim) .shiki-export span`. Explicit colour ⇒ no inheritance
+  compounding, so it stays flicker-free.
+- **Mapping cards** already transition their (explicit, inline) palette colours via
+  Tailwind `transition-colors duration-500`.
+
+### The `html.theme-anim` window
+
+`systemTheme.ts` calls `flashThemeTransition()` on a real mode change, adding
+`theme-anim` to `<html>` for 500 ms (debounced). Its only job now is to _widen_ the
+handful of elements whose own colour transition is normally faster — the tinted tokens
+(280→500 ms) and the `morph-target` textarea — so their explicit-colour shift matches the
+page during a theme flip without slowing the arrow-launch mode-crossfade the rest of the
+time.
+
+### Traps that reintroduce the bug (all fixed, keep them fixed)
+
+- **`duration-*` with no `transition-property`.** Tailwind's `duration-200` /
+  `duration-150` set only `transition-duration`; the property defaults to `all`, so the
+  element silently transitions its (inherited) `color` too. The token-workspace wrapper
+  (`duration-200` for a `focus:bg` tint) and the toolbar / toggle buttons (`duration-150`
+  / `duration-300` for opacity) each did this and desynced everything nested under them.
+  Fixed by scoping: `transition-[background-color]` on the wrapper, `transition-opacity`
+  on the buttons.
+- **A blanket `html.theme-anim * { transition: color … }`.** Tried once; it is the
+  compounding trap applied to _every_ element at once (deep inherited text lagged by
+  depth, then snapped when the window closed). Do not reintroduce a universal colour
+  transition — inheritance already does this job correctly.
+- **Same duration, different easing.** Tailwind's default timing function is
+  `cubic-bezier(0.4, 0, 0.2, 1)` while the page-level `html, body` transition uses
+  `ease` — so the mapping cards (Tailwind `transition-colors duration-500`) trailed the
+  page by up to ~15 % progress mid-flip despite the equal 500 ms duration, visibly
+  settling after everything else. `layout.css` pins
+  `--default-transition-timing-function: ease` in `@theme`, so every Tailwind transition
+  shares the page's curve. Don't add per-element `ease-*` utilities that diverge from it.
+
+### Two more supporting fixes
 
 - **`::placeholder` uses `currentColor`.** Browsers don't re-resolve `light-dark()`
   on `::placeholder` when `color-scheme` changes — the colour freezes at first paint.
   Switching the target textarea's placeholder to `currentColor` makes it inherit
   through the normal cascade and update on theme flip.
-- **JSON export dark palette.** `JsonExportPanel` derives its Shiki
-  `colorReplacements` from `appTheme.current` instead of a hardcoded light map. See
+- **JSON export recolours synchronously.** `HighlightedCode` used to re-tokenize on a
+  theme flip to swap Shiki's inline colours — an _async_ step, so the JSON panel snapped
+  a frame late. It now tokenizes once with the raw `dracula` theme (structure and base
+  colours are theme-independent) and applies a synchronous `colorMap` (raw hex →
+  app-palette hex) at render, so a flip changes the inline colours in the same frame and
+  the transition above eases them in lockstep. See
   [Export → Recoloring Shiki](export.md#recoloring-shiki-to-the-app-palette).
+- **Svelte-driven colours flush synchronously with the class flip.** Everything whose
+  colour is an inline style derived from `theme.current` (mapping cards, the Shiki
+  `colorMap`) re-renders through Svelte's batched flush — which in Chromium landed one
+  frame _after_ `applyThemeClass` toggled `.dark`, so those transitions started a frame
+  behind the page's. `systemTheme.ts` calls `flushSync()` right after `notify()` on a
+  real mode change, putting every DOM write into the same style recalc: one shared start
+  frame for all transitions.
 
-> Rules gated on `.theme-anim` must be tightly scoped — a too-broad rule would slow
-> transitions in contexts where the faster feel is intentional.
+Verified across Chromium / WebKit / Firefox by driving a theme toggle in Playwright and
+sampling each element's painted `color` per animation frame: authorship, "No mappings",
+plain tokens, toolbar buttons, the toggle glyph and the JSON panel all trace the _same_
+luminance curve as `<body>`, with no post-window drop.

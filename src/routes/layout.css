@@ -65,6 +65,13 @@
 }
 
 @theme {
+	/* Tailwind's default transition curve is cubic-bezier(0.4, 0, 0.2, 1), but the
+	   page-level theme transition (html/body in this file) uses `ease`. Same 500ms
+	   duration with different curves means Tailwind-transitioned surfaces (mapping
+	   cards etc.) trail the page by up to ~15% progress mid-flip — visible on large
+	   tinted areas. One curve everywhere keeps every element in lockstep. */
+	--default-transition-timing-function: ease;
+
 	--font-ss4: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-wenkai: Wenkai, ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 	--font-noto: 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif;
@@ -86,16 +93,22 @@
    Firefox Android with app theme = Dark forces the resolved color-scheme to
    dark and overrides the author's inline `color-scheme: light`, so a
    light-dark() palette ignored the user's toggle. The class is ours and wins.
-   color-scheme stays set for native form controls/scrollbars. */
+
+   `color-scheme` is deliberately NOT set here (nor on `.dark`). It's applied
+   inline on <html> by the app.html prepaint (initial) and the theme controller
+   (systemTheme.ts) — and, crucially, the controller changes it only AFTER the
+   colour-transition window, never in the same frame as the flip. Chrome throttles
+   a `color` transition to ~half rate when `color-scheme` changes mid-transition,
+   so the page background finished ~500ms while text dragged to ~900ms. Keeping
+   color-scheme out of the flip frame lets `color` and `background-color` settle
+   together. It stays set for native form controls / scrollbars. */
 html {
-	color-scheme: light;
 	--page-bg: #ffffff;
 	--page-fg: #1b1b1b;
 	--panel-bg: #f9f9f9;
 }
 
 html.dark {
-	color-scheme: dark;
 	--page-bg: #1b1b1b;
 	--page-fg: #f4f4f4;
 	--panel-bg: #262626;
@@ -111,17 +124,33 @@ body {
 }
 
 /* Persistent token spans (.tok) in both interactive panels crossfade
-   colour/opacity/weight on a mode change instead of snapping — only possible
+   opacity/weight/transform on a mode change instead of snapping — only possible
    because the span is never swapped between modes. --rd-x is the per-token
    line-mode hover-spread offset (actions/redistribute.ts); resting value 0.
-   ponytail: one global rule replaces two byte-identical component copies. The
-   source copy omitted `font-weight` from the transition, but it's inert there —
-   source tokens never change weight (tokenPresentation fontWeight:false) — so
-   the unified rule is safe. Keep the timings here so the crossfade / theme-flip
-   widths change in one place, not two. */
+
+   Deliberately NO `color` transition here. `color` is inherited, and every engine
+   (Firefox, WebKit, Chromium) repaints a descendant in lockstep with an ancestor's
+   *animating* inherited colour — but ONLY if the descendant has no colour transition
+   of its own. The moment a token also transitions `color`, it eases toward <body>'s
+   already-easing value, so on a theme flip the lag compounds with DOM depth and the
+   token settles out of sync (the flicker / "reappear at different speeds" bug). Plain
+   tokens take their colour purely by inheritance, so leaving colour untransitioned
+   here makes them ride <body>'s single transition perfectly. */
 .tok {
 	cursor: default;
 	transform: translateX(var(--rd-x, 0));
+	transition:
+		opacity 280ms ease,
+		font-weight 280ms ease,
+		transform 150ms ease;
+}
+
+/* Colour is transitioned ONLY on tokens that set it explicitly — a mapping tint
+   (active / focused, see tokenPresentation → `.tok-tinted`). Those own a concrete
+   palette colour, so transitioning it neither compounds nor rides inheritance. 280ms
+   for the link-mode activate crossfade; widened to 500ms during a theme flip so the
+   tint's light→dark palette shift settles with the rest of the page. */
+.tok-tinted {
 	transition:
 		color 280ms ease,
 		opacity 280ms ease,
@@ -129,11 +158,7 @@ body {
 		transform 150ms ease;
 }
 
-/* On a theme flip the page background eases over 500ms; widen the token colour
-   transition to match so the inherited text colour doesn't settle ~220ms early.
-   Scoped to the theme-switch window, so the 280ms mode-crossfade is untouched.
-   See systemTheme flashThemeTransition. */
-html.theme-anim .tok {
+html.theme-anim .tok-tinted {
 	transition:
 		color 500ms ease,
 		opacity 280ms ease,
@@ -147,7 +172,6 @@ html.theme-anim .tok {
    drop it for the Flip's duration. `.flipping` lives on the panel's row container. */
 .flipping .tok {
 	transition:
-		color 280ms ease,
 		opacity 280ms ease,
 		font-weight 280ms ease;
 }

@@ -91,7 +91,7 @@
 
 <style lang="postcss">
 	#tools :global(button) {
-		@apply duration-300;
+		@apply transition-opacity duration-300;
 	}
 
 	@media (hover: hover) {

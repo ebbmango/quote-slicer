@@ -204,7 +204,7 @@
 		bind:this={tokenContainer}
 		role="grid"
 		aria-label="Token workspace"
-		class="flex min-h-0 w-full flex-col rounded-xl px-1 outline-0 duration-200 focus:bg-blue-50 dark:focus:bg-gray-700/30"
+		class="flex min-h-0 w-full flex-col rounded-xl px-1 outline-0 transition-[background-color] duration-200 focus:bg-blue-50 dark:focus:bg-gray-700/30"
 		tabindex={mode.current === 'view' ? undefined : 0}
 		onkeydown={tokenGridNav.handleKeydown}
 		onfocusin={tokenGridNav.handleFocusIn}
