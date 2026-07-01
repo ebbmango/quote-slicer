@@ -11,10 +11,12 @@ The intended behavior is **"most recent change wins"**, whether that change came
 - On first load: follow the OS preference.
 - OS changes later: adopt them immediately.
 - User clicks the toggle: switch, and stay switched until the next OS or user change.
-- All open tabs: stay in sync at all times.
-- Page reload: preserve the active theme (including user overrides), up to a 5-minute grace window after the last tab closes.
+- All open tabs: stay in sync at all times (via the native `storage` event).
+- Reloads and full closes: preserve the active theme. A manual pick is durable — it persists until the user or the OS changes it.
 
-There is no persistent "manual override" mode that survives closing all tabs. Once all tabs are gone (and the grace window expires), the next visit resets to OS default.
+The only thing that overrides a stored pick while the app is away is the OS preference itself changing, detected on the next load by comparing against `osAtPick`.
+
+> This replaced an earlier revert-to-OS-after-all-tabs-closed model (a 5-minute grace + tab registry, `BroadcastChannel` sync). See ADR 0001 (`quote-slicer-docs/docs/adr/0001-theme-last-change-wins.md`) for why.
 
 ---
 
@@ -170,56 +172,38 @@ Example from `tokens.css`:
 
 ### What it does
 
-1. Swaps `html.no-js` → `html.js` immediately (so no-JS fallback CSS is suppressed).
-2. Reads `localStorage` for a previously stored theme state.
-3. Reads the OS preference via `window.matchMedia('(prefers-color-scheme: dark)')`.
-4. Applies the correct theme to `<html>` *before the first paint*, preventing flash.
+1. Reads `localStorage` for a previously stored theme state.
+2. Reads the OS preference via `window.matchMedia('(prefers-color-scheme: dark)')`.
+3. Applies the correct theme to `<html>` *before the first paint*, preventing flash.
 
 ### State format (`localStorage`)
 
-Two keys:
+One key: `quote-slicer:theme-state:v2`.
 
-| Key | Purpose |
-|-----|---------|
-| `quote-slicer-docs:theme-state:v1` | Current theme state object |
-| `quote-slicer-docs:theme-tabs:v1` | Tab registry (active tabs + last-empty timestamp) |
-
-Theme state shape:
 ```js
 {
-  version: 1,
-  mode: 'light' | 'dark',          // the resolved theme to apply
-  source: 'system' | 'user',       // who set it
-  systemMode: 'light' | 'dark',    // OS mode at the time of writing
-  updatedAt: number,                // Date.now()
-  writerTabId: string               // unique tab identifier
+  version: 2,
+  mode: 'light' | 'dark',      // the resolved theme to apply
+  source: 'system' | 'user',   // who set it (informational)
+  osAtPick: 'light' | 'dark'   // OS preference when this state was written
 }
 ```
 
-Tab registry shape:
-```js
-{
-  version: 1,
-  tabs: { [tabId]: { seenAt: number } },
-  lastEmptyAt?: number              // when all tabs last disappeared
-}
-```
+`osAtPick` is the whole trick: it lets a load detect that the OS preference
+changed while the app was closed (see ADR 0001).
 
 ### Resolution logic (mirrored in both app.html and themeState.ts)
 
 ```
-1. Parse storedState and registry from localStorage.
-2. Prune tabs older than STALE_TAB_MS (300,000ms = 5min).
-3. Determine hasContinuity:
-   - activeTabCount > 0, OR
-   - it's a reload AND lastEmptyAt is within RELOAD_GRACE_MS (300,000ms)
-4. If storedState exists AND hasContinuity:
-   - If storedState.systemMode !== currentSystemMode → ignore stored, use OS (system changed)
-   - Else → apply storedState.mode
-5. Otherwise → apply currentSystemMode (fresh start)
+1. Parse storedState from localStorage.
+2. If storedState is valid AND storedState.osAtPick === currentOS → apply storedState.mode.
+3. Otherwise (first visit, corrupt, or OS drifted while away) → apply currentOS.
 ```
 
-This logic is deliberately duplicated in plain JS inside `app.html` so it runs before any module bundling.
+That is the entire rule. No tab registry, heartbeat, or grace window: a manual
+pick persists across close, and only a genuine OS change overrides it. The logic
+is duplicated in plain JS inside `app.html` so it runs before any module
+bundling; `themeState.ts` exposes it as `resolveTheme`.
 
 ### `applyTheme` in the inline script
 
@@ -239,35 +223,25 @@ Both the class and the `colorScheme` style must be set — the class drives Tail
 **`src/lib/themeState.ts`** — zero side effects, fully testable.
 
 Exports:
-- `StoredThemeState`, `StoredTabRegistry`, `ThemeResolution` — types
-- `createSystemState(systemMode, now, tabId)` — builds a system-sourced state object
-- `createUserState(mode, systemMode, now, tabId)` — builds a user-sourced state object
-- `parseThemeState(string | null)` — validates + parses localStorage value
-- `parseTabRegistry(string | null)` — validates + parses tab registry
-- `pruneTabRegistry(registry, now)` — removes stale tabs, sets `lastEmptyAt`
-- `resolveStoredTheme(input)` — returns `ThemeResolution` (what mode to use + what to write back)
-- `resolveExternalThemeState(input)` → `'adopt' | 'ignore' | 'publish-system'`
-- `isStateNewer(candidate, current)` — timestamp + tabId tiebreaker comparison
-- `readThemeState(storage)`, `readTabRegistry(storage)`, `writeThemeState(...)`, etc.
+- `StoredThemeState`, `ThemeSource`, `StorageLike` — types
+- `THEME_STATE_KEY` — the single localStorage key (`quote-slicer:theme-state:v2`)
+- `toMode(systemIsDark)` — maps a media-query boolean to a `Mode`
+- `systemState(osMode)` / `userState(mode, osMode)` — build a state object
+- `parseThemeState(string | null)` — validates + parses the localStorage value
+- `resolveTheme(stored, osMode)` → `{ mode, state, fresh }` — the core rule
 
-Constants:
-```ts
-export const HEARTBEAT_MS     = 30_000;   // tab heartbeat interval
-export const STALE_TAB_MS     = 300_000;  // tab considered dead after 5min silence
-export const RELOAD_GRACE_MS  = 300_000;  // grace window after last tab closes
-```
+### `resolveTheme`
 
-### `resolveExternalThemeState`
-
-Called when a message arrives from another tab:
+The one decision, "last change wins, OS-drift-aware":
 
 ```
-if incomingState.systemMode !== currentSystemMode:
-  if incomingState.source === 'system' → 'ignore'  (stale system state from old OS mode)
-  else → 'publish-system'                           (their user pref is stale, correct them)
-if incomingState is newer OR has different mode → 'adopt'
-else → 'ignore'
+if stored && stored.osAtPick === osMode → { mode: stored.mode, state: stored, fresh: false }
+else                                     → { mode: osMode, state: systemState(osMode), fresh: true }
 ```
+
+`fresh` tells the caller whether the resolved state is new (first visit or OS
+drift — must be persisted) or the stored state returned unchanged. No timestamps,
+tab registry, or external-state reconciliation remain — see ADR 0001 for why.
 
 ---
 
@@ -275,19 +249,19 @@ else → 'ignore'
 
 **`src/lib/systemTheme.ts`** — the `adaptiveTheme()` function.
 
-Returns `{ get current(): Mode, set current(mode: Mode) }`.
+Returns `{ get current(): Mode, set current(mode: Mode) }`. On the server it
+returns a static `'light'` stub.
 
-### Initialization sequence
+### Initialization
 
 ```
-1. getTabId()          → crypto.randomUUID() or fallback
-2. window.matchMedia() → detect system preference
-3. new BroadcastChannel('theme-sync') (or null if unavailable)
-4. resolveInitialState() → read localStorage, run resolveStoredTheme, write back as needed
-5. registerTab()       → add this tab to the registry
-6. applyDocumentTheme(currentMode) → set html.dark class + colorScheme immediately
-7. setInterval(heartbeatTab, HEARTBEAT_MS) → keep tab alive
+1. media = window.matchMedia('(prefers-color-scheme: dark)')
+2. resolveTheme(read(), getSystemMode()) → initial mode
+3. applyDocumentTheme(currentMode) → set html.dark class + colorScheme immediately
+4. if the resolved state is fresh, write it back to localStorage
 ```
+
+No tab id, no `BroadcastChannel`, no `registerTab`, no heartbeat interval.
 
 ### `applyDocumentTheme`
 
@@ -298,26 +272,34 @@ function applyDocumentTheme(mode: Mode) {
 }
 ```
 
-Called on init AND inside `setCurrentState`. The pre-hydration script already did this, but `systemTheme.ts` re-applies it to stay authoritative after hydration.
+Called on init and inside `set`. The pre-hydration script already did this once;
+`systemTheme.ts` re-applies it to stay authoritative after hydration.
 
-### `setCurrentState`
+### `set` — the central setter
 
-Central setter — all theme changes go through here:
+All theme changes go through here:
 
 ```ts
-const setCurrentState = (state, options = {}) => {
-  const modeChanged = state.mode !== currentMode;
-  currentState = state;
-  currentMode  = state.mode;
+const set = (state, { persist = true } = {}) => {
+  const changed = state.mode !== currentMode;
+  currentMode = state.mode;
   applyDocumentTheme(currentMode);
-
-  if (options.write !== false)     writeThemeState(localStorage, state);
-  if (options.broadcast !== false) broadcastState(state);
-  if (modeChanged && options.notify !== false) notify();
+  if (changed) flashThemeTransition();   // app-specific: html.theme-anim for the flip
+  if (persist) write(state);
+  if (changed) notify();
 };
 ```
 
-`options.write: false` and `options.broadcast: false` are used when adopting a state that came from another tab (already written/broadcast by the sender).
+`persist: false` is used when adopting a state another tab already wrote (via the
+`storage` event), so the write isn't echoed back.
+
+### `flashThemeTransition` (app-specific)
+
+On an actual mode flip, marks `<html>` with `theme-anim` for 500ms so components
+whose colour normally crossfades faster (e.g. the token spans' 280ms transition)
+widen to the page's 500ms transition and settle together. Cleared afterward.
+Independent of theme resolution — it exists only for the app's animated palette,
+not the docs site.
 
 ### Svelte reactivity via `createSubscriber`
 
@@ -327,74 +309,36 @@ let notify = () => {};
 const subscribe = createSubscriber((update) => {
   notify = update;   // expose update() outside the subscriber body
 
-  // attach all event listeners here:
-  media.addEventListener('change', mediaHandler);
-  channel?.addEventListener('message', channelHandler);
-  window.addEventListener('storage', storageHandler);
-  document.addEventListener('visibilitychange', visibilityHandler);
-  window.addEventListener('pageshow', pageShowHandler);
-  window.addEventListener('focus', focusHandler);
-
-  channel?.postMessage({ type: 'request', source: tabId }); // ask peers for current state
+  media.addEventListener('change', onMedia);       // live OS change → follow OS
+  window.addEventListener('storage', onStorage);   // another tab wrote → adopt
+  document.addEventListener('visibilitychange', onReturn);
+  window.addEventListener('pageshow', onReturn);
+  window.addEventListener('focus', onReturn);
 
   return () => { /* cleanup: remove all listeners */ };
 });
 ```
 
-The getter:
-```ts
-get current(): Mode {
-  subscribe();       // registers dependency in active reactive context
-  return currentMode;
-}
-```
-
-When `theme.current` is read inside a `$effect`, Svelte sees the `subscribe()` call and tracks it as a reactive dependency. Later, calling `notify()` (= `update()`) re-runs that effect.
+The getter calls `subscribe()`, so reading `theme.current` inside a `$effect`
+registers a reactive dependency; `notify()` (= `update()`) re-runs it later.
 
 ### Tab synchronization
 
-**BroadcastChannel** (`'theme-sync'`) — primary, same-origin cross-tab:
-
-Messages: `{ type: 'request', source: tabId }` or `{ type: 'state', source: tabId, state: StoredThemeState }`.
-
-Protocol:
-1. On init, new tab broadcasts `request`.
-2. Other tabs respond with their current `state`.
-3. New tab calls `handleExternalState()` → `resolveExternalThemeState()` → adopt or ignore.
-4. On every user-initiated change, current tab broadcasts `state`.
-
-**`storage` event** — secondary, catches tabs in other windows where BroadcastChannel may not fire:
-```ts
-window.addEventListener('storage', (event) => {
-  if (event.key !== THEME_STATE_KEY || !event.newValue) return;
-  const state = readThemeState(window.localStorage);
-  if (state) handleExternalState(state);
-});
-```
-
-**Reconciliation on visibility/focus/pageshow** — catches tabs that were backgrounded:
-```ts
-const visibilityHandler = () => {
-  if (document.visibilityState === 'visible') reconcileStoredTheme();
-};
-```
-
-**Tab lifecycle:**
-- `registerTab()` on init: writes `{ seenAt: now }` into registry.
-- `heartbeatTab()` every 30s: refreshes `seenAt`.
-- `unregisterTab()` on `pagehide` (non-persisted): removes tab, sets `lastEmptyAt` if registry empties.
+The native **`storage` event** is the whole mechanism. When one tab writes the
+theme key, every other tab receives the event, re-reads `localStorage`, and
+adopts the value (`reconcile({ persist: false })`). A newly opened tab needs no
+handshake — it reads the key on load. `onReturn` (visibility / pageshow / focus)
+re-reconciles a tab that may have missed an OS change while hidden. No
+`BroadcastChannel`, tab registry, heartbeat, or `pagehide` teardown.
 
 ### OS change handler
 
 ```ts
-const mediaHandler = () => publishSystemState();
-
-const publishSystemState = () => {
-  setCurrentState(createSystemState(getSystemMode(), Date.now(), tabId));
-};
+const onMedia = () => set(systemState(getSystemMode()));
 ```
 
-When the OS switches theme, all tabs independently detect it via their own `media.change` listener, and each one calls `publishSystemState()`. They converge on the same mode because it comes from the same OS signal.
+When the OS switches theme, each open tab detects it via its own `media.change`
+listener and follows — the most recent change wins over any prior manual pick.
 
 ### Singleton export
 
@@ -538,20 +482,17 @@ Accessibility: only the currently-active button (the one that would switch away 
 
 1. **Copy `src/lib/types.ts`** — `Mode` type.
 
-2. **Copy `src/lib/themeState.ts`** — update the two localStorage key constants:
+2. **Copy `src/lib/themeState.ts`** — update the single localStorage key constant:
    ```ts
-   export const THEME_STATE_KEY = 'YOUR-APP-NAME:theme-state:v1';
-   export const THEME_TABS_KEY  = 'YOUR-APP-NAME:theme-tabs:v1';
+   export const THEME_STATE_KEY = 'YOUR-APP-NAME:theme-state:v2';
    ```
 
-3. **Copy `src/lib/systemTheme.ts`** verbatim (no app-specific strings).
+3. **Copy `src/lib/systemTheme.ts`.** The only app-specific part is `flashThemeTransition` (`html.theme-anim`); drop it if you don't have the animated palette.
 
 4. **Copy `src/lib/theme.ts`** verbatim.
 
 5. **Copy the `<script>` block from `src/app.html`** into your own `app.html`.
-   - Update the two localStorage key strings to match step 2.
-   - The `STATE_KEY` and `TABS_KEY` inline constants must stay in sync with `themeState.ts`.
-   - Keep `html.no-js` on the `<html>` tag — the script swaps it to `html.js`.
+   - Update the `STATE_KEY` inline constant to match step 2; keep it in sync with `resolveTheme` in `themeState.ts`.
 
 6. **CSS — `index.css`**: define the `@custom-variant dark` exactly as shown. This is non-negotiable for Tailwind `dark:` to work.
 
@@ -568,8 +509,7 @@ Accessibility: only the currently-active button (the one that would switch away 
 ## Gotchas
 
 - **`applyDocumentTheme` is called in `systemTheme.ts`, not the layout.** The layout used to have an `$effect` for this (described in the diary), but the current code handles it inside the controller. Don't add a redundant layout effect.
-- **The inline script in `app.html` duplicates logic from `themeState.ts`** intentionally — it runs before any module is available. Keep them in sync manually if you change the state format or key names.
+- **The inline script in `app.html` duplicates `resolveTheme` from `themeState.ts`** intentionally — it runs before any module is available. Keep them in sync manually if you change the state format or key name.
 - **`createSubscriber` is called on every `theme.current` read in a reactive context** — that's normal and expected. Svelte deduplicates subscriptions.
-- **`BroadcastChannel` is guarded** (`typeof BroadcastChannel === 'function'`) for environments where it's unavailable. The `storage` event serves as fallback.
-- **`pagehide` (not `beforeunload`)** is used for tab unregistration because `beforeunload` doesn't fire reliably on mobile. `event.persisted` check skips the teardown for BFCache restores.
+- **Cross-tab sync is the native `storage` event** — it fires only in *other* tabs on a write, which is exactly what's needed; the writing tab already updated itself.
 - **The animated toggle has a no-JS guard**: `html.no-js .side-nav-footer { display: none }` in `Navbar.svelte` hides the animated toggle entirely when JS is disabled (it can't work without it). The simpler `ThemeToggle` in the top nav has a `no-js:hidden` utility class for the same reason. The no-JS user only gets CSS-driven system theme via the `@custom-variant dark` media query fallback.
