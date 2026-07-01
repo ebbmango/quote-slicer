@@ -19,7 +19,9 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-_None — everything is folded into the docs._
+| Date | Note | Commits |
+|------|------|---------|
+| 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./26-07-02-theme-lockstep-easing-and-flushsync.md) | `fb0265f` |
 
 ## Archived notes (already parsed into the docs)
 
