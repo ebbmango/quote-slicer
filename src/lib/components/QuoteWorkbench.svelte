@@ -156,7 +156,7 @@
 	     Seamless text→token handoff (no crossfade): the source text is tracked to
 	     2px (tracking-[2px]) so its inter-glyph spacing already equals the token
 	     row's effective per-pair gap (gap-px counts twice — a zero-width divisor
-	     button sits between each token pair), plus translate-x-[1px] to cancel the
+	     button sits between each token pair), plus translate-x-px to cancel the
 	     trailing letter-spacing that otherwise centres the glyph block 1px left of
 	     the trailing-free token row; the text colours morph toward their token-mode
 	     values during the 450ms arrow launch (.morph-* rules in <style>), so by the
@@ -169,15 +169,15 @@
 				rows="1"
 				use:autosize
 				oncompositionstart={() => (composing = true)}
-				oninput={(e: InputEvent) => {
-					if (e.isComposing) return;
-					filterSourceInput(e.currentTarget as HTMLTextAreaElement);
+				oninput={(e) => {
+					if (composing) return;
+					filterSourceInput(e.currentTarget);
 				}}
 				oncompositionend={(e: CompositionEvent) => {
 					composing = false;
 					filterSourceInput(e.currentTarget as HTMLTextAreaElement);
 				}}
-				class="morph-source fade-y relative no-scrollbar min-h-0 w-full translate-x-[1px] resize-none overflow-y-auto bg-transparent px-2 py-3 text-center text-[1.75rem] leading-10 font-light tracking-[2px] opacity-30 outline-none {composing
+				class="morph-source fade-y relative no-scrollbar min-h-0 w-full translate-x-px resize-none overflow-y-auto bg-transparent px-2 py-3 text-center text-[1.75rem] leading-10 font-light tracking-[2px] opacity-30 outline-none {composing
 					? 'font-ss4'
 					: 'font-wenkai'} {arrowExiting ? 'exiting' : ''}"
 				placeholder="空"
