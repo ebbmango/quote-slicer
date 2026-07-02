@@ -60,7 +60,7 @@ self-contained piece into its own component/context. It:
 
 - Consumes the [token store](token-store.md) and derives `sourceTokens` / `targetTokens`
   for rendering. It does **not** push tokens into `Alignment` — `Alignment` reads the
-  same store itself. The *only* thing it pushes is the raw text, via
+  same store itself. The _only_ thing it pushes is the raw text, via
   `alignment.setMeta({ sourceText, targetText, authorship })` in an `$effect`.
 - **Text mode:** renders the source/target textareas, with real-time Han-character
   filtering on the source field (IME-composition-aware — it skips filtering while
@@ -134,7 +134,7 @@ and the re-entrancy rule that drives all of it) — covered in its own page,
 
 > The list ref uses a `use:listRef` action rather than `bind:this`. Because a hidden
 > aside copy and the modal copy can briefly coexist during a breakpoint force-close, a
-> plain `bind:this` would let the *unmounting* copy null the ref the *surviving* copy
+> plain `bind:this` would let the _unmounting_ copy null the ref the _surviving_ copy
 > just claimed. The action only nulls `listEl` when it still owns the node, so the
 > survivor wins.
 
@@ -185,12 +185,12 @@ The slide-in panel for the smallest viewports — see
 
 Four contexts, all set once at the root and read via `getContext` anywhere:
 
-| Context | Set / get | File |
-|---------|-----------|------|
-| `ModeContext` | `setModeContext` / `getModeContext` | `context/mode.svelte.ts` |
-| `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext` | `context/breakpoints.svelte.ts` |
-| token store | `setTokenStoreContext` / `getTokenStoreContext` | `animation/tokenStore.svelte.ts` |
-| `Alignment` | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts` |
+| Context             | Set / get                                            | File                             |
+| ------------------- | ---------------------------------------------------- | -------------------------------- |
+| `ModeContext`       | `setModeContext` / `getModeContext`                  | `context/mode.svelte.ts`         |
+| `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext`      | `context/breakpoints.svelte.ts`  |
+| token store         | `setTokenStoreContext` / `getTokenStoreContext`      | `animation/tokenStore.svelte.ts` |
+| `Alignment`         | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts`    |
 
 The order matters: `Alignment`'s constructor takes the store, so the store is set first.
 The **token store is the single owner** of the token arrays — `QuoteWorkbench` does not
@@ -208,12 +208,12 @@ can never be handed a pinyin-less array. See [Token Store](token-store.md).
 The layout is a CSS grid in `+page.svelte`, with breakpoints mirrored in JS by
 `BreakpointContext` (so component logic — not just CSS — can branch on viewport).
 
-| Viewport | Columns shown | maps/json lives in |
-|----------|---------------|--------------------|
-| **Cellphone** (default) | main only | a slide-in **modal** |
-| **Tablet** (tall portrait, `≤899px` & `≥1000px` tall) | main + one bottom sidebar | that **aside** (toggled) |
-| **Medium** (`≥900px`) | one sidebar + main | that **aside** (toggled) |
-| **Desktop** (`≥1200px`) | sidebar + main + sidebar | both asides at once (no toggle) |
+| Viewport                                              | Columns shown             | maps/json lives in              |
+| ----------------------------------------------------- | ------------------------- | ------------------------------- |
+| **Cellphone** (default)                               | main only                 | a slide-in **modal**            |
+| **Tablet** (tall portrait, `≤899px` & `≥1000px` tall) | main + one bottom sidebar | that **aside** (toggled)        |
+| **Medium** (`≥900px`)                                 | one sidebar + main        | that **aside** (toggled)        |
+| **Desktop** (`≥1200px`)                               | sidebar + main + sidebar  | both asides at once (no toggle) |
 
 `BreakpointContext` exposes `wide` (`≥1200px`), `belowMedium` (`≤899px`),
 `tabletPortrait`, and the derived **`minimal = belowMedium && !tabletPortrait`** — the
@@ -250,7 +250,7 @@ the tools row.
 - **Content swap without re-animating.** Calling `openModal` while already open just
   reassigns `asideView` and returns early. Slide direction lives in `flyX` (`$derived`):
   maps from the left, json from the right. Svelte reads transition params only at
-  transition *start*, so swapping views while open never replays the animation.
+  transition _start_, so swapping views while open never replays the animation.
 - **Breakpoint-exit force-close.** An `$effect` watches `minimal` + `modalOpen`; leaving
   minimal while open force-closes. A `forceClose` flag (`$state`) drives the `out:fly`
   duration to `0` so that exit is instant; `openModal` resets it to re-arm the slide.

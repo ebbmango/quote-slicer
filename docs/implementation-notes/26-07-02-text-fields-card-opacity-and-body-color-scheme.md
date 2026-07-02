@@ -9,23 +9,23 @@ style in Chromium.
 ## 1. Text mode: target textarea chases the flip (Safari always, Chrome paint-only)
 
 **Symptom.** Safari: the Latin (target) text and placeholder lag the theme flip
-badly, filled or empty. Chrome: the target *placeholder* lags; with real text the
+badly, filled or empty. Chrome: the target _placeholder_ lags; with real text the
 fields desync too.
 
 **Root cause.** `.morph-target` (and `.morph-target::placeholder`) carried a
 permanent `transition: color 400ms ease-out` for the arrow-launch morph. Their
-colour is *inherited*, so on a theme flip they ease toward `<body>`'s
+colour is _inherited_, so on a theme flip they ease toward `<body>`'s
 already-easing value — the compounding chase documented in dark-mode.md. Measured:
 target settles ~890–900 ms while everything else settles ~460 ms.
 
-**The trap inside the trap.** Chromium *reports lockstep* in `getComputedStyle`
+**The trap inside the trap.** Chromium _reports lockstep_ in `getComputedStyle`
 for the filled text but **paints the chase anyway** — painted pixels sat at ~52 %
 when the page hit 100 %. WebKit shows the chase in computed style. Never trust
 computed style alone for form-control colour timing; decode screenshots.
 
 **Placeholder variant.** Both engines' UA default for `::placeholder` is already
 `color-mix(in oklab, currentColor 50%, transparent)` (Firefox too — verified).
-An author declaration of that *identical value* is what arms the chase when a
+An author declaration of that _identical value_ is what arms the chase when a
 `transition: color` is present; colour-transition-free placeholders ride
 inheritance in lockstep. That asymmetry is why Chrome lagged only the target
 placeholder (explicit author colour) and not source/authorship (UA colour, even
@@ -34,7 +34,7 @@ though they also had a placeholder transition).
 **Placeholder trap #2 (found post-fix, by the user, on a dark-OS machine).** The
 first fix left resting placeholders on the UA default. Under a dark OS scheme —
 where the app.html prepaint stamps `color-scheme: dark` on `<html>` — Chromium
-does **not recompute** `::placeholder` colours built from colour *functions* of
+does **not recompute** `::placeholder` colours built from colour _functions_ of
 `currentColor` (`color-mix()`, relative-colour syntax) when the inherited colour
 changes. After every toggle the placeholder kept the previous theme's ink:
 invisible dark-on-dark / faint white-on-white ("the text perfectly camouflages
@@ -87,19 +87,19 @@ Fast double-clicks and long waits were both fine.
 
 **Root cause.** The previous fix deferred the root `color-scheme` write to
 560 ms after a flip (debounced). Isolated on a minimal fixture: Chromium runs
-*every* `color` transition at ~half speed if the **root** `color-scheme` changed
+_every_ `color` transition at ~half speed if the **root** `color-scheme` changed
 in the same frame, mid-flight, **or within ~500 ms before the transition
 starts**. So the deferred write opened a poison window at 560–1060 ms after each
 flip — and the toggle's 800 ms orbit animation trains the user to click inside
 it. Measured in-app: second flip at gaps 558–800 ms → body text settled
-~1000 ms, card bottom text ~1370 ms (the *second* deferred write landed
+~1000 ms, card bottom text ~1370 ms (the _second_ deferred write landed
 mid-crawl and re-throttled it), Shiki spans snapped at ~520 ms (the `theme-anim`
 transition rule was removed while the throttled transition was still ~40 %
 behind). Gaps ≤540 ms were clean (debounce cancelled the write) and ≥1200 ms
 were clean (outside the tail) — exactly the user's reproduction recipe.
 
 **Dead ends measured.** Deferring further only moves the window. Registered
-`@property` colour transitions are *always* on the slow path (~950 ms even with
+`@property` colour transitions are _always_ on the slow path (~950 ms even with
 no color-scheme change) — not an escape hatch.
 
 **Fix.** Live `color-scheme` goes inline on **`<body>`**, synchronously with the
@@ -145,5 +145,5 @@ own background). Form controls now re-theme in the same frame as the flip.
   colours will mismatch the theme — revisit §3 before "fixing" it by writing to
   the root again.
 - The Chromium throttle numbers (~500 ms tail, ~2× slowdown) are engine
-  internals observed on 2026-07 Chromium; the *rule* (never write root
+  internals observed on 2026-07 Chromium; the _rule_ (never write root
   color-scheme near a colour transition) is the stable part.

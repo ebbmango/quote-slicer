@@ -35,9 +35,9 @@ updates when `appTheme.current` changes. In `systemTheme.ts`, the theme flip
 does:
 
 ```ts
-applyThemeClass(currentMode);  // toggle .dark on <html>
+applyThemeClass(currentMode); // toggle .dark on <html>
 // ... rest of function continues ...
-notify();                        // triggers Svelte re-renders
+notify(); // triggers Svelte re-renders
 ```
 
 The class flip drives the HTML/body color transition _immediately_. But Svelte
@@ -70,11 +70,13 @@ regression test (`theme-lockstep.e2e.ts`).
 Per-frame luminance sampling in Playwright across Chromium, WebKit, and Firefox:
 
 **Before fixes:**
+
 - Chromium: body start 60 ms, card start 77 ms (17 ms lag) + easing divergence
 - WebKit: body start 103 ms, card start 103 ms (good) but wrong curves
 - Firefox: similar to Chromium
 
 **After fixes:**
+
 - All engines: body and all card surfaces start same frame, follow identical
   luminance curves within 1% at every checkpoint. Painted-pixel truth (decode
   mid-flip screenshots) confirms: progress values identical within 0.3 % across
@@ -101,6 +103,7 @@ Per-frame luminance sampling in Playwright across Chromium, WebKit, and Firefox:
 `fb0265f` — fix(theme): synchronize mapping card transitions with page
 
 Also touches:
+
 - `src/routes/layout.css` — added `--default-transition-timing-function: ease`
   in `@theme`
 - `src/lib/systemTheme.ts` — added `flushSync()` call

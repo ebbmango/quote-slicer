@@ -65,8 +65,7 @@ export function computeRowOffsets(
 }
 
 const reducedMotion = () =>
-	typeof window !== 'undefined' &&
-	window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Open the gap at `divisorIndex` (the global token index the divisor sits *after*)
@@ -80,7 +79,9 @@ export function redistributeRow(
 	if (!container || reducedMotion()) return;
 
 	// Clear any redistribution left on a previously spread row before applying the new one.
-	for (const el of container.querySelectorAll<HTMLElement>(`${TOK_SELECTOR}, ${SPLIT_SURFACE_SELECTOR}`))
+	for (const el of container.querySelectorAll<HTMLElement>(
+		`${TOK_SELECTOR}, ${SPLIT_SURFACE_SELECTOR}`
+	))
 		el.style.removeProperty('--rd-x');
 
 	const toks = Array.from(container.querySelectorAll<HTMLElement>(TOK_SELECTOR));
@@ -102,7 +103,11 @@ export function redistributeRow(
 	const rowTop = anchor.top;
 	const row = data.filter((d) => Math.abs(d.top - rowTop) < 4).sort((a, b) => a.idx - b.idx);
 
-	const off = computeRowOffsets(row.map((d) => d.idx), divisorIndex, { max, perGap });
+	const off = computeRowOffsets(
+		row.map((d) => d.idx),
+		divisorIndex,
+		{ max, perGap }
+	);
 	if (!off) return;
 	const m = row.length;
 	for (let j = 0; j < m; j++) row[j].el.style.setProperty('--rd-x', off[j].toFixed(2) + 'px');

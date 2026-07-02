@@ -24,7 +24,7 @@ The two mechanisms ran out of sync:
 - **Split** (1 line → 2 lines): `$effect` instantly grows the container to fit the new
   taller content. Tokens animate into the now-larger space — no visible problem.
 - **Merge** (2 lines → 1 line): `$effect` instantly shrinks the container to the new,
-  shorter height *before* Flip's transform-based animation (`absolute: false`) has
+  shorter height _before_ Flip's transform-based animation (`absolute: false`) has
   moved the displaced tokens into place. For ~0.35s, the second line's tokens are
   still rendered at their old (now out-of-bounds) position and get clipped by
   `overflow-y-auto`, only fading into view as the transform settles.
@@ -66,7 +66,7 @@ since the height tween needs the core `gsap` object, not just the plugin.
   boundary and the token positions move as one continuous motion rather than two
   visually distinct animations.
 - **Split was left alone** — growing the container before tokens move in doesn't clip
-  anything, so no height tween is *needed* there, but the same `run()` path now
+  anything, so no height tween is _needed_ there, but the same `run()` path now
   handles it uniformly (the tween from old→new height is a no-op direction-wise but
   harmless).
 - **`heightEl` is optional** (`null` skips height animation entirely), preserving the

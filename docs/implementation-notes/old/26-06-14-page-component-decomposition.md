@@ -31,7 +31,7 @@ The extraction landed in dependency order:
 3. **`JsonExportPanel.svelte`** — the JSON export view (new file, no `+page.svelte` diff in
    this commit — it's wired in by `DataPanel` next).
 4. **`DataPanel.svelte`** — renders `MappingsList` or `JsonExportPanel` based on a `view:
-   'maps' | 'json'` prop, with the `fade-edges` mask CSS for scroll panels. Used by both the
+'maps' | 'json'` prop, with the `fade-edges` mask CSS for scroll panels. Used by both the
    aside and the modal.
 5. **`DataModal.svelte`** — the slide-in panel for minimal viewports: `modalOpen`/
    `forceClose`/`flyX` state, `openModal`/`closeModal`, the `popstate` listener for Android

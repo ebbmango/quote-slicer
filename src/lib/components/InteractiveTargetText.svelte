@@ -49,6 +49,7 @@
 	// both consume an ordinal so enabling horizontal coloring later won't shift
 	// the vertical colors.
 	let divisorOrdinal = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per recompute, never mutated after return
 		const m = new Map<number, number>();
 		let n = 0;
 		tokens.forEach((t, i) => {
@@ -159,7 +160,7 @@
 				flipId={`tgt-${i}`}
 				container={lineContainer}
 				spread={SPREAD}
-				touchedDivisorIndex={touchedDivisorIndex}
+				{touchedDivisorIndex}
 				onActivate={() => onMerge(token.line)}
 				onTouch={onTouchDivisor}
 				onClearTouch={onClearTouchDivisor}
@@ -174,7 +175,7 @@
 				flipId={`tgt-${i}`}
 				container={lineContainer}
 				spread={SPREAD}
-				touchedDivisorIndex={touchedDivisorIndex}
+				{touchedDivisorIndex}
 				onActivate={() => onSplit(i)}
 				onTouch={onTouchDivisor}
 				onClearTouch={onClearTouchDivisor}
@@ -190,7 +191,10 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? alignment.stateOfTarget(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}
-				class={'tok ' + p.opacityClass + (p.style.includes('color:') ? ' tok-tinted' : '') + (interactive ? ' cursor-pointer outline-none' : '')}
+				class={'tok ' +
+					p.opacityClass +
+					(p.style.includes('color:') ? ' tok-tinted' : '') +
+					(interactive ? ' cursor-pointer outline-none' : '')}
 				style={p.style}
 				onclick={() => handleClick(i)}
 				onmouseenter={() => {

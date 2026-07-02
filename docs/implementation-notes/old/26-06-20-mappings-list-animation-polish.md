@@ -14,7 +14,7 @@ adds a shared guard so rapid user input during a card animation can't cause re-e
 ### Motivation
 
 The root re-entrancy fix (`queueMicrotask` in the gap-close `onComplete`) stops GSAP
-callbacks from writing Svelte `$state` mid-flush. But it doesn't stop the *user* from
+callbacks from writing Svelte `$state` mid-flush. But it doesn't stop the _user_ from
 issuing a second create or delete while the first card is still mid-slide. Rapid
 click-test confirmed: overlapping 250 ms exit transitions could still trigger the
 silent-reactivity-death bug the microtask was meant to contain.
@@ -41,7 +41,7 @@ If a second list consumer ever appears, revisit this.
 ## Empty-state crossfade (`c70f089`)
 
 Previously the "No mappings" overlay was hidden behind an `outroing === 0` guard,
-so it only appeared *after* the last card's 250 ms slide-out finished. The result
+so it only appeared _after_ the last card's 250 ms slide-out finished. The result
 was a jarring pop-in after a half-second gap.
 
 The fix imports Svelte's `fade` transition and attaches `in:fade={{ duration: EXIT_MS }}`

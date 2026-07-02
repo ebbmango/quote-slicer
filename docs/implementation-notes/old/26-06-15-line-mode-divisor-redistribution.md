@@ -56,7 +56,7 @@ hovered gap at local position `p`, the hovered gap opens by `delta` (capped at
 running sum of gap-deltas to their left; because the deltas sum to zero, both
 row ends land back at offset 0 — only the interior shifts.
 
-A divisor's `data-divisor-index` is the token index it sits *after* — for
+A divisor's `data-divisor-index` is the token index it sits _after_ — for
 source split-zones that's the left token's own index, but for target
 `ws-split` it's the whitespace token's index strictly between two words. The
 divisor's centering offset is computed by finding its flanking row tokens by
@@ -83,7 +83,7 @@ ways:
    `transform` transition on `.tok`/`.split-zone` for the duration of the Flip
    — color/opacity transitions remain.
 2. Before a split/merge fires, `clearRedistribute(lineContainer, { instant:
-   true })` removes any live `--rd-x` hover offset *without* easing, so it
+true })` removes any live `--rd-x` hover offset _without_ easing, so it
    isn't baked into Flip's "from" state and doesn't fight the Flip animation
    mid-flight.
 
@@ -97,7 +97,7 @@ divisors in quick succession can never trigger layout or change line wrapping
   redistribution's CSS transition from fighting GSAP Flip. If a future change
   adds another `transform`-driven animation to `.tok`/`.split-zone`/`.ws-split`,
   it likely needs the same `.flipping` exclusion.
-- `clearRedistribute(..., { instant: true })` must run *before* `handleSplit`/
+- `clearRedistribute(..., { instant: true })` must run _before_ `handleSplit`/
   `handleMerge` — if a future refactor reorders these, the wobble can return.
 - The row-grouping heuristic (`offsetTop` within 4px) assumes all tokens on a
   visual row share the same top within a few pixels; unusual font metrics or

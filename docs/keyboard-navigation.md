@@ -20,13 +20,13 @@ wires its `handleKeydown` / `handleFocusIn` to the `role="grid"` container. A si
 instance serves both modes because its config fields are getters/callbacks,
 re-evaluated on every keystroke:
 
-| Config field | Link mode | Line mode |
-|--------------|-----------|-----------|
-| `itemSelector()` | `TOKEN_ITEM_SELECTOR` (`[role="option"]`) | `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone, .ws-split`) |
-| `getDefaultIndex(zone)` | `alignment.findDefaultTokenIndex(zone)` | unused (`-1`) |
-| `onActivate(el, e)` | resolve zone + `data-token-index`, call `toggleSource`/`toggleTarget` | `el.click()` (fires the divisor's own handler) |
-| `restoresFocusOnActivate()` | `false` | `true` (a split/merge re-renders the focused divisor away) |
-| `onEscape()` | `alignment.deselect()` | no-op |
+| Config field                | Link mode                                                             | Line mode                                                    |
+| --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `itemSelector()`            | `TOKEN_ITEM_SELECTOR` (`[role="option"]`)                             | `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone, .ws-split`) |
+| `getDefaultIndex(zone)`     | `alignment.findDefaultTokenIndex(zone)`                               | unused (`-1`)                                                |
+| `onActivate(el, e)`         | resolve zone + `data-token-index`, call `toggleSource`/`toggleTarget` | `el.click()` (fires the divisor's own handler)               |
+| `restoresFocusOnActivate()` | `false`                                                               | `true` (a split/merge re-renders the focused divisor away)   |
+| `onEscape()`                | `alignment.deselect()`                                                | no-op                                                        |
 
 Cross-zone jumping (Alt+Enter and edge Alt+↑/↓) is now **unconditional** — it is no
 longer a config flag. An earlier `crossZoneJump()` getter gated it to link mode; it was
@@ -34,14 +34,14 @@ removed so line-mode users can move between source and target with the keyboard 
 
 The key bindings (identical machinery, mode-specific meaning):
 
-| Shortcut | Effect |
-|----------|--------|
-| Alt+↑ / Alt+↓ | Move focus to the element on the visual row above/below; at a zone's far edge, jump to the other zone (both modes) |
-| Alt+← / Alt+→ | Move focus to the prev/next navigable element in DOM order |
-| Alt+Enter | Toggle focus between source and target (both modes) |
-| Alt+Space | activate the focused element |
-| Alt+Shift+Space | activate "with force" (force-add a source token in link mode) |
-| Escape | blur the focused element, then run `onEscape()` |
+| Shortcut        | Effect                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Alt+↑ / Alt+↓   | Move focus to the element on the visual row above/below; at a zone's far edge, jump to the other zone (both modes) |
+| Alt+← / Alt+→   | Move focus to the prev/next navigable element in DOM order                                                         |
+| Alt+Enter       | Toggle focus between source and target (both modes)                                                                |
+| Alt+Space       | activate the focused element                                                                                       |
+| Alt+Shift+Space | activate "with force" (force-add a source token in link mode)                                                      |
+| Escape          | blur the focused element, then run `onEscape()`                                                                    |
 
 `handleFocusIn` remembers the last focused element per zone, so jumping away and back
 returns you where you were. `getZone(el)` (exported alongside) resolves which panel an
@@ -67,7 +67,7 @@ a `tick()`, then re-acquires focus by that index via `restoreFocusByIndex(zone, 
 That has a fallback for one case: merging a line break between a character and a
 **newline-orphaned** punctuation mark recombines them into one
 [group](tokenization.md#source-punctuation-grouping), and the merged divisor's index is
-now *intra-group* and unrendered — so the by-index lookup finds nothing. The fallback
+now _intra-group_ and unrendered — so the by-index lookup finds nothing. The fallback
 focuses the nearest remaining divisor at or before the original index instead, keeping
 keyboard focus in the panel.
 
@@ -91,7 +91,7 @@ contract:
 Readers import from `gridDom`; the **writers** (components that stamp these attributes in
 their markup) still reference the names in their own templates, so there is no
 compile-time check that a writer and reader agree — a rename must touch the component
-templates *and* `gridDom.ts`. The module deliberately exports no `querySelector`
+templates _and_ `gridDom.ts`. The module deliberately exports no `querySelector`
 wrappers: single-use lookups read fine inline. (`gridDom` absorbed the former
 `constants/lineDivisor.ts`.) See [`CONTEXT.md`](../CONTEXT.md) ("token-grid DOM
 contract").

@@ -24,7 +24,7 @@ and driven with `vi.useFakeTimers()`.
 
 **Hidden coupling in the colouring path.** `Alignment` built two private `$derived`
 maps (`sourceMappingIndex`, `targetMappingIndex`) that translated token indices
-to `MappingId` strings, then passed those maps *and* the full `mappings` array
+to `MappingId` strings, then passed those maps _and_ the full `mappings` array
 into `deriveSourceTokenState` / `deriveTargetTokenState`. The derive functions
 then did a `mappings.find(x => x.id === claimed)` on every call — an O(n) scan
 that was also untestable in isolation, since you had to construct both the index
@@ -74,7 +74,7 @@ function) remains unit-testable without the runes runtime.
 
 The `ViewHighlight` resolver closure captures `this` from `Alignment`'s
 constructor. It reads `this.sourceMappingIndex` and `this.targetMappingIndex`
-at *call time*, which is correct — those are `$derived` fields and will be
+at _call time_, which is correct — those are `$derived` fields and will be
 current. But if `ViewHighlight.movePointer` or a timer callback were to invoke
 the resolver after `Alignment` had been garbage-collected, the closure would
 read stale/undefined state. In practice this can't happen because `ViewHighlight`

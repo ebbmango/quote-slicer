@@ -56,7 +56,7 @@ Findings, ranked:
 ### Resolution
 
 - **#1 + #2 — SOLVED.** Fixed together via unified `canonicalize(syllable,
-  tone)` helper: normalizes `v`→`ü` and validates against
+tone)` helper: normalizes `v`→`ü` and validates against
   `PINYIN_SYLLABLES` across all three input branches (numbered / diacritic /
   toneless). Verified via unit tests.
 - **#3 — SOLVED.** Extracted `PinyinInput.svelte` with local
@@ -85,14 +85,14 @@ Findings, ranked:
    no longer updates while typing pinyin — frozen until blur. Real,
    user-visible regression.
 2. **PLAUSIBLE** — `Mapping.svelte:93` — `{#each ... as entry, i
-   (entry?.tokenIndex ?? 'empty')}` keys `PinyinInput` by `tokenIndex`; if
+(entry?.tokenIndex ?? 'empty')}` keys `PinyinInput` by `tokenIndex`; if
    `sourceEntries` reorder/reassign `tokenIndex` mid-edit (e.g. line
    split/merge while a mapping card is open and a pinyin field is focused
    with an uncommitted buffer), Svelte reuses the component instance for a
    different token with stale `editing`/`buffer` state, committing the wrong
    text to the wrong token on blur.
 3. **minor/cleanup** — `Mapping.svelte:119` — `onCommit={isEmpty ? () => {} :
-   ...}` allocates a no-op closure every render for a branch that's provably
+...}` allocates a no-op closure every render for a branch that's provably
    unreachable (input is `disabled` when `isEmpty`, so blur/onCommit never
    fires). Could drop the ternary or make `onCommit` optional/`undefined`.
 4. **simplification** — `PinyinInput.svelte:24` — `editing` (boolean) and
@@ -128,7 +128,7 @@ Reviewed all open items, decided scope, implemented a subset.
   `tokenIndex`, so split/merge can no longer reuse a `PinyinInput` instance for
   a different token. Fix applied regardless of repro (cheap, removes the class).
 - **Review #1 #4 (conversion-logic placement) — SOLVED.** `toCanonical(raw) ??
-  raw` moved out of `Mapping.svelte`'s `onCommit` into `alignment.setPinyin`
+raw` moved out of `Mapping.svelte`'s `onCommit` into `alignment.setPinyin`
   ([`alignment.svelte.ts:153`](../../src/lib/context/alignment.svelte.ts)) — the
   store now owns canonicalization (single token owner per `docs/token-store.md`).
   Component just passes raw text.
@@ -170,7 +170,7 @@ wrong token, look there first.
 
 - **Review #2 #4 (editing+buffer collapse) — SOLVED.** `PinyinInput.svelte`
   now uses a single `buffer: string | null` (`null` = not editing); `shown =
-  buffer ?? value`. Verified live (`zhi1` → `zhī` on blur, no console errors).
+buffer ?? value`. Verified live (`zhi1` → `zhī` on blur, no console errors).
 - **Extra fix (not from prior reviews) — blank pinyin now clears to
   `undefined`.** `setPinyin` ([alignment.svelte.ts:162](../../src/lib/context/alignment.svelte.ts))
   trims input; empty → `store.setPinyin(tokenId, undefined)` instead of `""`,

@@ -11,9 +11,7 @@
 
 				const root = document.documentElement;
 
-				const osMode = window.matchMedia('(prefers-color-scheme: dark)').matches
-					? 'dark'
-					: 'light';
+				const osMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
 				const applyTheme = (mode) => {
 					root.classList.toggle('dark', mode === 'dark');

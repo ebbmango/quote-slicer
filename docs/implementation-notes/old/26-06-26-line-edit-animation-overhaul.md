@@ -18,6 +18,7 @@ viewports.
 
 Before this commit both `InteractiveSourceText.svelte` and
 `InteractiveTargetText.svelte` maintained parallel copies of:
+
 - All split/merge button markup (`.split-zone`, `.ws-split`, `.merge-zone`)
 - A touch state machine (first-tap highlight, second-tap activate, clear-touch
   binding)
@@ -26,7 +27,7 @@ Before this commit both `InteractiveSourceText.svelte` and
 `LineDivisor.svelte` owns all of this now. Props: `kind` (`'split'|'merge'`),
 `surface` (`'zone'|'whitespace'`), `divisorIndex`, `color`, `text`, `flipId`,
 `container`, `spread`, `touchedDivisorIndex`, `onActivate`, `onTouch`,
-`onClearTouch`. The two Interactive*Text components simply loop over their token
+`onClearTouch`. The two Interactive\*Text components simply loop over their token
 arrays and emit `<LineDivisor>` between tokens.
 
 The source and target panels use different DOM affordances (source uses zero-width
@@ -43,7 +44,7 @@ spans between English words). `LineDivisor` renders the correct variant based on
 (with a release-and-reflow loop), ran a GSAP Flip on the edited panel's tokens
 only, then tweened the scroll box height to the settled value. Problems:
 
-- The panel *boundary* snapped to its post-edit position on the first frame (only
+- The panel _boundary_ snapped to its post-edit position on the first frame (only
   tokens were Flipped; the wrapper itself wasn't)
 - Required a multi-step release-and-measure loop whose termination condition was
   unreliable
@@ -57,14 +58,16 @@ const state = Flip.getState([sourceWrapper, targetWrapper, auth, ...editedTokens
 animating = true;
 mutate();
 await tick();
-void wrapper.offsetHeight;  // force synchronous reflow to settle flex
+void wrapper.offsetHeight; // force synchronous reflow to settle flex
 
 Flip.from(state, {
-    duration: 0.35,
-    ease: 'power2.inOut',
-    absolute: false,
-    nested: true,
-    onComplete: () => { animating = false; }
+	duration: 0.35,
+	ease: 'power2.inOut',
+	absolute: false,
+	nested: true,
+	onComplete: () => {
+		animating = false;
+	}
 });
 ```
 
@@ -102,8 +105,7 @@ redistribution, where the transform must be preserved:
 
 ```typescript
 const otherHeightChanged =
-    otherBeforeH !== null && otherAfterH !== null &&
-    Math.abs(otherBeforeH - otherAfterH) > 1;
+	otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
 if (auth) gsap.set(auth, { clearProps: 'transform' });
 if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 ```

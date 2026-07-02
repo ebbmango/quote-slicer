@@ -9,7 +9,7 @@ state and logic lives in **`Alignment`** (`src/lib/context/alignment.svelte.ts`)
 `Alignment` is a Svelte 5 class, instantiated once in `+page.svelte` via
 `setAlignmentContext(tokenStore)` and read anywhere via `getAlignmentContext()`.
 
-It is deliberately *not* the owner of the token arrays — the
+It is deliberately _not_ the owner of the token arrays — the
 [token store](token-store.md) is. `Alignment` takes the store (as a narrowed
 `TokenAccess`) and **derives** its token views from it, keyed by the current text:
 
@@ -19,15 +19,15 @@ private targetTokens = $derived.by(() => this.store.targetTokens(this.meta.targe
 ```
 
 So there is exactly one token owner; `Alignment` never holds a synced copy. What it
-*does* own:
+_does_ own:
 
-| State | Kind | Purpose |
-|-------|------|---------|
-| `mappings` | private `$state` | the full list of mappings |
-| `activeMappingId` | public `$state` | the currently selected mapping (or `null`) |
-| `meta` | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()` |
-| `nextColorIndex` | private `$state` | monotonic counter for assigning mapping colors |
-| `listAnimating` | public `$state` | true while the mappings list is mid-animation; throttles mutations (see [Mappings List](mappings-list.md#the-listanimating-mutation-throttle)) |
+| State             | Kind             | Purpose                                                                                                                                        |
+| ----------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mappings`        | private `$state` | the full list of mappings                                                                                                                      |
+| `activeMappingId` | public `$state`  | the currently selected mapping (or `null`)                                                                                                     |
+| `meta`            | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()`                                                              |
+| `nextColorIndex`  | private `$state` | monotonic counter for assigning mapping colors                                                                                                 |
+| `listAnimating`   | public `$state`  | true while the mappings list is mid-animation; throttles mutations (see [Mappings List](mappings-list.md#the-listanimating-mutation-throttle)) |
 
 And what it derives:
 
@@ -53,27 +53,27 @@ it (if that's the active mapping) or switch the active mapping to it (if it's an
 `i` is the clicked token's current array index. `opts.force` is `true` when Cmd/Ctrl
 is held (mouse), Alt+Shift+Space is pressed (keyboard), or on longpress (mobile).
 
-| Token state | force | Action |
-|-------------|-------|--------|
-| Punctuation | any | **No-op** (guarded — can't anchor a mapping; the source stream has no whitespace tokens) |
-| Belongs to active mapping | any | Remove from mapping; clear its pinyin; prune if empty |
-| Belongs to another mapping | any | Switch active mapping to that one |
-| Unmapped; active mapping exists, has no source yet | any | Append to active mapping |
-| Unmapped; active mapping exists, already has a source | `false` | Create a **new** mapping for this token |
-| Unmapped; active mapping exists, already has a source | `true` | Append to active mapping (force-add) |
-| Unmapped; no active mapping | any | Create a new mapping for this token |
+| Token state                                           | force   | Action                                                                                   |
+| ----------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| Punctuation                                           | any     | **No-op** (guarded — can't anchor a mapping; the source stream has no whitespace tokens) |
+| Belongs to active mapping                             | any     | Remove from mapping; clear its pinyin; prune if empty                                    |
+| Belongs to another mapping                            | any     | Switch active mapping to that one                                                        |
+| Unmapped; active mapping exists, has no source yet    | any     | Append to active mapping                                                                 |
+| Unmapped; active mapping exists, already has a source | `false` | Create a **new** mapping for this token                                                  |
+| Unmapped; active mapping exists, already has a source | `true`  | Append to active mapping (force-add)                                                     |
+| Unmapped; no active mapping                           | any     | Create a new mapping for this token                                                      |
 
 On any add, pinyin is auto-filled (see below).
 
 ### `toggleTarget(i)`
 
-| Token state | Action |
-|-------------|--------|
-| Whitespace or punctuation | **No-op** (guarded) |
-| Belongs to active mapping | Remove from mapping; prune if empty |
-| Belongs to another mapping | Switch active mapping |
-| Unmapped; active mapping exists | Append to active mapping |
-| Unmapped; no active mapping | Create a new mapping for this token |
+| Token state                     | Action                              |
+| ------------------------------- | ----------------------------------- |
+| Whitespace or punctuation       | **No-op** (guarded)                 |
+| Belongs to active mapping       | Remove from mapping; prune if empty |
+| Belongs to another mapping      | Switch active mapping               |
+| Unmapped; active mapping exists | Append to active mapping            |
+| Unmapped; no active mapping     | Create a new mapping for this token |
 
 Target tokens have no force/multi-add distinction — any non-whitespace, non-punctuation
 target token can be freely added to the active mapping.
@@ -86,7 +86,7 @@ target token can be freely added to the active mapping.
 
 - **Create** — `createMapping()`: a fresh UUID, the next `colorIndex` from the
   monotonic counter, empty token-ID arrays.
-- **Prune** — `pruneActive()`: deletes the active mapping if it has zero source *and*
+- **Prune** — `pruneActive()`: deletes the active mapping if it has zero source _and_
   zero target tokens. Called after every removal, so emptying a mapping out cleans it up.
 - **Deselect** — `deselect()`: `activeMappingId = null`, without deleting.
 - **Delete** — `deleteById(id)` / `deleteActive()`: removes by ID; clears
@@ -131,7 +131,7 @@ so the conversion only re-runs when the tokens change, not on every mapping sele
 
 ## Whitespace bridging
 
-A whitespace target token can't be mapped, but it can *display* a mapping's color when
+A whitespace target token can't be mapped, but it can _display_ a mapping's color when
 it sits between two tokens of the same mapping — so a multi-word phrase reads as one
 continuous highlight instead of striped gaps.
 
@@ -149,15 +149,15 @@ Token navigation is provided by the shared `createTokenGridNav()` instance (see
 [Keyboard & Navigation](keyboard-navigation.md) for the mechanism). Tokens are removed
 from the Tab order; you move between them with Alt+Arrow inside the token workspace.
 
-| Shortcut | Action |
-|----------|--------|
-| Alt+↑ / Alt+↓ | Focus the token on the visual row above/below; wraps source↔target at the panel edges |
-| Alt+← / Alt+→ | Focus the prev/next token in DOM order |
-| Alt+Enter | Toggle focus between the source and target panels (remembers the last focused token per panel) |
-| Alt+Space | Select/deselect the focused token (`toggleSource`/`toggleTarget`) |
-| Alt+Shift+Space | Force-add the source token to the active mapping |
-| Escape | Blur the focused token, then deselect the active mapping |
-| Backspace / Delete | Delete the focused mapping card, or the active mapping if none is focused |
+| Shortcut           | Action                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Alt+↑ / Alt+↓      | Focus the token on the visual row above/below; wraps source↔target at the panel edges          |
+| Alt+← / Alt+→      | Focus the prev/next token in DOM order                                                         |
+| Alt+Enter          | Toggle focus between the source and target panels (remembers the last focused token per panel) |
+| Alt+Space          | Select/deselect the focused token (`toggleSource`/`toggleTarget`)                              |
+| Alt+Shift+Space    | Force-add the source token to the active mapping                                               |
+| Escape             | Blur the focused token, then deselect the active mapping                                       |
+| Backspace / Delete | Delete the focused mapping card, or the active mapping if none is focused                      |
 
 Backspace/Delete is a document-level handler (`initAlignmentShortcuts`), not part of
 the grid nav — see [Keyboard & Navigation](keyboard-navigation.md#document-level-shortcuts).

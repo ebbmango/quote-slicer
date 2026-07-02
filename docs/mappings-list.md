@@ -1,7 +1,7 @@
 # Mappings List & Card Animations
 
 The sidebar `<ol>` of mapping cards (`MappingsList.svelte`) animates additions and
-deletions with GSAP's Flip plugin. This page covers *why* the animation is built the
+deletions with GSAP's Flip plugin. This page covers _why_ the animation is built the
 way it is, the add/delete sequencing, the touch swipe-to-delete gesture, the scroll
 timing, and the one re-entrancy rule that the whole system hinges on.
 
@@ -16,7 +16,7 @@ what this list needs:
 
 - **Column-direction awareness** — at wider viewports the grid is two columns; a
   left-column card should slide left, a right-column card right.
-- **Out→close sequencing** — the leaving card slides out *first*, then the survivors
+- **Out→close sequencing** — the leaving card slides out _first_, then the survivors
   flow closed to fill the gap.
 - **A ripple** — the gap-close staggers outward from the deleted card's position.
 
@@ -34,7 +34,7 @@ durations live from `getComputedStyle` so they stay in sync with the CSS breakpo
 
 ## Add path (make-way, then slide-in)
 
-1. An `$effect.pre` (runs *before* the DOM patch) diffs the current
+1. An `$effect.pre` (runs _before_ the DOM patch) diffs the current
    `sortedMappingViews` IDs against the previous set to detect a single new ID, then
    `Flip.getState(existingCards)` snapshots neighbour positions before Svelte inserts
    the new card. The snapshot and new ID are stored in plain `let` variables.
@@ -88,7 +88,7 @@ had simply stopped updating, app-wide.
 **Root cause:** GSAP's ticker can advance **synchronously** inside `Flip.from()` (it
 ticks forward to flush already-complete tweens before returning). Under overlapping
 deletes, calling `Flip.from()` for one card's gap-close advanced the ticker, which fired
-a *previous* gap-close's `onComplete` — **synchronously, while Svelte was mid-flush**
+a _previous_ gap-close's `onComplete` — **synchronously, while Svelte was mid-flush**
 (because `onExitEnd` is itself called from Svelte's outro machinery, part of a flush).
 That `onComplete` wrote `closing` (a `$state`). **Writing `$state` re-entrantly during
 an in-progress Svelte flush silently corrupts the reactive scheduler** — no error, the
@@ -99,11 +99,11 @@ flush just stops committing, and every derived value freezes.
 
 ```js
 onComplete: () => {
-  queueMicrotask(() => {
-    closeTweens = closeTweens.filter((t) => t !== tween);
-    closing = Math.max(0, closing - 1);
-    // …
-  });
+	queueMicrotask(() => {
+		closeTweens = closeTweens.filter((t) => t !== tween);
+		closing = Math.max(0, closing - 1);
+		// …
+	});
 };
 ```
 
@@ -111,7 +111,7 @@ onComplete: () => {
 > GSAP callback (`onComplete`, `onUpdate`, `onStart`). GSAP can advance its ticker
 > synchronously during `Flip.from()`, `tween.kill()`, and similar, so any such callback
 > can fire re-entrantly mid-flush. Defer the write with `queueMicrotask`. Writing
-> `$state` from Svelte's *own* outro handlers (`onoutrostart`/`onoutroend`) is fine —
+> `$state` from Svelte's _own_ outro handlers (`onoutrostart`/`onoutroend`) is fine —
 > that's why `outroing++` stays synchronous while only the `closing` decrement is
 > deferred.
 
@@ -137,11 +137,11 @@ sliding. Overlapping exit transitions could still re-trigger the freeze.
 
 When a card becomes the active mapping it is scrolled into view. The scroll is issued
 **as soon as layout space is allocated** — immediately when the card becomes active,
-*before* the GSAP transforms begin — because the card already exists in the DOM and the
+_before_ the GSAP transforms begin — because the card already exists in the DOM and the
 browser's layout knows where it will land. This cut roughly 400 ms (adds) / 220 ms
 (deletes that reveal an active card) of latency versus the old "scroll after the
 animation settles" approach. A second `scrollIntoView` in the animation's `onComplete`
-covers the case where the user activates a *different* card mid-animation; it is a
+covers the case where the user activates a _different_ card mid-animation; it is a
 no-op if the card is already visible.
 
 A separate `$effect` handles the end-of-deletion scroll, gated on `closing === 0` so it
@@ -153,7 +153,7 @@ read geometry from in-flight Flip transforms and scroll to the wrong place. The
 
 ## The empty-state overlay
 
-The `<ol>` is **always mounted**, even when empty. Svelte's `out:exit` is a *local*
+The `<ol>` is **always mounted**, even when empty. Svelte's `out:exit` is a _local_
 transition — it plays only when the `{#each}` item is removed, not when an ancestor
 block is torn down. Wrapping the `<ol>` in `{#if length > 0}{:else}` would destroy it
 on the last delete and skip the exit slide entirely.
@@ -166,7 +166,7 @@ first mapping is added.
 ## Swipe-to-delete (touch)
 
 On coarse-pointer devices the delete button is hidden (it was hittable while invisible,
-so a user trying to *select* a card could delete it). A horizontal swipe replaces it.
+so a user trying to _select_ a card could delete it). A horizontal swipe replaces it.
 
 The gesture state machine lives in the **`swipeToDelete` Svelte action**
 (`src/lib/actions/swipeToDelete.ts`); the component keeps only the GSAP springback and
@@ -190,7 +190,7 @@ translate is written to `dataset.swipeFlyoff`, then `deleteById` is called. The 
 transition reads the stamp and flies the card the rest of the way from the finger's
 position, then runs the same gap-close as a button delete. The explicit stamp matters:
 a button-deleted card may carry a GSAP survivor transform from an in-flight gap-close,
-so *inferring* "this was a swipe" from the computed transform is ambiguous — the marker
+so _inferring_ "this was a swipe" from the computed transform is ambiguous — the marker
 is unambiguous and dies with the node. (This exact ambiguity was a confirmed bug in the
 first implementation, where a button-deleted card flew off in the wrong direction.)
 

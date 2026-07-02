@@ -18,7 +18,10 @@ describe('computeRowOffsets', () => {
 	});
 
 	it('m>2: anchors both outer edges at 0 so the row width stays constant', () => {
-		for (const row of [[0, 1, 2], [3, 4, 5, 6, 7]]) {
+		for (const row of [
+			[0, 1, 2],
+			[3, 4, 5, 6, 7]
+		]) {
 			for (let d = row[0]; d < row[row.length - 1]; d++) {
 				const off = computeRowOffsets(row, d, opts);
 				if (!off) continue;
@@ -29,7 +32,11 @@ describe('computeRowOffsets', () => {
 	});
 
 	it('opens the hovered gap by a positive amount on every spreadable divisor', () => {
-		for (const row of [[0, 1], [0, 1, 2], [3, 4, 5, 6, 7]]) {
+		for (const row of [
+			[0, 1],
+			[0, 1, 2],
+			[3, 4, 5, 6, 7]
+		]) {
 			for (let d = row[0]; d < row[row.length - 1]; d++) {
 				const off = computeRowOffsets(row, d, opts);
 				if (!off) continue;

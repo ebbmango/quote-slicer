@@ -6,7 +6,7 @@ import {
 	buildTargetText,
 	deriveSourceTokenState,
 	deriveTargetTokenState,
-	type Mapping,
+	type Mapping
 } from './tokenState';
 
 function mapping(overrides: Partial<Mapping> = {}): Mapping {
@@ -22,7 +22,7 @@ describe('buildMappingIndex', () => {
 		const m1 = mapping({ id: 'm1', sourceTokenIds: [10, 20, 99] });
 		const idToIndex = new Map([
 			[10, 0],
-			[20, 1],
+			[20, 1]
 		]);
 		const index = buildMappingIndex([m1], idToIndex, (m) => m.sourceTokenIds);
 		expect(index.get(0)).toBe(m1);
@@ -37,21 +37,21 @@ describe('deriveSourceTokenState', () => {
 
 	it('returns unmapped for a token in no mapping', () => {
 		expect(deriveSourceTokenState(1, sourceMappingIndex, null)).toEqual({
-			kind: 'unmapped',
+			kind: 'unmapped'
 		});
 	});
 
 	it('returns idle for a token in a non-active mapping', () => {
 		expect(deriveSourceTokenState(0, sourceMappingIndex, null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].light.source,
+			color: MAPPING_COLORS[0].light.source
 		});
 	});
 
 	it('returns active for a token in the active mapping', () => {
 		expect(deriveSourceTokenState(0, sourceMappingIndex, 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].light.source,
+			color: MAPPING_COLORS[0].light.source
 		});
 	});
 });
@@ -62,7 +62,7 @@ describe('deriveTargetTokenState', () => {
 	it('returns unmapped for a token in no mapping', () => {
 		const tokens = [targetToken({ id: 0, type: 'text' })];
 		expect(deriveTargetTokenState(0, tokens, new Map(), null)).toEqual({
-			kind: 'unmapped',
+			kind: 'unmapped'
 		});
 	});
 
@@ -71,11 +71,11 @@ describe('deriveTargetTokenState', () => {
 		const targetMappingIndex = new Map([[0, m1]]);
 		expect(deriveTargetTokenState(0, tokens, targetMappingIndex, null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].light.target,
+			color: MAPPING_COLORS[0].light.target
 		});
 		expect(deriveTargetTokenState(0, tokens, targetMappingIndex, 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].light.target,
+			color: MAPPING_COLORS[0].light.target
 		});
 	});
 
@@ -83,19 +83,19 @@ describe('deriveTargetTokenState', () => {
 		const tokens = [
 			targetToken({ id: 0, text: 'one', type: 'text' }),
 			targetToken({ id: 1, text: ' ', type: 'whitespace' }),
-			targetToken({ id: 2, text: 'two', type: 'text' }),
+			targetToken({ id: 2, text: 'two', type: 'text' })
 		];
 		const targetMappingIndex = new Map([
 			[0, m1],
-			[2, m1],
+			[2, m1]
 		]);
 		expect(deriveTargetTokenState(1, tokens, targetMappingIndex, null)).toEqual({
 			kind: 'idle',
-			color: MAPPING_COLORS[0].light.target,
+			color: MAPPING_COLORS[0].light.target
 		});
 		expect(deriveTargetTokenState(1, tokens, targetMappingIndex, 'm1')).toEqual({
 			kind: 'active',
-			color: MAPPING_COLORS[0].light.target,
+			color: MAPPING_COLORS[0].light.target
 		});
 	});
 
@@ -104,25 +104,25 @@ describe('deriveTargetTokenState', () => {
 		const tokens = [
 			targetToken({ id: 0, text: 'one', type: 'text' }),
 			targetToken({ id: 1, text: ' ', type: 'whitespace' }),
-			targetToken({ id: 2, text: 'two', type: 'text' }),
+			targetToken({ id: 2, text: 'two', type: 'text' })
 		];
 		const targetMappingIndex = new Map([
 			[0, m1],
-			[2, m2],
+			[2, m2]
 		]);
 		expect(deriveTargetTokenState(1, tokens, targetMappingIndex, null)).toEqual({
-			kind: 'unmapped',
+			kind: 'unmapped'
 		});
 	});
 
 	it('does not bridge a whitespace token at the start of the array (no left neighbor)', () => {
 		const tokens = [
 			targetToken({ id: 0, text: ' ', type: 'whitespace' }),
-			targetToken({ id: 1, text: 'one', type: 'text' }),
+			targetToken({ id: 1, text: 'one', type: 'text' })
 		];
 		const targetMappingIndex = new Map([[1, m1]]);
 		expect(deriveTargetTokenState(0, tokens, targetMappingIndex, null)).toEqual({
-			kind: 'unmapped',
+			kind: 'unmapped'
 		});
 	});
 });
@@ -141,7 +141,7 @@ describe('buildTargetText', () => {
 		const tokens = [
 			targetToken({ id: 0, text: 'There', type: 'text' }),
 			targetToken({ id: 1, text: ' ', type: 'whitespace' }),
-			targetToken({ id: 2, text: 'is', type: 'text' }),
+			targetToken({ id: 2, text: 'is', type: 'text' })
 		];
 		expect(buildTargetText([0, 2], tokens)).toBe('There is');
 	});
@@ -150,7 +150,7 @@ describe('buildTargetText', () => {
 		const tokens = [
 			targetToken({ id: 0, text: 'one', type: 'text' }),
 			targetToken({ id: 1, text: 'two', type: 'text' }),
-			targetToken({ id: 2, text: 'three', type: 'text' }),
+			targetToken({ id: 2, text: 'three', type: 'text' })
 		];
 		expect(buildTargetText([0, 2], tokens)).toBe('one, three');
 	});

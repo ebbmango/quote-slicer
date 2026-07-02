@@ -19,9 +19,9 @@ This was fine as long as the hovered divisor stayed on the same visual row, wher
 
 ```css
 @property --rd-x {
-    syntax: '<length>';
-    initial-value: 0px;
-    inherits: true;
+	syntax: '<length>';
+	initial-value: 0px;
+	inherits: true;
 }
 ```
 

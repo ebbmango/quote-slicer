@@ -16,7 +16,7 @@ shift/force-add + pinyin side effects only on source) with zero tests, only
 reachable via DOM click handlers. Same asymmetry in `getSourceTokenState` /
 `getTargetTokenState` (target adds whitespace bridging).
 
-"Alignment" names the concept this class is the model *of* — useful since
+"Alignment" names the concept this class is the model _of_ — useful since
 `view` mode (not yet built, per [overview.md](../overview.md)) will likely
 read from the same model. New domain term → added to `CONTEXT.md`.
 

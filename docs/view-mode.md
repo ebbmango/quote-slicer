@@ -10,7 +10,7 @@ reader can see a connection at a glance instead of decoding per-token colour chi
 
 The highlight is not just "colour the hovered token". It has to:
 
-- light the *whole* mapping group across both panels from a single hovered token;
+- light the _whole_ mapping group across both panels from a single hovered token;
 - not flicker as the pointer glides across tokens of the same mapping;
 - feel responsive on a deliberate re-hover but not trigger on an accidental graze;
 - offer a touch equivalent (no hover) without inheriting the mouse delays.
@@ -32,7 +32,7 @@ like. (Earlier this surface was re-published as nine pass-through forwarders on
 
 > Because `ViewHighlight` takes a resolver closure rather than owning the index maps,
 > the coupling to `Alignment` is a single call-time function, not a structural
-> reference. The closure reads the `$derived` maps at *call time*, which is correct;
+> reference. The closure reads the `$derived` maps at _call time_, which is correct;
 > it shares `Alignment`'s lifetime so it can never outlive them.
 
 ## The cold / warm / grace timing
@@ -42,9 +42,9 @@ tokens. The fix has two halves: **clearing is container-level, not per-token**, 
 **light-up is delayed**.
 
 - There is **no per-token `mouseleave`**. Clearing happens only when the pointer
-  enters an *unmapped* token or leaves the whole panel. (A pointer parked in the flex
+  enters an _unmapped_ token or leaves the whole panel. (A pointer parked in the flex
   gap between tokens keeps the highlight lit — a known, intentional quirk of this
-  design.) Moving between two spans of the *same* mapping is an early-return no-op.
+  design.) Moving between two spans of the _same_ mapping is an early-return no-op.
 - **Cold delay = 500 ms** — the wait before lighting up when entering a mapping from
   nothing lit.
 - **Warm delay = 300 ms** — used when re-entering a mapping within the 500 ms

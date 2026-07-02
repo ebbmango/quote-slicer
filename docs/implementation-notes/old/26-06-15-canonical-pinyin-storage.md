@@ -5,7 +5,7 @@
 
 ## Overview
 
-`SourceToken.pinyin` now stores canonical *numbered* pinyin (`"zhi1"`) instead
+`SourceToken.pinyin` now stores canonical _numbered_ pinyin (`"zhi1"`) instead
 of diacritic pinyin (`"zhī"`). Diacritic form is derived for display only. This
 makes the stored/exported representation system-agnostic and sets up future
 transliteration support (Wade-Giles, Zhuyin) without parsing diacritics back

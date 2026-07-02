@@ -47,6 +47,7 @@ export function createTokenStore() {
 	// cache because pinyin is annotated before any split exists to populate the
 	// cache — a cache miss must still surface it. Applied on read; reassigned (not
 	// mutated in place) so dependent $derived recompute.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- reassigned wholesale, never mutated in place
 	let pinyin: Map<number, string | undefined> = $state(new Map());
 
 	onMount(async () => {
@@ -68,9 +69,7 @@ export function createTokenStore() {
 	// retokenize. Pinyin is reapplied from the id-keyed overlay either way.
 	function sourceTokens(text: string): SourceToken[] {
 		const base =
-			sourceCache !== null && sourceCache.text === text
-				? sourceCache.tokens
-				: tokenizeSource(text);
+			sourceCache !== null && sourceCache.text === text ? sourceCache.tokens : tokenizeSource(text);
 		return applyPinyin(base);
 	}
 	function targetTokens(text: string): TargetToken[] {
@@ -81,6 +80,7 @@ export function createTokenStore() {
 
 	// Annotate (or clear, with undefined) a source token's pinyin by stable id.
 	function setPinyin(tokenId: number, value: string | undefined): void {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- next immutable snapshot; the reassignment below drives reactivity
 		const next = new Map(pinyin);
 		if (value === undefined) next.delete(tokenId);
 		else next.set(tokenId, value);
@@ -157,8 +157,20 @@ export function createTokenStore() {
 		if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 	}
 
-	function split(zone: Zone, text: string, tokens: SourceToken[], afterIndex: number, scope: EditScope): void;
-	function split(zone: Zone, text: string, tokens: TargetToken[], afterIndex: number, scope: EditScope): void;
+	function split(
+		zone: Zone,
+		text: string,
+		tokens: SourceToken[],
+		afterIndex: number,
+		scope: EditScope
+	): void;
+	function split(
+		zone: Zone,
+		text: string,
+		tokens: TargetToken[],
+		afterIndex: number,
+		scope: EditScope
+	): void;
 	function split(
 		zone: Zone,
 		text: string,
@@ -170,8 +182,20 @@ export function createTokenStore() {
 		animate(zone, scope, () => writeCache(zone, text, next));
 	}
 
-	function merge(zone: Zone, text: string, tokens: SourceToken[], lineN: number, scope: EditScope): void;
-	function merge(zone: Zone, text: string, tokens: TargetToken[], lineN: number, scope: EditScope): void;
+	function merge(
+		zone: Zone,
+		text: string,
+		tokens: SourceToken[],
+		lineN: number,
+		scope: EditScope
+	): void;
+	function merge(
+		zone: Zone,
+		text: string,
+		tokens: TargetToken[],
+		lineN: number,
+		scope: EditScope
+	): void;
 	function merge(
 		zone: Zone,
 		text: string,

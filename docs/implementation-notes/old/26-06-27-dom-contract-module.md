@@ -10,6 +10,7 @@ Five separate readers of the token grid — the keyboard navigator, the hover-sp
 ## Architecture
 
 `src/lib/navigation/gridDom.ts` is now the single source of truth for:
+
 - **Selector constants** (`TOKEN_ITEM_SELECTOR`, `PANEL_SELECTOR`, `SCROLLBOX_SELECTOR`, `FLIP_TOKEN_SELECTOR`, etc.)
 - **Builder functions** (`zoneSelector(zone)`, `tokenSelector(index)`, `divisorSelector(index)`) that construct attribute-value selectors
 - **Dataset accessors** (`tokenIndexOf(el)`, `divisorIndexOf(el)`) paired with their corresponding builders so a rename touches one place, not two

@@ -4,7 +4,7 @@
 
 The app is a fully static SvelteKit site — `export const prerender = true` in
 `+layout.ts`, built with `@sveltejs/adapter-static`. There is no SSR and no server
-runtime: the build emits plain HTML/JS/CSS. This is *why* anything touching browser
+runtime: the build emits plain HTML/JS/CSS. This is _why_ anything touching browser
 APIs (notably GSAP) is lazy-loaded inside `onMount` rather than imported at module top
 level — import-time browser calls would break prerendering.
 
@@ -21,7 +21,7 @@ The site is served from a subpath (`/quote-slicer/`), not a domain root.
 
 ```js
 const dev = process.argv.includes('dev');
-const basePath = dev ? '' : '/quote-slicer';  // → kit.paths.base
+const basePath = dev ? '' : '/quote-slicer'; // → kit.paths.base
 ```
 
 So dev-server URLs stay root-relative, while production build links resolve under the
@@ -30,7 +30,7 @@ Pages subpath — with no per-environment env var to set.
 ## The proprietary icons file
 
 `src/lib/assets/icons.json` holds a **proprietary icon set** and is **gitignored**. A
-clean checkout therefore *cannot build* — the import fails on the missing file. Locally
+clean checkout therefore _cannot build_ — the import fails on the missing file. Locally
 you need your own copy of `icons.json` in place.
 
 In CI the file is restored from a repo secret before install/build:
@@ -44,7 +44,7 @@ In CI the file is restored from a repo secret before install/build:
 
 ### The required-keys guard
 
-A *missing* secret fails the build outright (the `icons.json` import can't resolve). But
+A _missing_ secret fails the build outright (the `icons.json` import can't resolve). But
 a **stale or incomplete** secret — the file present, yet missing the keys a newer
 component references — used to slip through: the build succeeded, the deploy succeeded,
 and only on prod did the affected icons render as nothing (the lookup returned
@@ -56,7 +56,7 @@ So `deploy.yml` runs a guard step **after** restoring `icons.json` but **before*
 `node -e` and checks every required icon key, exiting non-zero with a message listing any
 that are absent.
 
-> The guard is the *enforcement*, not the source of truth. When you add a new icon to a
+> The guard is the _enforcement_, not the source of truth. When you add a new icon to a
 > component you must update the `ICONS_JSON_B64` secret **and** add the key to the
 > guard's required-keys list — otherwise the guard can't catch a stale secret.
 

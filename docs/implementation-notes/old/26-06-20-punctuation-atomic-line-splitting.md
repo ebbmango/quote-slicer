@@ -14,7 +14,7 @@ prevented visual wrapping now prevents editorial splitting as well.
 
 `groupSourceTokens` (added in commit `1523814`) placed punctuation and its base
 token inside a single non-breaking `.tok-group` flex container, so the two could
-never *wrap* onto different visual rows. But split-zone divisors still lived
+never _wrap_ onto different visual rows. But split-zone divisors still lived
 **inside** the group between each token pair, which meant a user could explicitly
 split the line there — orphaning `，` or `。` at the start of a new line. That
 is typographically wrong for CJK: punctuation should always trail its character,

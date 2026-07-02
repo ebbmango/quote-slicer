@@ -7,8 +7,8 @@
 
 The target tokenizer had two parallel implementations — `tokenizeTargetSeparate` (every
 punctuation run its own token) and `tokenizeTargetCombined` (flanking punctuation absorbed into
-words). This commit drops both in favor of a single `tokenizeTarget`, which absorbs *flanking*
-punctuation into word tokens but splits out punctuation that sits *between* two word characters
+words). This commit drops both in favor of a single `tokenizeTarget`, which absorbs _flanking_
+punctuation into word tokens but splits out punctuation that sits _between_ two word characters
 (hyphens, decimal points, thousands separators) so each piece remains individually mappable.
 
 ## Motivation
@@ -32,7 +32,7 @@ The old `SEPARATE_RE` and `COMBINED_RE` regexes (`tokenize.ts`) are replaced by 
 
 The second alternative is the core change: a word (letters/digits) with optional leading and
 trailing punctuation, guarded by `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` lookaround. Those
-lookarounds are what stop punctuation flanked by word-chars on *both sides* from being absorbed —
+lookarounds are what stop punctuation flanked by word-chars on _both sides_ from being absorbed —
 that punctuation falls through to the standalone-punctuation alternative instead, splitting
 `well-known` into `[well][-][known]` and `3.14` into `[3][.][14]`.
 
@@ -45,12 +45,12 @@ than `'punctuation'`.
 
 ## Examples
 
-| Input | Output |
-|---|---|
-| `There's nothing "simple" in programming.` | `[There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]` |
-| `well-known` | `[well][-][known]` |
-| `$5,000.00` | `[$5][,][000][.][00]` |
-| `你好!` | `[你][好][!]` (hanzi tokens untouched; punctuation stays standalone) |
+| Input                                      | Output                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| `There's nothing "simple" in programming.` | `[There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]`         |
+| `well-known`                               | `[well][-][known]`                                                   |
+| `$5,000.00`                                | `[$5][,][000][.][00]`                                                |
+| `你好!`                                    | `[你][好][!]` (hanzi tokens untouched; punctuation stays standalone) |
 
 ## Design Decisions
 

@@ -35,7 +35,7 @@ faster can opt in with a scoped rule:
 
 ```css
 :global(html.theme-anim) .my-element {
-  transition: color 500ms ease;
+	transition: color 500ms ease;
 }
 ```
 

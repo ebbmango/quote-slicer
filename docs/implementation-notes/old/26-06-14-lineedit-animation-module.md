@@ -13,7 +13,7 @@ both the text-keyed token cache and one unified GSAP Flip per edit.
 ## Motivation
 
 Before this change, a split or merge in one panel triggered two independent animations: a Flip
-on the edited panel's own tokens, and a separate `withShiftAnimation` Y-shift on the *other*
+on the edited panel's own tokens, and a separate `withShiftAnimation` Y-shift on the _other_
 panel plus the authorship field to absorb the height change. Each had its own height-lock,
 and the two could race — `withShiftAnimation`'s `lockEl.style.height` lock and the Flip's
 `absolute: true` could fight over the same element's box during a single edit.
@@ -43,17 +43,17 @@ wrapper).
 
 `animate(zone, scope, mutate)` does the actual work:
 
-1. Captures `Flip.getState()` over `flipTargets(zone, scope)` — the *edited* panel's individual
-   tokens (`[data-flip-id]` elements inside its scroll box, which reflow) plus the *other*
+1. Captures `Flip.getState()` over `flipTargets(zone, scope)` — the _edited_ panel's individual
+   tokens (`[data-flip-id]` elements inside its scroll box, which reflow) plus the _other_
    panel's wrapper and authorship as whole units (which only reposition).
 2. Locks the edited scroll box to its current pixel height and sets `animating = true` (so the
    panel's own instant-fit `$effect` doesn't snap the height mid-flight).
 3. Runs `mutate()` (the split/merge + cache write) and awaits `tick()`.
 4. Measures the settled height (`scrollHeight` after temporarily setting `height: auto`), then
    GSAP-tweens the scroll box from the locked height to the new one, releasing back to `height:
-   ''` (auto) on complete.
+''` (auto) on complete.
 5. Runs `Flip.from(state, { absolute: false, ... })` over the captured elements — `absolute:
-   false` so the boxes keep their layout space while transforms resolve, with the height tween
+false` so the boxes keep their layout space while transforms resolve, with the height tween
    supplying the room.
 
 A single Flip call now covers both "this panel's tokens reflow" and "the other panel +

@@ -23,7 +23,7 @@ revisiting.
 ## Implementation Details
 
 **`listEl` ref ownership (`fd59b99`).** `bind:this={listEl}` let whichever
-`mappingsList()` copy unmounted *last* clear `listEl`, even if the other copy was still
+`mappingsList()` copy unmounted _last_ clear `listEl`, even if the other copy was still
 showing it — during a force-close, the modal and aside copies briefly coexist, so the
 surviving aside's ref could get nulled and break `scrollCardIntoView` /
 `handleListTab` until the next mutation. Replaced with a `use:listRef` action

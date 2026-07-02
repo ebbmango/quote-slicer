@@ -1,7 +1,14 @@
 import { tick } from 'svelte';
 import { pickVisualNeighbor } from './visualNeighbor';
 import { interactionMode } from '$lib/context/interactionMode.svelte';
-import { getZone, zoneSelector, tokenSelector, divisorSelector, divisorIndexOf, type Zone } from './gridDom';
+import {
+	getZone,
+	zoneSelector,
+	tokenSelector,
+	divisorSelector,
+	divisorIndexOf,
+	type Zone
+} from './gridDom';
 
 export type TokenGridNavConfig = {
 	/** CSS selector for the currently navigable elements (varies by mode). */
@@ -27,10 +34,17 @@ export type TokenGridNavConfig = {
 // Escape               Blur the focused element; mode-specific extra action.
 // ──────────────────────────────────────────────────────────────────────────────
 
-export function createTokenGridNav(getContainer: () => HTMLElement | null, config: TokenGridNavConfig) {
+export function createTokenGridNav(
+	getContainer: () => HTMLElement | null,
+	config: TokenGridNavConfig
+) {
 	const lastFocused: Record<Zone, HTMLElement | null> = { source: null, target: null };
 
-	function findVisualNeighbor(currentEl: HTMLElement, all: HTMLElement[], dir: 'up' | 'down'): HTMLElement | null {
+	function findVisualNeighbor(
+		currentEl: HTMLElement,
+		all: HTMLElement[],
+		dir: 'up' | 'down'
+	): HTMLElement | null {
 		const rects = all.map((el) => el.getBoundingClientRect());
 		const idx = pickVisualNeighbor(currentEl.getBoundingClientRect(), rects, dir);
 		return idx === -1 ? null : all[idx];
@@ -41,7 +55,9 @@ export function createTokenGridNav(getContainer: () => HTMLElement | null, confi
 		if (!container) return null;
 		const idx = config.getDefaultIndex(zone);
 		if (idx !== -1) {
-			const el = container.querySelector<HTMLElement>(`${zoneSelector(zone)} ${tokenSelector(idx)}`);
+			const el = container.querySelector<HTMLElement>(
+				`${zoneSelector(zone)} ${tokenSelector(idx)}`
+			);
 			if (el) return el;
 		}
 		// Scope to the zone's container first, then run itemSelector() inside it.

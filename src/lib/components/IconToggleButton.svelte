@@ -23,7 +23,9 @@
 	class="size-6 outline-0 transition-opacity duration-150"
 	class:opacity-20={!active}
 	{onclick}
-	onpointerup={(e) => { if (e.pointerType === 'touch') (e.currentTarget as HTMLButtonElement).blur(); }}
+	onpointerup={(e) => {
+		if (e.pointerType === 'touch') (e.currentTarget as HTMLButtonElement).blur();
+	}}
 >
 	<svg viewBox={icon.viewBox} fill="currentColor">
 		<path d={icon.path} />

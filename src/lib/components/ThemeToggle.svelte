@@ -60,7 +60,7 @@
 	});
 </script>
 
-<div class="flex w-full justify-center relative">
+<div class="relative flex w-full justify-center">
 	<div
 		class="orbit"
 		style={`--theme-toggle-rotation: ${rotation}deg; --theme-toggle-counter-rotation: ${-rotation}deg;`}
@@ -129,10 +129,18 @@
 	   If they kept applying after hydration, html.dark toggling would write a competing
 	   rotate value synchronously (before Svelte flushes --theme-toggle-rotation),
 	   causing the transition to start from the wrong origin every other toggle. */
-	.orbit:not([data-hydrated]) { rotate: 0deg; }
-	:global(html.dark) .orbit:not([data-hydrated]) { rotate: 180deg; }
-	.orbit:not([data-hydrated]) .counter { rotate: 0deg; }
-	:global(html.dark) .orbit:not([data-hydrated]) .counter { rotate: -180deg; }
+	.orbit:not([data-hydrated]) {
+		rotate: 0deg;
+	}
+	:global(html.dark) .orbit:not([data-hydrated]) {
+		rotate: 180deg;
+	}
+	.orbit:not([data-hydrated]) .counter {
+		rotate: 0deg;
+	}
+	:global(html.dark) .orbit:not([data-hydrated]) .counter {
+		rotate: -180deg;
+	}
 
 	/* Post-hydration: JS owns rotate exclusively — no other rule touches it, so the
 	   html.dark class change never interferes with the in-flight transition. */
@@ -158,11 +166,19 @@
 		transition: opacity 800ms;
 	}
 
-	.is-sun { opacity: 1; }
-	.is-moon { opacity: 0; }
+	.is-sun {
+		opacity: 1;
+	}
+	.is-moon {
+		opacity: 0;
+	}
 
-	:global(html.dark) .is-sun { opacity: 0; }
-	:global(html.dark) .is-moon { opacity: 1; }
+	:global(html.dark) .is-sun {
+		opacity: 0;
+	}
+	:global(html.dark) .is-moon {
+		opacity: 1;
+	}
 
 	/* Counter-rotate the glyph by the inverse so it stays upright through the orbit.
 	   Opacity 0.2 at rest, brightens to 1 on hover/focus. */

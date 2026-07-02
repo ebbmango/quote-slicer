@@ -58,7 +58,7 @@ Deletion is driven by Svelte's `out:exit` transition (a custom function, not a b
 `onoutroend` fires the `onExitEnd` handler once the slide finishes. At that instant the card is invisible but still in flow:
 
 1. Snapshot surviving neighbours with `Flip.getState(survivors)` — they're at their open-gap positions.
-2. Set `node.style.display = 'none'` — this pulls the card out of layout flow, so the grid reflows the survivors closed *synchronously, in the same call stack*.
+2. Set `node.style.display = 'none'` — this pulls the card out of layout flow, so the grid reflows the survivors closed _synchronously, in the same call stack_.
 3. Run `Flip.from(state, ...)` — Flip animates the survivors from the snapshot (open) to where the grid just placed them (closed), with a stagger ripple outward from the deleted card's former index.
 
 This approach is frame-perfect: both the snapshot and the reflow happen before the browser paints, so there is no teleport and no reliance on timing.
@@ -79,14 +79,14 @@ The active-card scroll `$effect` is suppressed while any animation is in flight 
 
 ```js
 const scrollSuppressed = () =>
-    pendingAddId != null || addCard != null || outroing > 0 || closing > 0;
+	pendingAddId != null || addCard != null || outroing > 0 || closing > 0;
 ```
 
 `outroing` and `closing` are `$state` so the scroll `$effect` re-runs (and retries the scroll) the moment the last exit slide and gap-close finish — no separate "scroll when done" callback is needed in most cases.
 
 ### Empty-state overlay
 
-The `<ol>` is **always mounted**, even when the mapping list is empty. This is necessary because Svelte's `out:exit` is a *local* transition: it only plays when the `{#each}` item is removed, not when an ancestor block is torn down. Putting the `<ol>` inside an `{#if length > 0}{:else}` block meant the whole `<ol>` was destroyed when the last card was deleted, skipping the exit slide entirely.
+The `<ol>` is **always mounted**, even when the mapping list is empty. This is necessary because Svelte's `out:exit` is a _local_ transition: it only plays when the `{#each}` item is removed, not when an ancestor block is torn down. Putting the `<ol>` inside an `{#if length > 0}{:else}` block meant the whole `<ol>` was destroyed when the last card was deleted, skipping the exit slide entirely.
 
 The empty-state "No mappings." overlay is a separate `{#if length === 0 && outroing === 0}` block so it waits for the last card's slide to finish before appearing.
 
@@ -103,7 +103,7 @@ Rapidly clicking the same hanzi token in link mode — which creates a mapping o
 
 ### Root cause
 
-GSAP's ticker can advance **synchronously** when `Flip.from()` is called — it ticks forward to process any already-completed tweens before returning. Under rapid same-token clicks, the exit transitions overlapped: card A's `onExitEnd` ran while card B's exit was still in progress. Inside `onExitEnd`, calling `Flip.from(...)` for the gap-close caused GSAP's ticker to advance, which completed the *previous* gap-close tween's `onComplete` callback — **synchronously, while Svelte was mid-flush** (because `onExitEnd` itself was called from Svelte's outro machinery, which is part of a flush).
+GSAP's ticker can advance **synchronously** when `Flip.from()` is called — it ticks forward to process any already-completed tweens before returning. Under rapid same-token clicks, the exit transitions overlapped: card A's `onExitEnd` ran while card B's exit was still in progress. Inside `onExitEnd`, calling `Flip.from(...)` for the gap-close caused GSAP's ticker to advance, which completed the _previous_ gap-close tween's `onComplete` callback — **synchronously, while Svelte was mid-flush** (because `onExitEnd` itself was called from Svelte's outro machinery, which is part of a flush).
 
 The `onComplete` body wrote `closing = Math.max(0, closing - 1)` — a `$state` mutation. Writing `$state` re-entrantly during an already-in-progress Svelte flush silently corrupts the reactive scheduler. No error is thrown; the flush simply stops committing updates. All derived values freeze globally.
 
@@ -117,15 +117,15 @@ Wrap the gap-close `onComplete` body in `queueMicrotask`:
 
 ```js
 onComplete: () => {
-    queueMicrotask(() => {
-        closeTweens = closeTweens.filter((t) => t !== tween);
-        closing = Math.max(0, closing - 1);
-        if (closeTweens.length === 0) {
-            clearSurvivorTransforms(addCard ?? undefined);
-            scrollActiveIntoView();
-        }
-    });
-}
+	queueMicrotask(() => {
+		closeTweens = closeTweens.filter((t) => t !== tween);
+		closing = Math.max(0, closing - 1);
+		if (closeTweens.length === 0) {
+			clearSurvivorTransforms(addCard ?? undefined);
+			scrollActiveIntoView();
+		}
+	});
+};
 ```
 
 `queueMicrotask` defers the callback until after the current microtask (and therefore the current Svelte flush) has unwound. The `$state` write then lands in a clean scheduler context.
@@ -141,6 +141,6 @@ Today only `closing` was the culprit (the `addEnter`/`addFlip` `onComplete` call
 ## Areas to Be Careful
 
 - **`onExitEnd` is synchronous by design**: the snapshot, `display:none`, and `Flip.from` call must all happen in the same synchronous frame for the animation to be teleport-free. Do not introduce `await` or `setTimeout` in this handler.
-- **`closing` bookkeeping is deferred but the tween itself is not**: `closeTweens.push(tween)` and `closing++` happen synchronously *after* `Flip.from` returns (they are not in the `onComplete`). Only the decrement is deferred.
+- **`closing` bookkeeping is deferred but the tween itself is not**: `closeTweens.push(tween)` and `closing++` happen synchronously _after_ `Flip.from` returns (they are not in the `onComplete`). Only the decrement is deferred.
 - **The `queueMicrotask` deferral means `closing` briefly lags reality**: for the duration of one microtask after a gap-close completes, `closing` is still 1 (not 0). `scrollSuppressed()` will still return `true` for that window. This is harmless — the scroll will fire on the next scheduler tick when `closing` drops.
 - **Two `<MappingsList>` instances can coexist** (aside panel + modal on mobile). The `listRef` action prevents stale teardown from nulling the ref owned by the surviving copy.

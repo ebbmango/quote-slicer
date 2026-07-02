@@ -11,15 +11,21 @@ describe('parseThemeState', () => {
 		expect(parseThemeState(null)).toBeNull();
 		expect(parseThemeState('{"version":2,"mode":"dark"')).toBeNull();
 		expect(
-			parseThemeState(JSON.stringify({ version: 1, mode: 'dark', source: 'user', osAtPick: 'light' }))
+			parseThemeState(
+				JSON.stringify({ version: 1, mode: 'dark', source: 'user', osAtPick: 'light' })
+			)
 		).toBeNull();
 		expect(
-			parseThemeState(JSON.stringify({ version: 2, mode: 'blue', source: 'user', osAtPick: 'light' }))
+			parseThemeState(
+				JSON.stringify({ version: 2, mode: 'blue', source: 'user', osAtPick: 'light' })
+			)
 		).toBeNull();
 		expect(
 			parseThemeState(JSON.stringify({ version: 2, mode: 'dark', source: 'x', osAtPick: 'light' }))
 		).toBeNull();
-		expect(parseThemeState(JSON.stringify({ version: 2, mode: 'dark', source: 'user' }))).toBeNull();
+		expect(
+			parseThemeState(JSON.stringify({ version: 2, mode: 'dark', source: 'user' }))
+		).toBeNull();
 	});
 });
 

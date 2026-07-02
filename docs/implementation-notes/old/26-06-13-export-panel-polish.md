@@ -16,7 +16,7 @@ the container edges instead of hard-clipping it. The mappings list also gained a
 The JSON export (`HighlightedCode.svelte`) rendered into a `<pre>` that stayed at
 the panel's width while `white-space: pre` let the text overflow horizontally.
 The panel's right padding was applied to the box, not the content, so once a line
-ran past the box edge the padding sat *behind* the start of the line — long lines
+ran past the box edge the padding sat _behind_ the start of the line — long lines
 butted right up against the scroll boundary with no breathing room.
 
 Separately, the panels relied on native scrollbars as the only cue that content
@@ -30,7 +30,7 @@ the top/bottom of the scroll box, which read as clipped rather than scrollable.
 real content extent, so the right padding reappears past the longest line.
 
 **Edge fades.** A `.fade-edges` wrapper applies a CSS mask gradient on all four
-edges. The ramp (`--ramp-y`) is hand-tuned to approximate a *smoothstep* curve:
+edges. The ramp (`--ramp-y`) is hand-tuned to approximate a _smoothstep_ curve:
 the alpha stops are spaced so the opacity slope is ~0 at both the transparent
 outer edge and the fully-opaque inner junction, which kills the visible kink a
 plain linear gradient leaves at each end. The same ramp is reused for both axes

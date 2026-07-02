@@ -33,7 +33,7 @@ export function tokenPresentation(o: {
 
 	const weight = (px: string) => (fontWeight ? ` font-weight: ${px};` : '');
 
-	let style = '';
+	let style: string;
 	if (state.kind === 'active') {
 		style = `color: ${state.color};${weight('600')}${focused ? ' filter: brightness(0.75);' : ''}`;
 	} else if (state.kind === 'idle') {

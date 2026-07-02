@@ -14,7 +14,11 @@
 	// divisor through this one interface. See docs/line-mode.md.
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { interactionMode } from '$lib/context/interactionMode.svelte';
-	import { redistributeRow, clearRedistribute, type RedistributeOpts } from '$lib/actions/redistribute';
+	import {
+		redistributeRow,
+		clearRedistribute,
+		type RedistributeOpts
+	} from '$lib/actions/redistribute';
 
 	let {
 		kind,
@@ -343,7 +347,10 @@
 		background-repeat: repeat-x;
 		background-size: calc(var(--line-tool-dash) + var(--line-tool-gap)) 100%;
 		opacity: var(--line-tool-opacity-idle-merge);
-		transition: opacity 340ms, width 340ms ease, background-size 340ms ease;
+		transition:
+			opacity 340ms,
+			width 340ms ease,
+			background-size 340ms ease;
 	}
 
 	/* The line itself is the only interactive part of the band (see .merge-zone).

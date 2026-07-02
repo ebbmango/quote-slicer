@@ -26,7 +26,7 @@ Naively firing on `mouseenter` causes the whole text to flicker as the pointer g
 - **Cold** (500 ms): pointer enters a mapping from nothing lit.
 - **Warm** (300 ms): pointer re-enters a mapping within 500 ms of the previous highlight clearing (a "grace window" — the user is still moving around the text).
 
-`pointerMapping` (plain JS, not `$state`) tracks what's under the pointer right now. `hoveredMappingId` (`$state`) is what's actually lit. Moving between two spans of the *same* mapping hits `movePointer`'s early-return (`next === this.pointerMapping`) and is a no-op.
+`pointerMapping` (plain JS, not `$state`) tracks what's under the pointer right now. `hoveredMappingId` (`$state`) is what's actually lit. Moving between two spans of the _same_ mapping hits `movePointer`'s early-return (`next === this.pointerMapping`) and is a no-op.
 
 ### Touch
 

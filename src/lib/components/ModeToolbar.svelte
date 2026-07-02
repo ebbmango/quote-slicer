@@ -18,8 +18,14 @@
 
 	const modeCtx = getModeContext();
 
-	const mapsIcon = { viewBox: icons['objects-column'].viewBox, path: icons['objects-column'].classic.light };
-	const jsonIcon = { viewBox: icons['curly-brackets'].viewBox, path: icons['curly-brackets'].classic.light };
+	const mapsIcon = {
+		viewBox: icons['objects-column'].viewBox,
+		path: icons['objects-column'].classic.light
+	};
+	const jsonIcon = {
+		viewBox: icons['curly-brackets'].viewBox,
+		path: icons['curly-brackets'].classic.light
+	};
 </script>
 
 <div

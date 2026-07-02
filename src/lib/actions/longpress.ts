@@ -50,6 +50,6 @@ export function longpress(node: HTMLElement, options: LongpressOptions = {}) {
 			node.removeEventListener('pointermove', cancel);
 			node.removeEventListener('pointercancel', cancel);
 			node.removeEventListener('click', suppressClick, true);
-		},
+		}
 	};
 }

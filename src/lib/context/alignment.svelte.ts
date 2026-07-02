@@ -12,7 +12,7 @@ import {
 	type MappingId,
 	type QuoteExport,
 	type QuoteExportMeta,
-	type TokenState,
+	type TokenState
 } from '$lib/tokenState';
 import { theme as appTheme } from '$lib/theme';
 import { ViewHighlight } from './viewHighlight.svelte';
@@ -59,8 +59,12 @@ export class Alignment {
 		});
 	}
 
-	private sourceTokens: SourceToken[] = $derived.by(() => this.store.sourceTokens(this.meta.sourceText));
-	private targetTokens: TargetToken[] = $derived.by(() => this.store.targetTokens(this.meta.targetText));
+	private sourceTokens: SourceToken[] = $derived.by(() =>
+		this.store.sourceTokens(this.meta.sourceText)
+	);
+	private targetTokens: TargetToken[] = $derived.by(() =>
+		this.store.targetTokens(this.meta.targetText)
+	);
 
 	// Diacritic pinyin for display, parallel to `sourceTokens`. Memoized here so
 	// `toDisplay()` (regex + pinyin-pro convert) only re-runs when the tokens
@@ -74,18 +78,20 @@ export class Alignment {
 		meta: {
 			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
 			targetText: this.meta.targetText.replace(/\n+/g, ' ').trim(),
-			authorship: this.meta.authorship.replace(/\n+/g, ' ').trim(),
+			authorship: this.meta.authorship.replace(/\n+/g, ' ').trim()
 		},
 		sourceTokens: this.sourceTokens,
 		targetTokens: this.targetTokens,
-		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
+		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest)
 	});
 
 	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
 	private sourceIdToIndex: Map<number, number> = $derived(
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per recompute, never mutated
 		new Map(this.sourceTokens.map((t, i) => [t.id, i]))
 	);
 	private targetIdToIndex: Map<number, number> = $derived(
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per recompute, never mutated
 		new Map(this.targetTokens.map((t, i) => [t.id, i]))
 	);
 
@@ -93,7 +99,9 @@ export class Alignment {
 		[...this.mappings].sort((a, b) => {
 			const pos = (ids: number[], map: Map<number, number>) =>
 				ids.length ? Math.min(...ids.map((id) => map.get(id) ?? Infinity)) : Infinity;
-			return pos(a.sourceTokenIds, this.sourceIdToIndex) - pos(b.sourceTokenIds, this.sourceIdToIndex);
+			return (
+				pos(a.sourceTokenIds, this.sourceIdToIndex) - pos(b.sourceTokenIds, this.sourceIdToIndex)
+			);
 		})
 	);
 
@@ -118,7 +126,7 @@ export class Alignment {
 			id: crypto.randomUUID(),
 			colorIndex: this.nextColorIndex++,
 			sourceTokenIds: [],
-			targetTokenIds: [],
+			targetTokenIds: []
 		};
 	}
 
@@ -143,10 +151,10 @@ export class Alignment {
 					tokenId,
 					tokenIndex: idx,
 					text: this.sourceTokens[idx]?.text ?? '',
-					pinyin: this.sourceDisplayPinyin[idx] ?? '',
+					pinyin: this.sourceDisplayPinyin[idx] ?? ''
 				};
 			}),
-			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens),
+			targetText: buildTargetText(resolvedTargetIndices, this.targetTokens)
 		};
 	}
 
@@ -262,7 +270,12 @@ export class Alignment {
 	}
 
 	stateOfSource(i: number): TokenState {
-		return deriveSourceTokenState(i, this.sourceMappingIndex, this.activeMappingId, appTheme.current);
+		return deriveSourceTokenState(
+			i,
+			this.sourceMappingIndex,
+			this.activeMappingId,
+			appTheme.current
+		);
 	}
 
 	stateOfTarget(i: number): TokenState {
@@ -274,7 +287,6 @@ export class Alignment {
 			appTheme.current
 		);
 	}
-
 }
 
 export function setAlignmentContext(store: TokenAccess): Alignment {

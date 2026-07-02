@@ -1,5 +1,8 @@
 // Allowlist for source text input: Han characters, CJK punctuation blocks, and newlines.
-export const SOURCE_INPUT_RE = /[^\p{Script=Han}　-〿＀-￯\n]/gu;
+// \u3000-\u303F: CJK Symbols and Punctuation (ideographic space through 〿); \uFF00-\uFFEF: Halfwidth
+// and Fullwidth Forms (＀ to ￯). Escapes, not literals — the raw characters are
+// invisible/confusable in an editor (and trip no-irregular-whitespace).
+export const SOURCE_INPUT_RE = /[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF\n]/gu;
 
 export type SourceToken = {
 	id: number; // stable across split/merge; assigned once at tokenization as array position
@@ -23,16 +26,19 @@ export type TargetToken = {
  * Newlines delimit lines; they are not emitted as tokens.
  */
 export function tokenizeSource(text: string): SourceToken[] {
-	return text.split('\n').flatMap((lineText, line) =>
-		[...lineText].map((char) => {
-			if (/\p{Script=Han}/u.test(char))
-				return { text: char, line, type: 'character' as const, pinyin: undefined };
-			if (/\p{N}/u.test(char)) return { text: char, line, type: 'number' as const, pinyin: null };
-			if (/[\p{P}\p{S}]/u.test(char))
-				return { text: char, line, type: 'punctuation' as const, pinyin: null };
-			return { text: char, line, type: 'symbol' as const, pinyin: null };
-		})
-	).map((t, id) => ({ ...t, id }));
+	return text
+		.split('\n')
+		.flatMap((lineText, line) =>
+			[...lineText].map((char) => {
+				if (/\p{Script=Han}/u.test(char))
+					return { text: char, line, type: 'character' as const, pinyin: undefined };
+				if (/\p{N}/u.test(char)) return { text: char, line, type: 'number' as const, pinyin: null };
+				if (/[\p{P}\p{S}]/u.test(char))
+					return { text: char, line, type: 'punctuation' as const, pinyin: null };
+				return { text: char, line, type: 'symbol' as const, pinyin: null };
+			})
+		)
+		.map((t, id) => ({ ...t, id }));
 }
 
 // Leading punctuation — opening brackets (`\p{Ps}`: 「『《【（) and initial quotes
@@ -132,21 +138,23 @@ const TARGET_RE =
  */
 export function tokenizeTarget(text: string): TargetToken[] {
 	const lines = text.split('\n');
-	return lines.flatMap((lineText, line) => {
-		const tokens: Omit<TargetToken, 'id'>[] = [];
-		for (const { 0: t } of lineText.matchAll(TARGET_RE)) {
-			if (/^\s+$/.test(t)) {
-				tokens.push({ text: t, line, type: 'whitespace' });
-			} else if (/^\p{Script=Han}$/u.test(t)) {
-				tokens.push({ text: t, line, type: 'hanzi' });
-			} else if (/[\p{L}\p{N}]/u.test(t)) {
-				tokens.push({ text: t, line, type: 'text' });
-			} else {
-				tokens.push({ text: t, line, type: 'punctuation' });
+	return lines
+		.flatMap((lineText, line) => {
+			const tokens: Omit<TargetToken, 'id'>[] = [];
+			for (const { 0: t } of lineText.matchAll(TARGET_RE)) {
+				if (/^\s+$/.test(t)) {
+					tokens.push({ text: t, line, type: 'whitespace' });
+				} else if (/^\p{Script=Han}$/u.test(t)) {
+					tokens.push({ text: t, line, type: 'hanzi' });
+				} else if (/[\p{L}\p{N}]/u.test(t)) {
+					tokens.push({ text: t, line, type: 'text' });
+				} else {
+					tokens.push({ text: t, line, type: 'punctuation' });
+				}
 			}
-		}
-		// Boundary whitespace: acts as merge affordance in line mode.
-		if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
-		return tokens;
-	}).map((t, id) => ({ ...t, id }));
+			// Boundary whitespace: acts as merge affordance in line mode.
+			if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
+			return tokens;
+		})
+		.map((t, id) => ({ ...t, id }));
 }

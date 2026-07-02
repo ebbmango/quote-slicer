@@ -124,7 +124,11 @@
      and their color/height transitions can animate instead of snapping. The
      line-mode split/merge buttons are always present (net-zero width / collapsed
      height) and only become interactive in line mode. -->
-<div bind:this={container} data-scrollbox class="fade-y relative min-h-0 w-full overflow-y-auto px-2 py-3 no-scrollbar">
+<div
+	bind:this={container}
+	data-scrollbox
+	class="fade-y relative no-scrollbar min-h-0 w-full overflow-y-auto px-2 py-3"
+>
 	<!-- click-outside-to-deselect kept; Escape covers the keyboard path, see docs/implementation-notes/click-outside-deselect.md -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
@@ -134,7 +138,7 @@
 		aria-multiselectable={isLineMode ? undefined : true}
 		aria-label={isLineMode ? undefined : 'Source tokens'}
 		// change text to 1.75rem
-		class="flex w-full flex-wrap content-start leading-10 gap-px justify-center bg-transparent font-wenkai text-[1.75rem] font-light"
+		class="flex w-full flex-wrap content-start justify-center gap-px bg-transparent font-wenkai text-[1.75rem] leading-10 font-light"
 		class:select-none={isLinkMode}
 		class:flipping={animating}
 		onclick={handleContainerClick}
@@ -154,7 +158,10 @@
 				role={interactive ? 'option' : undefined}
 				aria-selected={interactive ? alignment.stateOfSource(i).kind === 'active' : undefined}
 				tabindex={interactive ? -1 : undefined}
-				class={'tok ' + p.opacityClass + (p.style.includes('color:') ? ' tok-tinted' : '') + (interactive ? ' cursor-pointer outline-none' : '')}
+				class={'tok ' +
+					p.opacityClass +
+					(p.style.includes('color:') ? ' tok-tinted' : '') +
+					(interactive ? ' cursor-pointer outline-none' : '')}
 				style={p.style}
 				onclick={(e) => handleClick(e, i)}
 				onmouseenter={() => {
@@ -195,7 +202,7 @@
 					color={divisorColor(di, DIVISOR_FIELD, colorMode)}
 					container={lineContainer}
 					spread={SPREAD}
-					touchedDivisorIndex={touchedDivisorIndex}
+					{touchedDivisorIndex}
 					onActivate={() => (isMerge ? onMerge(tokens[di].line) : onSplit(di))}
 					onTouch={onTouchDivisor}
 					onClearTouch={onClearTouchDivisor}

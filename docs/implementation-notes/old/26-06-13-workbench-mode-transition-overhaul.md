@@ -5,7 +5,7 @@
 
 ## Overview
 
-Mode switches in the workbench used to *snap* — token colors appeared instantly,
+Mode switches in the workbench used to _snap_ — token colors appeared instantly,
 line breaks opened with no motion — because each mode rendered its own `{#if}`
 branch and Svelte destroyed and recreated every token span and line separator on
 every switch. This work collapses link/line/view into **one persistent DOM tree
@@ -15,7 +15,7 @@ that gates the text → link transition.
 
 ## Motivation
 
-A new DOM element can't transition *from* a previous element's state — there is no
+A new DOM element can't transition _from_ a previous element's state — there is no
 previous state, so the browser paints the final value immediately. As long as
 `InteractiveSourceText` and `InteractiveTargetText` swapped their entire subtree
 between a line-mode branch and a link/view branch, no amount of CSS transition
@@ -38,7 +38,7 @@ Two transition mechanisms carry the animation:
 
 - **`.tok`** — a class on every token span with
   `transition: color/opacity/font-weight 280ms`. Token styling functions
-  (`tokenStyle`, `tokenOpacity`) now return *only* the target values; the
+  (`tokenStyle`, `tokenOpacity`) now return _only_ the target values; the
   transition timing lives in the CSS rule, not inline. Leaving link mode unsets
   color/weight, so the span crossfades back to the default text color on its own.
 - **`.merge-zone`** — the full-width line break. It is a real element at
@@ -51,7 +51,7 @@ Two transition mechanisms carry the animation:
 The scroll container's height is the load-bearing subtlety. Two parties want to
 own it:
 
-1. **`flipTransition`** owns an explicit pixel height *during* a split/merge tween
+1. **`flipTransition`** owns an explicit pixel height _during_ a split/merge tween
    (`flip.animating === true`) so the Flip animation isn't fought.
 2. **Everything else** wants the box at `height: auto` so it follows content in
    flow — crucially including the `.merge-zone` height transitions that animate a

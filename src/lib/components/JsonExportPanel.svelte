@@ -39,7 +39,7 @@
 	});
 </script>
 
-<div class="shiki-export h-full w-full overflow-auto p-6 text-xs no-scrollbar">
+<div class="shiki-export no-scrollbar h-full w-full overflow-auto p-6 text-xs">
 	<HighlightedCode code={exportJson} {colorMap} />
 </div>
 

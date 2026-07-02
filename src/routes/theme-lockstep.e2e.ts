@@ -9,40 +9,40 @@ import { test, expect } from '@playwright/test';
 //    controller's flushSync (systemTheme.ts), Chromium applies them one frame after
 //    the .dark class flip, so the card transition starts a frame behind the page's.
 test('theme flip: page and mapping cards transition in lockstep', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'next' }).click();
-  await page.waitForTimeout(1500);
+	await page.goto('/');
+	await page.getByRole('button', { name: 'next' }).click();
+	await page.waitForTimeout(1500);
 
-  // create one mapping so a card exists
-  await page.locator('[data-zone="source"] [role="option"]').first().click();
-  await page.locator('[data-zone="target"] [role="option"]').first().click();
-  await page.waitForTimeout(400);
+	// create one mapping so a card exists
+	await page.locator('[data-zone="source"] [role="option"]').first().click();
+	await page.locator('[data-zone="target"] [role="option"]').first().click();
+	await page.waitForTimeout(400);
 
-  const eases = await page.evaluate(() => {
-    const li = document.querySelector('li[data-mapping-id]')!;
-    const surfaces = [
-      document.body,
-      li.querySelector(':scope > div')!,
-      li.querySelector(':scope > div:last-child')!
-    ];
-    return surfaces.map((el) => getComputedStyle(el).transitionTimingFunction.split(',')[0].trim());
-  });
-  expect(new Set(eases).size, 'body and card surfaces share one timing function').toBe(1);
+	const eases = await page.evaluate(() => {
+		const li = document.querySelector('li[data-mapping-id]')!;
+		const surfaces = [
+			document.body,
+			li.querySelector(':scope > div')!,
+			li.querySelector(':scope > div:last-child')!
+		];
+		return surfaces.map((el) => getComputedStyle(el).transitionTimingFunction.split(',')[0].trim());
+	});
+	expect(new Set(eases).size, 'body and card surfaces share one timing function').toBe(1);
 
-  const sync = await page.evaluate(() => {
-    const cardTop = document.querySelector('li[data-mapping-id] > div') as HTMLElement;
-    const before = cardTop.getAttribute('style');
-    const toggle = document.querySelector(
-      'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
-    ) as HTMLElement;
-    toggle.click();
-    // read back in the same task — no awaits, no frames in between
-    const after = cardTop.getAttribute('style');
-    return { before, after };
-  });
-  expect(sync.after, 'card inline colors update in the same task as the class flip').not.toBe(
-    sync.before
-  );
+	const sync = await page.evaluate(() => {
+		const cardTop = document.querySelector('li[data-mapping-id] > div') as HTMLElement;
+		const before = cardTop.getAttribute('style');
+		const toggle = document.querySelector(
+			'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+		) as HTMLElement;
+		toggle.click();
+		// read back in the same task — no awaits, no frames in between
+		const after = cardTop.getAttribute('style');
+		return { before, after };
+	});
+	expect(sync.after, 'card inline colors update in the same task as the class flip').not.toBe(
+		sync.before
+	);
 });
 
 // Three structural invariants behind the "every surface in lockstep" rule. Each one
@@ -59,51 +59,49 @@ test('theme flip: page and mapping cards transition in lockstep', async ({ page 
 //    `color` transition that starts within ~500ms after a ROOT color-scheme change,
 //    so any root write (even deferred) leaves a poison window for the next flip.
 test('theme flip: lockstep structural invariants', async ({ page }) => {
-  await page.goto('/');
+	await page.goto('/');
 
-  const fieldTransitions = await page.evaluate(() =>
-    ['#source-text', '#target-text', '#authorship'].map(
-      (sel) => getComputedStyle(document.querySelector(sel)!).transitionProperty
-    )
-  );
-  for (const tp of fieldTransitions) {
-    expect(tp, 'resting text fields must not transition color').not.toContain('color');
-  }
+	const fieldTransitions = await page.evaluate(() =>
+		['#source-text', '#target-text', '#authorship'].map(
+			(sel) => getComputedStyle(document.querySelector(sel)!).transitionProperty
+		)
+	);
+	for (const tp of fieldTransitions) {
+		expect(tp, 'resting text fields must not transition color').not.toContain('color');
+	}
 
-  await page.getByRole('button', { name: 'next' }).click();
-  await page.waitForTimeout(1500);
-  await page.locator('[data-zone="source"] [role="option"]').first().click();
-  await page.locator('[data-zone="target"] [role="option"]').first().click();
-  await page.waitForTimeout(400);
+	await page.getByRole('button', { name: 'next' }).click();
+	await page.waitForTimeout(1500);
+	await page.locator('[data-zone="source"] [role="option"]').first().click();
+	await page.locator('[data-zone="target"] [role="option"]').first().click();
+	await page.waitForTimeout(400);
 
-  const botTransition = await page.evaluate(
-    () =>
-      getComputedStyle(document.querySelector('li[data-mapping-id] > div:last-child span')!)
-        .transitionProperty
-  );
-  expect(botTransition, 'card bottom text transitions its isDark-dependent opacity').toContain(
-    'opacity'
-  );
+	const botTransition = await page.evaluate(
+		() =>
+			getComputedStyle(document.querySelector('li[data-mapping-id] > div:last-child span')!)
+				.transitionProperty
+	);
+	expect(botTransition, 'card bottom text transitions its isDark-dependent opacity').toContain(
+		'opacity'
+	);
 
-  const schemes = await page.evaluate(() => {
-    const htmlBefore = document.documentElement.style.colorScheme;
-    (
-      document.querySelector(
-        'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
-      ) as HTMLElement
-    ).click();
-    return {
-      htmlBefore,
-      htmlAfter: document.documentElement.style.colorScheme,
-      body: document.body.style.colorScheme
-    };
-  });
-  expect(schemes.body, 'live color-scheme lands on <body> in the same task').toMatch(
-    /^(light|dark)$/
-  );
-  expect(schemes.htmlAfter, 'the flip never writes the root color-scheme').toBe(
-    schemes.htmlBefore
-  );
+	const schemes = await page.evaluate(() => {
+		const htmlBefore = document.documentElement.style.colorScheme;
+		(
+			document.querySelector(
+				'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+			) as HTMLElement
+		).click();
+		return {
+			htmlBefore,
+			htmlAfter: document.documentElement.style.colorScheme,
+			body: document.body.style.colorScheme
+		};
+	});
+	expect(schemes.body, 'live color-scheme lands on <body> in the same task').toMatch(
+		/^(light|dark)$/
+	);
+	expect(schemes.htmlAfter, 'the flip never writes the root color-scheme').toBe(schemes.htmlBefore);
 });
 
 // Dark-OS placeholder ink. When the OS prefers dark (the prepaint stamps
@@ -116,18 +114,18 @@ test('theme flip: lockstep structural invariants', async ({ page }) => {
 // a colour-function declaration computes to an oklab()/color() string (not rgb), and
 // a stale value is the opposite theme's ink.
 test('theme flip: placeholder ink tracks the theme under a dark OS scheme', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/');
-  const placeholderInk = () =>
-    page.evaluate(
-      () => getComputedStyle(document.querySelector('#target-text')!, '::placeholder').color
-    );
+	await page.emulateMedia({ colorScheme: 'dark' });
+	await page.goto('/');
+	const placeholderInk = () =>
+		page.evaluate(
+			() => getComputedStyle(document.querySelector('#target-text')!, '::placeholder').color
+		);
 
-  await page.click('button[aria-label="Switch to light mode"]');
-  await page.waitForTimeout(700);
-  expect(await placeholderInk(), 'light theme uses the light ink').toBe('rgb(27, 27, 27)');
+	await page.click('button[aria-label="Switch to light mode"]');
+	await page.waitForTimeout(700);
+	expect(await placeholderInk(), 'light theme uses the light ink').toBe('rgb(27, 27, 27)');
 
-  await page.click('button[aria-label="Switch to dark mode"]');
-  await page.waitForTimeout(700);
-  expect(await placeholderInk(), 'dark theme uses the dark ink').toBe('rgb(244, 244, 244)');
+	await page.click('button[aria-label="Switch to dark mode"]');
+	await page.waitForTimeout(700);
+	expect(await placeholderInk(), 'dark theme uses the dark ink').toBe('rgb(244, 244, 244)');
 });

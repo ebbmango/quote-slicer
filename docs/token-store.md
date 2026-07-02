@@ -8,7 +8,7 @@
 Two facts about the app are in tension:
 
 1. **Line edits must survive.** When the user splits or merges a line, only the tokens'
-   `.line` fields change. But the tokenizer reads the *raw text string* — so naively
+   `.line` fields change. But the tokenizer reads the _raw text string_ — so naively
    re-tokenizing on every render would throw the user's line breaks away.
 2. **Pinyin must survive.** Pinyin is annotated onto source tokens as they join
    mappings, and it must persist across line edits too.
@@ -16,31 +16,31 @@ Two facts about the app are in tension:
 Earlier versions split these concerns across `QuoteWorkbench` (which held the cache)
 and `Alignment` (which held a synced copy of the tokens, with pinyin on it). Keeping
 two token owners in sync via `$effect` was fragile: split/merge had to be handed the
-*specific* pinyin-bearing array, and passing the "wrong" (freshly-tokenized) array
+_specific_ pinyin-bearing array, and passing the "wrong" (freshly-tokenized) array
 silently dropped pinyin.
 
 The token store collapses all of this into **one owner**. It is the single source of
 truth for the source/target token arrays: it tokenizes, holds the line-edit cache,
 holds the pinyin overlay, and runs the split/merge animation. Both `QuoteWorkbench`
-and `Alignment` *derive* their token views from it — neither keeps a copy.
+and `Alignment` _derive_ their token views from it — neither keeps a copy.
 
-> Naming: always call this the **token store**. Avoid the old name *lineEdit*, and
+> Naming: always call this the **token store**. Avoid the old name _lineEdit_, and
 > avoid "token cache" (the cache is only one part of it). See
 > [`CONTEXT.md`](../CONTEXT.md).
 
 ## The text-keyed cache
 
-The cache answers "have the tokens for *this exact text* been line-edited?"
+The cache answers "have the tokens for _this exact text_ been line-edited?"
 
 ```ts
 let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
 
 function sourceTokens(text: string): SourceToken[] {
-  const base =
-    sourceCache !== null && sourceCache.text === text
-      ? sourceCache.tokens     // cache hit: text unchanged → reuse split/merged tokens
-      : tokenizeSource(text);  // cache miss: text changed → re-tokenize fresh
-  return applyPinyin(base);    // overlay pinyin either way
+	const base =
+		sourceCache !== null && sourceCache.text === text
+			? sourceCache.tokens // cache hit: text unchanged → reuse split/merged tokens
+			: tokenizeSource(text); // cache miss: text changed → re-tokenize fresh
+	return applyPinyin(base); // overlay pinyin either way
 }
 ```
 
@@ -60,18 +60,18 @@ Pinyin is kept **separate** from the cache, in an id-keyed map:
 let pinyin: Map<number, string | undefined> = $state(new Map());
 ```
 
-Why separate? Because pinyin is annotated *before* any split exists to populate the
+Why separate? Because pinyin is annotated _before_ any split exists to populate the
 cache. If pinyin lived only on the cached tokens, a cache miss (the common case before
 the first line edit) would lose it. Keeping it in its own id-keyed overlay means it is
 re-applied on **every** read, cache hit or miss:
 
 ```ts
 function applyPinyin(tokens: SourceToken[]): SourceToken[] {
-  return tokens.map((t) => {
-    if (pinyin.has(t.id)) return { ...t, pinyin: pinyin.get(t.id) };
-    if (t.pinyin != null) return { ...t, pinyin: undefined };
-    return t;
-  });
+	return tokens.map((t) => {
+		if (pinyin.has(t.id)) return { ...t, pinyin: pinyin.get(t.id) };
+		if (t.pinyin != null) return { ...t, pinyin: undefined };
+		return t;
+	});
 }
 ```
 
@@ -92,12 +92,12 @@ is derived for display only. See
 
 The store exposes:
 
-| Member | Used by | Purpose |
-|--------|---------|---------|
+| Member                                      | Used by                       | Purpose                                               |
+| ------------------------------------------- | ----------------------------- | ----------------------------------------------------- |
 | `sourceTokens(text)` / `targetTokens(text)` | `QuoteWorkbench`, `Alignment` | read tokens for a given text (cache + pinyin applied) |
-| `setPinyin(id, value)` | `Alignment` | annotate/clear a source token's pinyin |
-| `split(...)` / `merge(...)` | `QuoteWorkbench` | line edit + animation |
-| `animating` (getter) | `QuoteWorkbench` → panels | true while a split/merge tween is in flight |
+| `setPinyin(id, value)`                      | `Alignment`                   | annotate/clear a source token's pinyin                |
+| `split(...)` / `merge(...)`                 | `QuoteWorkbench`              | line edit + animation                                 |
+| `animating` (getter)                        | `QuoteWorkbench` → panels     | true while a split/merge tween is in flight           |
 
 `Alignment` only needs read + pinyin-write access, so its constructor takes a narrowed
 type:
@@ -122,11 +122,11 @@ The **edit scope** is the bundle of DOM refs a single edit operates on, built by
 
 ```ts
 type EditScope = {
-  sourceWrapperEl: HTMLElement | null;  // the data-zone panel wrappers (height-tweened
-  targetWrapperEl: HTMLElement | null;  //   when the edited one can grow)
-  sourceScrollEl:  HTMLElement | null;  // each panel's [data-scrollbox] — the edited one's
-  targetScrollEl:  HTMLElement | null;  //   tokens (data-flip-id) are found inside it
-  authEl:          HTMLElement | null;  // the authorship textarea
+	sourceWrapperEl: HTMLElement | null; // the data-zone panel wrappers (height-tweened
+	targetWrapperEl: HTMLElement | null; //   when the edited one can grow)
+	sourceScrollEl: HTMLElement | null; // each panel's [data-scrollbox] — the edited one's
+	targetScrollEl: HTMLElement | null; //   tokens (data-flip-id) are found inside it
+	authEl: HTMLElement | null; // the authorship textarea
 };
 ```
 
@@ -139,13 +139,13 @@ height locking, measuring, or tweening:
 
 1. Capture the edited panel's tokens (`[data-flip-id]` inside its scroll box) and the
    other wrapper's height, then `Flip.getState(...)` over the flip targets: **both panel
-   wrappers + the authorship field + the edited tokens**. Capturing the *layout boxes*
+   wrappers + the authorship field + the edited tokens**. Capturing the _layout boxes_
    (not just the tokens) is what lets the panel boundary animate from its pre-edit
    position instead of snapping there on the first frame.
 2. Set `animating = true` (gates the panel's height `$effect`), run `mutate()`
    (split/merge + cache write), `await tick()`, then force one synchronous reflow
    (read `offsetHeight`) so flex fully resolves before Flip reads the after-state.
-   (Flex settles in a *single* reflow — confirmed with GSAP disabled — so no
+   (Flex settles in a _single_ reflow — confirmed with GSAP disabled — so no
    release-and-wait loop is needed.)
 3. `Flip.from(state, { duration: 0.35, ease: 'power2.inOut', absolute: false, nested: true })`.
    - **`absolute: false`** keeps the boxes in flow, so the edited wrapper's height change
@@ -156,7 +156,7 @@ height locking, measuring, or tweening:
 
 ### The slide is flow-driven, not a second Flip
 
-`Flip.getState` *includes* the other (non-edited) wrapper and the authorship field, but
+`Flip.getState` _includes_ the other (non-edited) wrapper and the authorship field, but
 they are not meant to carry an independent transform — they should ride the flow as the
 edited wrapper's height changes. Because `absolute: false` reverts the layout to "before"
 when `Flip.from` starts, any transform Flip computed for them (from the full before→after
@@ -171,7 +171,7 @@ if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 't
 Auth is always cleared (it has no height of its own — it only moves with the stack
 re-centring). The other wrapper is cleared **only if its height didn't change**: a changed
 height signals the constrained/overflow regime, where flex redistributes both panels and
-the Flip transform *is* load-bearing for the position animation. The other wrapper's
+the Flip transform _is_ load-bearing for the position animation. The other wrapper's
 height is measured before and after the mutation so the regime check uses settled values.
 
 This dual-regime behaviour — flow-driven slide when the stack can grow, Flip-driven

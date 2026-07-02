@@ -16,7 +16,7 @@ The split/merge hairlines used `border-style: dashed`, which renders uneven
 dash segments at the line ends. The target panel's boundary-whitespace token
 also rendered two overlapping buttons that both triggered merge — one visible
 text button (`.ws-boundary`) and one indicator zone (`.merge-zone`),
-duplicating the same action. Separately, splitting or merging the *source*
+duplicating the same action. Separately, splitting or merging the _source_
 text for the first time silently stripped pinyin from the affected tokens.
 
 ## Implementation Details

@@ -12,7 +12,7 @@ so they work on both `SourceToken` and `TargetToken` and are trivially testable.
 
 ### `splitAfterToken(tokens, afterIndex)`
 
-Inserts a line break *after* `tokens[afterIndex]`. Returns a new array (no mutation):
+Inserts a line break _after_ `tokens[afterIndex]`. Returns a new array (no mutation):
 
 - tokens on lines **above** `splitLine` → unchanged;
 - tokens at/before `afterIndex` on `splitLine` → unchanged;
@@ -39,7 +39,7 @@ module — **`LineDivisor`** — for the affordance itself: it owns the three di
 surfaces (`.split-zone` / `.ws-split` / `.merge-zone`), the touch first-tap/second-tap
 state machine, the mouse/keyboard hover-spread wiring (`redistributeRow`), the
 instant-clear that precedes a Flip, and all the divisor CSS. The panels only choose
-*which* divisor goes *where* (from their own token stream) and pass down the resolved
+_which_ divisor goes _where_ (from their own token stream) and pass down the resolved
 palette colour, the panel-specific `SPREAD` tuning, the row container, and the
 `onActivate` edit. So a change to divisor behaviour lands in one place, not two.
 
@@ -56,7 +56,7 @@ where a group is a base character plus its glued punctuation, from
 Each carries a hairline indicator (`.split-indicator` / `.merge-indicator`) that
 appears on hover/focus.
 
-**A group is unsplittable.** There are no divisors *inside* a `.tok-group`, so a line
+**A group is unsplittable.** There are no divisors _inside_ a `.tok-group`, so a line
 break can fall before or after a base+punctuation group but never between a character
 and its mark — which would orphan `，` or `。` at the start of a line, typographically
 wrong for CJK. (This replaced a fuller, dropped design where punctuation was instead
@@ -72,15 +72,19 @@ The target panel reuses its **whitespace tokens** as the interaction surface:
 - **boundary whitespace** (the synthetic token appended between lines during
   tokenization) → a full-width `.merge-zone` button; clicking it merges the two lines.
 
-> Earlier there were *two* overlapping merge affordances on the target boundary (a
+> Earlier there were _two_ overlapping merge affordances on the target boundary (a
 > `.ws-boundary` text button plus a `.merge-zone`). The redundant `.ws-boundary` was
 > removed; the boundary token now renders as a single `.merge-zone` button.
 
 These callbacks bubble up to `QuoteWorkbench`, which forwards them into the token store:
 
 ```ts
-function splitSource(afterIndex) { store.split('source', sourceText, sourceTokens, afterIndex, editScope()); }
-function mergeSource(lineN)      { store.merge('source', sourceText, sourceTokens, lineN, editScope()); }
+function splitSource(afterIndex) {
+	store.split('source', sourceText, sourceTokens, afterIndex, editScope());
+}
+function mergeSource(lineN) {
+	store.merge('source', sourceText, sourceTokens, lineN, editScope());
+}
 // …and splitTarget / mergeTarget for the target zone.
 ```
 
@@ -112,7 +116,7 @@ components — it runs the single Flip of the
 scope. The panel components contribute three things to make that work:
 
 1. **An index-keyed `{#each tokens (i)}` loop.** Keying by index (not token identity)
-   keeps every span element *alive* across a mutation, so Flip can match old positions
+   keeps every span element _alive_ across a mutation, so Flip can match old positions
    to new ones. Each span carries a `data-flip-id`.
 2. **A `data-scrollbox` marker** on the panel's overflow container, so the store can
    find the box whose height it must tween.
@@ -123,7 +127,7 @@ scope. The panel components contribute three things to make that work:
    in [Mode Transitions](mode-transitions.md).
 
 Because the workbench centres its three stacked panels, a height change in one panel
-shifts the others too — which is why the *other* panel's wrapper and the authorship
+shifts the others too — which is why the _other_ panel's wrapper and the authorship
 field are also flip targets, repositioned as whole units.
 
 ## Keyboard scheme (line mode)
@@ -133,13 +137,13 @@ Same `createTokenGridNav()` instance as link mode, reconfigured per mode (see
 split/merge controls — the selector is `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone,
 .ws-split`), all focusable.
 
-| Shortcut | Action |
-|----------|--------|
-| Alt+↑ / Alt+↓ | Focus the split/merge control on the visual row above/below; at a panel edge, jump to the other zone |
-| Alt+← / Alt+→ | Focus the prev/next control in DOM order |
-| Alt+Enter | Toggle focus between the source and target panels |
-| Alt+Space / Alt+Shift+Space | Activate the focused control (calls its `click` → `handleSplit`/`handleMerge`) |
-| Escape | Blur the focused control |
+| Shortcut                    | Action                                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Alt+↑ / Alt+↓               | Focus the split/merge control on the visual row above/below; at a panel edge, jump to the other zone |
+| Alt+← / Alt+→               | Focus the prev/next control in DOM order                                                             |
+| Alt+Enter                   | Toggle focus between the source and target panels                                                    |
+| Alt+Space / Alt+Shift+Space | Activate the focused control (calls its `click` → `handleSplit`/`handleMerge`)                       |
+| Escape                      | Blur the focused control                                                                             |
 
 Cross-zone jumps (Alt+Enter and edge Alt+↑/↓) work in **every** mode — the old
 `crossZoneJump` config flag that restricted them to link mode was removed. Activating a

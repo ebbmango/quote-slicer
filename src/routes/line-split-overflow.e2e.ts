@@ -17,7 +17,8 @@ import { expect, test } from '@playwright/test';
 // The settled state is self-correcting, so both are sampled *during* the animation.
 
 const SRC = '知命者不怨天，知己者不怨人。';
-const TGT = 'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
+const TGT =
+	'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
 const AUTH = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
 
 test.describe('line split in an overflowing panel', () => {
@@ -35,9 +36,12 @@ test.describe('line split in an overflowing panel', () => {
 			const sWrap = document.querySelector('[data-zone="source"]') as HTMLElement;
 			const tWrap = document.querySelector('[data-zone="target"]') as HTMLElement;
 			const sBox = document.querySelector('[data-zone="source"] [data-scrollbox]') as HTMLElement;
-			const z = document.querySelector('[data-zone="source"] .split-zone[data-divisor-index="1"]') as HTMLButtonElement;
+			const z = document.querySelector(
+				'[data-zone="source"] .split-zone[data-divisor-index="1"]'
+			) as HTMLButtonElement;
 
-			const wrapClips = getComputedStyle(sWrap).overflow === 'clip' && getComputedStyle(tWrap).overflow === 'clip';
+			const wrapClips =
+				getComputedStyle(sWrap).overflow === 'clip' && getComputedStyle(tWrap).overflow === 'clip';
 			z.click();
 
 			let worstSrcIntoTgt = -1e9;
@@ -46,7 +50,10 @@ test.describe('line split in an overflowing panel', () => {
 			const start = performance.now();
 			await new Promise<void>((res) => {
 				const tick = () => {
-					worstSrcIntoTgt = Math.max(worstSrcIntoTgt, Math.round(sWrap.getBoundingClientRect().bottom - tWrap.getBoundingClientRect().top));
+					worstSrcIntoTgt = Math.max(
+						worstSrcIntoTgt,
+						Math.round(sWrap.getBoundingClientRect().bottom - tWrap.getBoundingClientRect().top)
+					);
 					maxBoxOffset = Math.max(maxBoxOffset, sBox.offsetHeight);
 					tgtTops.push(Math.round(tWrap.getBoundingClientRect().top));
 					if (performance.now() - start > 600) res();
@@ -55,8 +62,16 @@ test.describe('line split in an overflowing panel', () => {
 				requestAnimationFrame(tick);
 			});
 			let maxTgtJump = 0;
-			for (let i = 1; i < tgtTops.length; i++) maxTgtJump = Math.max(maxTgtJump, Math.abs(tgtTops[i] - tgtTops[i - 1]));
-			return { wrapClips, worstSrcIntoTgt, maxTgtJump, maxBoxOffset, settledScrollHeight: sBox.scrollHeight, settledOffset: sBox.offsetHeight };
+			for (let i = 1; i < tgtTops.length; i++)
+				maxTgtJump = Math.max(maxTgtJump, Math.abs(tgtTops[i] - tgtTops[i - 1]));
+			return {
+				wrapClips,
+				worstSrcIntoTgt,
+				maxTgtJump,
+				maxBoxOffset,
+				settledScrollHeight: sBox.scrollHeight,
+				settledOffset: sBox.offsetHeight
+			};
 		});
 
 		// Precondition: we are really in the overflow regime.

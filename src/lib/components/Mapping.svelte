@@ -224,7 +224,9 @@
 		     transition — transition-colors alone let it snap in one frame (the
 		     bottom-text "flicker" visible in every browser). -->
 		{#if mappingView.targetText}
-			<span class="truncate px-3 font-ss4 text-xs font-[380] transition-[color,opacity] duration-500" style="color: {theme.botText}; opacity: {botTextOpacity};"
+			<span
+				class="truncate px-3 font-ss4 text-xs font-[380] transition-[color,opacity] duration-500"
+				style="color: {theme.botText}; opacity: {botTextOpacity};"
 				>&ldquo;{mappingView.targetText}&rdquo;</span
 			>
 		{:else}

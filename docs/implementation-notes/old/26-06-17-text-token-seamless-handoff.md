@@ -45,11 +45,11 @@ under the 450ms swap — so the animation settles flat before the DOM changes.
 Three fields, three strategies:
 
 - **Source** (`morph-source`): element stays at `opacity-30`, matching the token row's resting
-  opacity. Only the *placeholder* colour rises to `currentColor` — typed text is already at the
+  opacity. Only the _placeholder_ colour rises to `currentColor` — typed text is already at the
   right level.
 - **Authorship** (`morph-author`): same as source; element stays at `opacity-40`.
-- **Target** (`morph-target`): element opacity stays at 1, so the dimming is carried by the *text
-  colour* fading to `currentColor @ 30%`. The placeholder uses a fixed `rgb(0 0 0 / 0.5)` →
+- **Target** (`morph-target`): element opacity stays at 1, so the dimming is carried by the _text
+  colour_ fading to `currentColor @ 30%`. The placeholder uses a fixed `rgb(0 0 0 / 0.5)` →
   `rgb(0 0 0 / 0.3)` path rather than `currentColor`, because the element's own colour is
   animating and referencing it from the placeholder would compound the two multipliers and produce
   a non-monotonic dip before settling.

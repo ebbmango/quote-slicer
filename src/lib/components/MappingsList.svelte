@@ -179,7 +179,7 @@
 		// only the slide-in runs.
 		if (state) {
 			addFlip = Flip.from(state, {
-				duration: twoCol ? 0.40 : MAKEWAY_S,
+				duration: twoCol ? 0.4 : MAKEWAY_S,
 				ease: MAKEWAY_EASE,
 				absolute: false,
 				onComplete: () => clearSurvivorTransforms(card)
@@ -273,7 +273,7 @@
 		// The $effect retries correctly when the last closing tween completes.
 		if (closing === 0) scrollActiveIntoView();
 		const tween = Flip.from(state, {
-			duration: isTwoCol() ? 0.40 : CLOSE_S,
+			duration: isTwoCol() ? 0.4 : CLOSE_S,
 			ease: CLOSE_EASE,
 			absolute: false,
 			stagger: { each: STAGGER, from: Math.min(fromIdx, Math.max(0, survivors.length - 1)) },
@@ -301,7 +301,12 @@
 	// to the swipeToDelete action; kept here because it owns the lazy-loaded gsap.
 	function springBackSwipe(card: HTMLElement) {
 		if (gsap)
-			gsap.to(card, { x: 0, duration: SWIPE_SPRINGBACK_S, ease: 'power2.out', clearProps: 'transform' });
+			gsap.to(card, {
+				x: 0,
+				duration: SWIPE_SPRINGBACK_S,
+				ease: 'power2.out',
+				clearProps: 'transform'
+			});
 		else card.style.transform = '';
 	}
 
@@ -401,7 +406,7 @@
 	<ol
 		role="listbox"
 		aria-label="Mappings"
-		class="grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-x-hidden overflow-y-auto scroll-smooth p-6 no-scrollbar tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+		class="no-scrollbar grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-x-hidden overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
 		use:listRef
 		use:swipeToDelete={{
 			columnDir,
@@ -420,7 +425,7 @@
 		<div
 			in:fade={{ duration: EXIT_MS }}
 			out:fade={{ duration: 200 }}
-			class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 p-6 text-center opacity-30 font-ss4 font-[350]"
+			class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 p-6 text-center font-ss4 font-[350] opacity-30"
 		>
 			<p>No mappings.</p>
 		</div>

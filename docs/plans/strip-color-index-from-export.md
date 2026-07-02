@@ -5,7 +5,7 @@
 Remove `colorIndex` from each `Mapping` in the exported JSON
 (`exportData` / `exportJson` in [link.svelte.ts](../../src/lib/context/link.svelte.ts)).
 `colorIndex` stays internal to quote-slicer's `Mapping` type — only the
-*export* shape drops it.
+_export_ shape drops it.
 
 ## Why
 

@@ -43,18 +43,18 @@ highlight via `class:opacity-20={asideView !== '<name>'}` (inactive = dimmed).
 ## Design Decisions
 
 - `wide` is tracked in JS (matchMedia) rather than handled purely in CSS,
-  because the *same* `.sidebar-left` slot needs to render different content
+  because the _same_ `.sidebar-left` slot needs to render different content
   depending on both the toggle state and the breakpoint — a CSS-only
   show/hide of two pre-rendered blocks would double-render `HighlightedCode`
   (which does async Shiki tokenization) unnecessarily on narrow screens.
 - `asideView` is ignored entirely at `wide` — the toggle only affects the
   single-aside layout, matching the `.subtools` row itself being hidden at
-  >=1200px.
+  > =1200px.
 
 ## Areas to Be Careful
 
 - The `1200px` breakpoint is duplicated: once in `+page.svelte`'s
   `matchMedia` call and once in the `<style>` block's `@media (min-width:
-  1200px)` rules (`.sidebar-right` display, `.subtools` display). These must
+1200px)` rules (`.sidebar-right` display, `.subtools` display). These must
   be kept in sync — if the CSS breakpoint changes, update the `matchMedia`
   query too, or `wide` and the actual layout will disagree.
