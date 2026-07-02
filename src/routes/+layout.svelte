@@ -19,9 +19,8 @@
 
 	onMount(async () => {
 		const { gsap } = await import('gsap');
-		const { Draggable } = await import('gsap/Draggable');
 		const { Flip } = await import('gsap/Flip');
-		gsap.registerPlugin(Draggable, Flip);
+		gsap.registerPlugin(Flip);
 	});
 
 	let { children } = $props();
