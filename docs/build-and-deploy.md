@@ -94,8 +94,8 @@ npm test             # unit (run) + e2e
 
 The framework-free logic is unit-tested with vitest:
 
-- `src/lib/vitest-examples/tokenize.spec.ts` — the target tokenizer's punctuation rules.
-- `src/lib/vitest-examples/pinyinConvert.spec.ts` — canonical↔diacritic pinyin conversion.
+- `src/lib/tokenize.spec.ts` — the target tokenizer's punctuation rules.
+- `src/lib/pinyinConvert.spec.ts` — canonical↔diacritic pinyin conversion.
 - `src/lib/tokenState.spec.ts` — token-state derivation.
 - `src/lib/tokenPresentation.spec.ts` — per-token colour/opacity/weight output.
 - `src/lib/exportFormat.spec.ts` — the JSON pretty-printer.

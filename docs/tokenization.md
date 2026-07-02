@@ -94,7 +94,7 @@ There's nothing "simple" in programming.
 
 The lookbehind/lookahead `(?<![A-Za-z0-9])` / `(?![A-Za-z0-9])` are what enforce the
 interior-vs-flanking distinction. This behaviour is locked down by ~137 lines of cases
-in `src/lib/vitest-examples/tokenize.spec.ts`.
+in `src/lib/tokenize.spec.ts`.
 
 > **History:** there used to be two target tokenizers (`tokenizeTargetSeparate` and
 > `tokenizeTargetCombined`). They were consolidated into this single `tokenizeTarget`

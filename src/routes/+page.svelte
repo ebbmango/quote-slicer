@@ -9,7 +9,7 @@
 	import { setModeContext } from '$lib/context/mode.svelte';
 	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
-	import { setTokenStoreContext } from '$lib/animation/tokenStore.svelte';
+	import { setTokenStoreContext } from '$lib/context/tokenStore.svelte';
 	import { initAlignmentShortcuts } from '$lib/actions/globalShortcuts';
 
 	function autosize(node: HTMLTextAreaElement) {

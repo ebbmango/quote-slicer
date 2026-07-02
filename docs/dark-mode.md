@@ -38,16 +38,16 @@ tab within the 5-minute TTL, or a recent reload within the grace window).
 
 The logic is split so it can be unit-tested without a DOM:
 
-- **`src/lib/themeState.ts`** — pure functions and types only. The storage shape
+- **`src/lib/theme/themeState.ts`** — pure functions and types only. The storage shape
   (`StoredThemeState`, `StoredTabRegistry`), the keys and timing constants
   (`HEARTBEAT_MS = 30 s`, `STALE_TAB_MS` / `RELOAD_GRACE_MS = 5 min`), and all the
   resolution logic (`resolveStoredTheme`, `resolveExternalThemeState`,
   `pruneTabRegistry`, …). No browser API. Covered by `themeState.spec.ts`.
-- **`src/lib/systemTheme.ts`** — `adaptiveTheme()`, the browser-connected runtime. It
+- **`src/lib/theme/systemTheme.ts`** — `adaptiveTheme()`, the browser-connected runtime. It
   wires the pure functions to `localStorage`, a `BroadcastChannel('theme-sync')`, the
   OS media query, and a heartbeat timer, and returns a Svelte-reactive object with a
   `get/set current` backed by `createSubscriber`.
-- **`src/lib/theme.ts`** — `export const theme = adaptiveTheme()`, the single shared
+- **`src/lib/theme/index.ts`** — `export const theme = adaptiveTheme()`, the single shared
   controller instance. Consumers import it (most alias it `appTheme`) and read
   `theme.current` (`'light' | 'dark'`); setting `theme.current = …` is what
   `ThemeToggle` does on click.

@@ -12,7 +12,7 @@ _Avoid_: LinkContext, link state
 See `CLAUDE.md`'s domain vocabulary table — these terms are shared across the whole codebase, not specific to the Alignment module.
 
 **token store**:
-The single owner of the source/target token arrays. Tokenizes, holds the text-keyed split/merge cache, owns per-character pinyin as an id-keyed overlay applied on read, and runs the [line-edit animation](#line-edit-animation) around each split/merge. `src/lib/animation/tokenStore.svelte.ts` (`createTokenStore` / `setTokenStoreContext`). The Alignment module derives its token view from this store keyed by the current text, rather than holding its own copy — so there is no second token owner to keep in sync, and split/merge can no longer be fed the "wrong" (pinyin-less) array.
+The single owner of the source/target token arrays. Tokenizes, holds the text-keyed split/merge cache, owns per-character pinyin as an id-keyed overlay applied on read, and runs the [line-edit animation](#line-edit-animation) around each split/merge. `src/lib/context/tokenStore.svelte.ts` (`createTokenStore` / `setTokenStoreContext`). The Alignment module derives its token view from this store keyed by the current text, rather than holding its own copy — so there is no second token owner to keep in sync, and split/merge can no longer be fed the "wrong" (pinyin-less) array.
 _Avoid_: lineEdit (former name), line manager, split service, token cache (the cache is only part of it)
 
 **line edit**:

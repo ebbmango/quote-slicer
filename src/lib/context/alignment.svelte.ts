@@ -2,7 +2,7 @@ import { getContext, setContext } from 'svelte';
 import { pinyin } from 'pinyin-pro';
 import { toCanonical, toDisplay } from '$lib/pinyinConvert';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
-import type { TokenAccess } from '$lib/animation/tokenStore.svelte';
+import type { TokenAccess } from '$lib/context/tokenStore.svelte';
 import {
 	buildMappingIndex,
 	buildTargetText,

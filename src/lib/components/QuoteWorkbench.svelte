@@ -3,7 +3,7 @@
 	import { getModeContext } from '$lib/context/mode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
-	import { getTokenStoreContext, type EditScope } from '$lib/animation/tokenStore.svelte';
+	import { getTokenStoreContext, type EditScope } from '$lib/context/tokenStore.svelte';
 	import { createTokenGridNav } from '$lib/navigation/tokenGridNav';
 	import {
 		getZone,

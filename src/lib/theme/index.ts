@@ -1,4 +1,4 @@
-import { adaptiveTheme } from '$lib/systemTheme';
+import { adaptiveTheme } from './systemTheme';
 
 // Single shared theme controller instance for the app runtime.
 export const theme = adaptiveTheme();

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Alignment } from './alignment.svelte';
 import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
 import { MAPPING_COLORS } from '$lib/constants/colors';
-import type { TokenAccess } from '$lib/animation/tokenStore.svelte';
+import type { TokenAccess } from '$lib/context/tokenStore.svelte';
 
 // Minimal stand-in for the token store's TokenAccess surface: the real
 // tokenizers (ids are deterministic per text) plus a reactive pinyin overlay,

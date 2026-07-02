@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { flushSync } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
-import type { ThemeMode as Mode } from './types';
+import type { ThemeMode as Mode } from '../types';
 import {
 	THEME_STATE_KEY,
 	parseThemeState,

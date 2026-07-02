@@ -37,10 +37,10 @@ linked per area.
 | `src/lib/context/alignment.svelte.ts`       | `Alignment` — owns `mappings[]` + `activeMappingId` + `listAnimating`; derives tokens from the store; toggle handlers, canonical pinyin, `sortedMappingViews`, `exportData`; delegates view-mode highlight to `ViewHighlight`; exports `MappingView` ([Link Mode](link-mode.md)) |
 | `src/lib/context/viewHighlight.svelte.ts`   | `ViewHighlight` — view-mode hover/tap highlight timer machine (cold/warm/grace) ([View Mode](view-mode.md))                                                                                                                                                                      |
 | `src/lib/context/interactionMode.svelte.ts` | Global `interactionMode` singleton + `initModeTracking()`; writes `html[data-interaction]` ([Keyboard & Navigation](keyboard-navigation.md))                                                                                                                                     |
-| `src/lib/animation/tokenStore.svelte.ts`    | The **token store** — single owner of tokens, text-keyed cache, pinyin overlay, the line-edit animation; `TokenStore` / `TokenAccess` / `EditScope` types ([Token Store](token-store.md))                                                                                        |
-| `src/lib/themeState.ts`                     | Pure theme logic — storage shape, keys, `resolveStoredTheme()`/`resolveExternalThemeState()`/registry helpers ([Dark Mode](dark-mode.md))                                                                                                                                        |
-| `src/lib/systemTheme.ts`                    | `adaptiveTheme()` — browser-connected theme runtime (localStorage, `BroadcastChannel`, heartbeat, `flashThemeTransition()`) ([Dark Mode](dark-mode.md))                                                                                                                          |
-| `src/lib/theme.ts`                          | `theme` — the single shared `adaptiveTheme()` instance (consumers alias it `appTheme`) ([Dark Mode](dark-mode.md))                                                                                                                                                               |
+| `src/lib/context/tokenStore.svelte.ts`      | The **token store** — single owner of tokens, text-keyed cache, pinyin overlay, the line-edit animation; `TokenStore` / `TokenAccess` / `EditScope` types ([Token Store](token-store.md))                                                                                        |
+| `src/lib/theme/themeState.ts`               | Pure theme logic — storage shape, keys, `resolveStoredTheme()`/`resolveExternalThemeState()`/registry helpers ([Dark Mode](dark-mode.md))                                                                                                                                        |
+| `src/lib/theme/systemTheme.ts`              | `adaptiveTheme()` — browser-connected theme runtime (localStorage, `BroadcastChannel`, heartbeat, `flashThemeTransition()`) ([Dark Mode](dark-mode.md))                                                                                                                          |
+| `src/lib/theme/index.ts`                    | `theme` — the single shared `adaptiveTheme()` instance (consumers alias it `appTheme`) ([Dark Mode](dark-mode.md))                                                                                                                                                               |
 
 ## Components
 
@@ -81,14 +81,14 @@ linked per area.
 
 ## Tests
 
-| File                                            | Covers                                                               |
-| ----------------------------------------------- | -------------------------------------------------------------------- |
-| `src/lib/vitest-examples/tokenize.spec.ts`      | Target tokenizer punctuation rules                                   |
-| `src/lib/vitest-examples/pinyinConvert.spec.ts` | Canonical↔diacritic pinyin conversion                                |
-| `src/lib/tokenState.spec.ts`                    | Token-state derivation                                               |
-| `src/lib/tokenPresentation.spec.ts`             | Per-token colour/opacity/weight output                               |
-| `src/lib/exportFormat.spec.ts`                  | JSON pretty-printer                                                  |
-| `src/lib/themeState.spec.ts`                    | Theme resolution / continuity logic                                  |
-| `src/lib/actions/redistribute.spec.ts`          | Hover-spread offset math (`computeRowOffsets`)                       |
-| `src/lib/navigation/visualNeighbor.spec.ts`     | Visual-neighbour math                                                |
-| `src/routes/**/*.e2e.ts`                        | Playwright end-to-end flows (incl. line-split overflow, rapid-click) |
+| File                                        | Covers                                                               |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| `src/lib/tokenize.spec.ts`                  | Target tokenizer punctuation rules                                   |
+| `src/lib/pinyinConvert.spec.ts`             | Canonical↔diacritic pinyin conversion                                |
+| `src/lib/tokenState.spec.ts`                | Token-state derivation                                               |
+| `src/lib/tokenPresentation.spec.ts`         | Per-token colour/opacity/weight output                               |
+| `src/lib/exportFormat.spec.ts`              | JSON pretty-printer                                                  |
+| `src/lib/theme/themeState.spec.ts`          | Theme resolution / continuity logic                                  |
+| `src/lib/actions/redistribute.spec.ts`      | Hover-spread offset math (`computeRowOffsets`)                       |
+| `src/lib/navigation/visualNeighbor.spec.ts` | Visual-neighbour math                                                |
+| `src/routes/**/*.e2e.ts`                    | Playwright end-to-end flows (incl. line-split overflow, rapid-click) |

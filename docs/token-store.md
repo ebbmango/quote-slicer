@@ -1,6 +1,6 @@
 # Token Store
 
-`src/lib/animation/tokenStore.svelte.ts` — `createTokenStore()` /
+`src/lib/context/tokenStore.svelte.ts` — `createTokenStore()` /
 `setTokenStoreContext()` / `getTokenStoreContext()`.
 
 ## Why it exists

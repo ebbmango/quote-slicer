@@ -185,12 +185,12 @@ The slide-in panel for the smallest viewports — see
 
 Four contexts, all set once at the root and read via `getContext` anywhere:
 
-| Context             | Set / get                                            | File                             |
-| ------------------- | ---------------------------------------------------- | -------------------------------- |
-| `ModeContext`       | `setModeContext` / `getModeContext`                  | `context/mode.svelte.ts`         |
-| `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext`      | `context/breakpoints.svelte.ts`  |
-| token store         | `setTokenStoreContext` / `getTokenStoreContext`      | `animation/tokenStore.svelte.ts` |
-| `Alignment`         | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts`    |
+| Context             | Set / get                                            | File                            |
+| ------------------- | ---------------------------------------------------- | ------------------------------- |
+| `ModeContext`       | `setModeContext` / `getModeContext`                  | `context/mode.svelte.ts`        |
+| `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext`      | `context/breakpoints.svelte.ts` |
+| token store         | `setTokenStoreContext` / `getTokenStoreContext`      | `context/tokenStore.svelte.ts`  |
+| `Alignment`         | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts`   |
 
 The order matters: `Alignment`'s constructor takes the store, so the store is set first.
 The **token store is the single owner** of the token arrays — `QuoteWorkbench` does not
