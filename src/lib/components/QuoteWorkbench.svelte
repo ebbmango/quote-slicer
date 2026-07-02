@@ -25,6 +25,22 @@
 	} = $props();
 	let composing = $state(false);
 
+	// Strip disallowed characters (SOURCE_INPUT_RE) from the source textarea,
+	// shifting the caret left by however many were removed so it stays put
+	// relative to the surviving text. Shared by oninput and oncompositionend —
+	// IME input only settles on compositionend, so both paths must filter.
+	function filterSourceInput(el: HTMLTextAreaElement) {
+		const start = el.selectionStart ?? 0;
+		const end = el.selectionEnd ?? 0;
+		const filtered = el.value.replace(SOURCE_INPUT_RE, '');
+		const removed = el.value.length - filtered.length;
+		if (removed > 0) {
+			el.value = filtered;
+			sourceText = filtered;
+			el.setSelectionRange(start - removed, end - removed);
+		}
+	}
+
 	let mode = getModeContext();
 	let editing = $derived(mode.current === 'text');
 	const alignment = getAlignmentContext();
@@ -155,29 +171,11 @@
 				oncompositionstart={() => (composing = true)}
 				oninput={(e: InputEvent) => {
 					if (e.isComposing) return;
-					const el = e.currentTarget as HTMLTextAreaElement;
-					const start = el.selectionStart ?? 0;
-					const end = el.selectionEnd ?? 0;
-					const filtered = el.value.replace(SOURCE_INPUT_RE, '');
-					const removed = el.value.length - filtered.length;
-					if (removed > 0) {
-						el.value = filtered;
-						sourceText = filtered;
-						el.setSelectionRange(start - removed, end - removed);
-					}
+					filterSourceInput(e.currentTarget as HTMLTextAreaElement);
 				}}
 				oncompositionend={(e: CompositionEvent) => {
 					composing = false;
-					const el = e.currentTarget as HTMLTextAreaElement;
-					const start = el.selectionStart ?? 0;
-					const end = el.selectionEnd ?? 0;
-					const filtered = el.value.replace(SOURCE_INPUT_RE, '');
-					const removed = el.value.length - filtered.length;
-					if (removed > 0) {
-						el.value = filtered;
-						sourceText = filtered;
-						el.setSelectionRange(start - removed, end - removed);
-					}
+					filterSourceInput(e.currentTarget as HTMLTextAreaElement);
 				}}
 				class="morph-source fade-y relative no-scrollbar min-h-0 w-full translate-x-[1px] resize-none overflow-y-auto bg-transparent px-2 py-3 text-center text-[1.75rem] leading-10 font-light tracking-[2px] opacity-30 outline-none {composing
 					? 'font-ss4'
@@ -351,23 +349,10 @@
 		}
 	}
 
-	/* Small soft edge-fade on the authorship line, matching the source/target
-	   panels (theirs is 0.75rem; authorship is smaller text so a touch less). The
-	   py-3 padding lets the line clear the fade at rest and when it scrolls. */
+	/* Same soft edge-fade as the token panels (.fade-y in routes/layout.css),
+	   a touch tighter — smaller text here; py-3 still clears the fade at rest
+	   and when the line scrolls. */
 	.fade-y {
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 0.5rem,
-			#000 calc(100% - 0.5rem),
-			transparent 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 0.5rem,
-			#000 calc(100% - 0.5rem),
-			transparent 100%
-		);
+		--fade-pad: 0.5rem;
 	}
 </style>

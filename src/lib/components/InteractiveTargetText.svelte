@@ -211,30 +211,6 @@
 	{/each}
 </div>
 
-<style>
-	/* Soft top/bottom fade on the scroll area instead of a hard cutoff. The 0.75rem
-	   fade matches the scroll box's 0.75rem (py-3) padding, so at either scroll
-	   extreme the first/last line sits past the fade and reads at full opacity —
-	   only mid-scroll content dims. mask = transparency, so it works over the page
-	   background and the modal's #f9f9f9 alike. */
-	.fade-y {
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 0.75rem,
-			#000 calc(100% - 0.75rem),
-			transparent 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			#000 0.75rem,
-			#000 calc(100% - 0.75rem),
-			transparent 100%
-		);
-	}
-
-	/* Token spans (.tok), the theme-flip widening, the .flipping transform-drop,
-	   and reduced-motion all live in routes/layout.css now — one global rule
-	   shared with the source panel instead of a byte-identical copy here. */
-</style>
+<!-- No local styles: token spans (.tok), the theme-flip widening, the .flipping
+     transform-drop, reduced-motion, and the .fade-y scroll fade all live in
+     routes/layout.css — global rules shared with the source panel. -->

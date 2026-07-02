@@ -182,6 +182,30 @@ html.theme-anim .tok-tinted {
 	}
 }
 
+/* Soft top/bottom fade on a scroll area instead of a hard cutoff. --fade-pad
+   matches the box's vertical padding, so at either scroll extreme the first/last
+   line sits past the fade and reads at full opacity — only mid-scroll content
+   dims. mask = transparency, so it works over the page background and the
+   modal's panel background alike. Shared by both token panels (0.75rem = py-3);
+   the workbench textareas override --fade-pad to 0.5rem (smaller text). */
+.fade-y {
+	--fade-pad: 0.75rem;
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--fade-pad),
+		#000 calc(100% - var(--fade-pad)),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--fade-pad),
+		#000 calc(100% - var(--fade-pad)),
+		transparent 100%
+	);
+}
+
 @utility no-scrollbar {
 	scrollbar-width: none;
 	-ms-overflow-style: none;
