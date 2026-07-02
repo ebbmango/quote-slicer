@@ -40,7 +40,6 @@ export class Alignment {
 	// by MappingsList via $effect when it is mounted; false when the panel is hidden/unmounted.
 	// Checked by toggleSource/toggleTarget/delete* to throttle mutations during animation.
 	listAnimating: boolean = $state(false);
-	private nextColorIndex: number = $state(0);
 	private mappings: Mapping[] = $state([]);
 	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
 
@@ -122,9 +121,14 @@ export class Alignment {
 	}
 
 	private createMapping(): Mapping {
+		// Lowest free palette slot, so deleting a mapping releases its color for reuse.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per call, never mutated
+		const used = new Set(this.mappings.map((m) => m.colorIndex));
+		let colorIndex = 0;
+		while (used.has(colorIndex)) colorIndex++;
 		return {
 			id: crypto.randomUUID(),
-			colorIndex: this.nextColorIndex++,
+			colorIndex,
 			sourceTokenIds: [],
 			targetTokenIds: []
 		};

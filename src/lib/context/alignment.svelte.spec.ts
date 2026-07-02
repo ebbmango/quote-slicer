@@ -109,6 +109,16 @@ describe('mapping lifecycle', () => {
 		expect(alignment.sortedMappingViews).toEqual([]);
 	});
 
+	it('a new mapping reuses the lowest freed color index', () => {
+		const { alignment } = setup();
+		alignment.toggleSource(0); // colorIndex 0
+		const a = alignment.activeMappingId!;
+		alignment.toggleSource(1); // colorIndex 1
+		alignment.deleteById(a);
+		alignment.toggleSource(2); // takes the freed slot 0, not 2
+		expect(alignment.sortedMappingViews.map((v) => v.colorIndex).sort()).toEqual([0, 1]);
+	});
+
 	it('mutations are ignored while the mappings list is animating', () => {
 		const { alignment } = setup();
 		alignment.toggleSource(0);
