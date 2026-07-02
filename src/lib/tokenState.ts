@@ -4,6 +4,11 @@ import type { SourceToken, TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;
 
+// buildTargetText groups selected target tokens whose indices are at most this
+// far apart (with only whitespace/punctuation in between) into one run instead
+// of comma-joining them.
+const MAX_BRIDGE_GAP = 5;
+
 export type Mapping = {
 	id: MappingId;
 	colorIndex: number;
@@ -92,7 +97,7 @@ export function buildTargetText(targetIndices: number[], targetTokens: TargetTok
 		const group = groups[groups.length - 1];
 		const prev = group[group.length - 1];
 		const curr = sorted[i];
-		let bridgeable = curr - prev <= 5;
+		let bridgeable = curr - prev <= MAX_BRIDGE_GAP;
 		for (let k = prev + 1; bridgeable && k < curr; k++) {
 			const t = targetTokens[k];
 			bridgeable = t?.type === 'whitespace' || t?.type === 'punctuation';

@@ -15,13 +15,13 @@
 	} from '$lib/navigation/gridDom';
 	import InteractiveSourceText from '$lib/components/InteractiveSourceText.svelte';
 	import InteractiveTargetText from '$lib/components/InteractiveTargetText.svelte';
+	import { autosize } from '$lib/actions/autosize';
 
 	let {
 		sourceText = $bindable(),
 		targetText = $bindable(),
 		authorship = $bindable(),
-		arrowExiting = false,
-		autosize
+		arrowExiting = false
 	} = $props();
 	let composing = $state(false);
 

@@ -12,22 +12,6 @@
 	import { setTokenStoreContext } from '$lib/context/tokenStore.svelte';
 	import { initAlignmentShortcuts } from '$lib/actions/globalShortcuts';
 
-	function autosize(node: HTMLTextAreaElement) {
-		const resize = () => {
-			node.style.height = 'auto';
-			node.style.height = node.scrollHeight + 'px';
-		};
-		node.addEventListener('input', resize);
-		window.addEventListener('resize', resize);
-		resize();
-		return {
-			destroy: () => {
-				node.removeEventListener('input', resize);
-				window.removeEventListener('resize', resize);
-			}
-		};
-	}
-
 	const modeCtx = setModeContext();
 	const breakpoints = setBreakpointContext();
 	const tokenStore = setTokenStoreContext();
@@ -90,7 +74,7 @@
 			<div
 				class="absolute inset-0 flex flex-col items-center [justify-content:safe_center] overflow-y-auto"
 			>
-				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} {autosize} />
+				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} />
 			</div>
 			<DataModal
 				bind:this={dataModal}
