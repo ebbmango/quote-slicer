@@ -157,7 +157,7 @@
 					color={theme.pinyinText}
 					opacity={pinyinOpacity}
 					value={isEmpty ? '- - - -' : (entry?.pinyin ?? '')}
-					onCommit={isEmpty ? undefined : (raw) => alignment.setPinyin(mappingView.id, i, raw)}
+					onCommit={entry ? (raw) => alignment.setPinyin(mappingView.id, entry.tokenId, raw) : undefined}
 				/>
 			</div>
 

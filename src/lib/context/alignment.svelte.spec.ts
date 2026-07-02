@@ -157,14 +157,22 @@ describe('derived views and token states', () => {
 
 	it('setPinyin canonicalizes through the store; free text is kept raw; blank clears', () => {
 		const { alignment, pinyinOf } = setup();
-		alignment.toggleSource(0);
+		// 爱 — tokenId 1 at mapping position 0, so an index-vs-id mixup would show
+		alignment.toggleSource(1);
 		const id = alignment.activeMappingId!;
-		alignment.setPinyin(id, 0, 'wǒ');
-		expect(pinyinOf(0)).toBe('wo3');
-		alignment.setPinyin(id, 0, 'note');
-		expect(pinyinOf(0)).toBe('note');
+		alignment.setPinyin(id, 1, 'ài');
+		expect(pinyinOf(1)).toBe('ai4');
+		alignment.setPinyin(id, 1, 'note');
+		expect(pinyinOf(1)).toBe('note');
 		expect(alignment.sortedMappingViews[0].sourceEntries[0].pinyin).toBe('note');
-		alignment.setPinyin(id, 0, '   ');
+		alignment.setPinyin(id, 1, '   ');
+		expect(pinyinOf(1)).toBeUndefined();
+	});
+
+	it('setPinyin ignores a tokenId outside the mapping', () => {
+		const { alignment, pinyinOf } = setup();
+		alignment.toggleSource(1);
+		alignment.setPinyin(alignment.activeMappingId!, 0, 'wǒ'); // 我 is unmapped
 		expect(pinyinOf(0)).toBeUndefined();
 	});
 });

@@ -171,14 +171,10 @@ export class Alignment {
 	// component (single token owner — see docs/token-store.md). Unparseable text
 	// is stored as-is, preserving free-text notes. Blank input clears the
 	// annotation back to `undefined` so export omits it (vs. an empty string).
-	//
-	// `position` indexes into `sourceTokenIds`. This could instead take the stable
-	// `tokenId` directly (more robust against reorder/split/merge) — if pinyin
-	// edits ever commit to the wrong token, look here first.
-	setPinyin(id: MappingId, position: number, value: string): void {
+	// A `tokenId` not in the mapping's `sourceTokenIds` is ignored.
+	setPinyin(id: MappingId, tokenId: number, value: string): void {
 		const m = this.mappings.find((x) => x.id === id);
-		const tokenId = m?.sourceTokenIds[position];
-		if (tokenId === undefined) return;
+		if (!m?.sourceTokenIds.includes(tokenId)) return;
 		const trimmed = value.trim();
 		this.store.setPinyin(tokenId, trimmed ? (toCanonical(trimmed) ?? trimmed) : undefined);
 	}
