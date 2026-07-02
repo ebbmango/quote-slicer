@@ -55,7 +55,7 @@
 </script>
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
-	<aside class="sidebar sidebar-left bg-[var(--panel-bg)]" aria-hidden={modeCtx.current === 'text'}>
+	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={modeCtx.current === 'text'}>
 		<!-- At minimal the modal owns the maps/json content, so the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
 		{#if !breakpoints.minimal}
@@ -72,7 +72,7 @@
 			     The DataModal is a SIBLING absolute layer, positioned by the band — so
 			     it stays put and never rides this scroll. -->
 			<div
-				class="absolute inset-0 flex flex-col items-center [justify-content:safe_center] overflow-y-auto"
+				class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto"
 			>
 				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} />
 			</div>
@@ -110,7 +110,7 @@
 		</div>
 	</main>
 	<aside
-		class="sidebar sidebar-right bg-[var(--panel-bg)]"
+		class="sidebar sidebar-right bg-(--panel-bg)"
 		aria-hidden={modeCtx.current === 'text'}
 	>
 		<DataPanel view="json" />

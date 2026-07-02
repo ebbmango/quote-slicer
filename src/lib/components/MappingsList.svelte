@@ -406,7 +406,7 @@
 	<ol
 		role="listbox"
 		aria-label="Mappings"
-		class="no-scrollbar grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] [gap:var(--mapping-gap)] overflow-x-hidden overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
+		class="no-scrollbar grid h-full w-full auto-rows-[5.75rem] grid-cols-[1fr] gap-(--mapping-gap) overflow-x-hidden overflow-y-auto scroll-smooth p-6 tablet:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))] modal-wide:grid-cols-[repeat(auto-fill,minmax(clamp(200px,calc(50%-calc(var(--mapping-gap)/2)),100%),1fr))]"
 		use:listRef
 		use:swipeToDelete={{
 			columnDir,
