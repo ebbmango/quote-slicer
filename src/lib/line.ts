@@ -1,3 +1,4 @@
+// Precondition: `afterIndex` is a valid index into `tokens` — out of range throws (see line.spec.ts).
 export function splitAfterToken<T extends { line: number }>(tokens: T[], afterIndex: number): T[] {
 	const splitLine = tokens[afterIndex].line;
 	return tokens.map((token, i) => {
