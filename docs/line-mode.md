@@ -8,7 +8,9 @@ the token store's [text-keyed cache](token-store.md#the-text-keyed-cache).
 ## The core functions
 
 All three live in `src/lib/line.ts` as pure generics over `T extends { line: number }`,
-so they work on both `SourceToken` and `TargetToken` and are trivially testable.
+so they work on both `SourceToken` and `TargetToken` and are unit-tested directly in
+`line.spec.ts` (immutability, line math, and `splitAfterToken`'s documented
+precondition that `afterIndex` be in range — out of range throws).
 
 ### `splitAfterToken(tokens, afterIndex)`
 

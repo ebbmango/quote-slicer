@@ -142,8 +142,10 @@ type MappingView = {
   [Link Mode → Pinyin](link-mode.md#pinyin-auto-fill-and-canonical-storage). Pinyin
   lives on the token, not on the mapping.
 - `targetText` is built by `buildTargetText()`, which stitches contiguous runs of the
-  mapping's target tokens into phrases (bridging short whitespace/punctuation gaps of
-  ≤ 5 tokens) and joins non-contiguous runs with `, `.
+  mapping's target tokens into phrases and joins non-contiguous runs with `, `. Two
+  selected tokens whose indices are at most `MAX_BRIDGE_GAP = 5` apart (a named
+  constant in `tokenState.ts`), with only whitespace/punctuation between them, join
+  into one run instead of being comma-separated.
 
 ## Export types
 

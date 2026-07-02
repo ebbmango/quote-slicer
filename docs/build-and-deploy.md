@@ -85,24 +85,22 @@ npm run check        # svelte-check
 npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
 
-npm run test:unit    # vitest (src/lib/**/*.spec.ts)
+npm run test:unit    # vitest — two projects: client (jsdom) + server (node)
 npm run test:e2e     # playwright
 npm test             # unit (run) + e2e
 ```
 
 ### Test surface
 
-The framework-free logic is unit-tested with vitest:
-
-- `src/lib/tokenize.spec.ts` — the target tokenizer's punctuation rules.
-- `src/lib/pinyinConvert.spec.ts` — canonical↔diacritic pinyin conversion.
-- `src/lib/tokenState.spec.ts` — token-state derivation.
-- `src/lib/tokenPresentation.spec.ts` — per-token colour/opacity/weight output.
-- `src/lib/exportFormat.spec.ts` — the JSON pretty-printer.
-- `src/lib/themeState.spec.ts` — theme resolution / continuity logic.
-- `src/lib/actions/redistribute.spec.ts` — the hover-spread offset math.
-- `src/lib/navigation/visualNeighbor.spec.ts` — the visual-neighbour math.
+Unit tests run under vitest in **two projects** — a node-environment **server**
+project for framework-free logic and a jsdom **client** project that loads the
+client Svelte runtime so rune-based classes (`Alignment`, `ViewHighlight`) can be
+tested too. Why the split exists, which config lines are load-bearing, and how specs
+are routed between the projects is covered in [Testing](testing.md); the full
+spec-by-spec list lives in the [File Map](file-map.md#tests).
 
 End-to-end flows are covered by Playwright (`src/routes/*.e2e.ts`), including
-`line-split-overflow.e2e.ts` (the constrained/overflow line-edit regime) and
-`rapid-click.e2e.ts` (the mapping-list re-entrancy guard).
+`line-split-overflow.e2e.ts` (the constrained/overflow line-edit regime),
+`rapid-click.e2e.ts` (the mapping-list re-entrancy guard), and
+`theme-lockstep.e2e.ts` (the theme-flip synchronization invariants — see
+[Dark Mode](dark-mode.md#synchronized-transitions)).

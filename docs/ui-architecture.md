@@ -63,8 +63,13 @@ self-contained piece into its own component/context. It:
   same store itself. The _only_ thing it pushes is the raw text, via
   `alignment.setMeta({ sourceText, targetText, authorship })` in an `$effect`.
 - **Text mode:** renders the source/target textareas, with real-time Han-character
-  filtering on the source field (IME-composition-aware — it skips filtering while
-  `isComposing`, then re-filters on `compositionend`, preserving the caret).
+  filtering on the source field via a single `filterSourceInput()` helper shared by
+  `oninput` and `oncompositionend` (both paths are required — IME input only settles on
+  `compositionend`; filtering is skipped while `isComposing`). The helper also owns the
+  caret preservation: it shifts the selection left by the number of stripped characters.
+  All textareas keep their height matched to content with the `autosize` action
+  (`src/lib/actions/autosize.ts`), imported directly like its siblings
+  `longpress`/`swipeToDelete`.
 - **Link/line/view:** renders the `role="grid"` token workspace.
 - Builds `editScope()` (the DOM refs for the [line-edit
   animation](token-store.md#the-line-edit-animation-splitmerge), including the
@@ -96,6 +101,11 @@ all modes** (see [Mode Transitions](mode-transitions.md#the-persistent-dom-cross
 - **View mode:** token hover/tap is wired to the [view-mode highlight](view-mode.md).
 - Both mark their scroll box `data-scrollbox` and gate a height `$effect` on the
   `animating` prop. Neither owns Alt+Space or Escape — those route through the navigator.
+- Both scroll boxes carry the shared **`.fade-y`** soft top/bottom scroll fade — a single
+  global rule in `routes/layout.css`, parameterized by `--fade-pad` (default `0.75rem`;
+  the workbench textareas override it to `0.5rem` for their smaller text). It used to be
+  byte-identical scoped CSS in each component; panel-shared token styles live in
+  `layout.css` so the copies can't drift.
 - A bare click on empty container space calls `alignment.deselect()` (the mouse half of
   click-outside-to-deselect; Escape is the keyboard half).
 - Their structural differences (source's separate scrollbox vs row container; source's
@@ -118,7 +128,8 @@ One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview
   [dark-mode flash fixes](dark-mode.md#the-delete-button-colour-flash).
 - Pinyin editing uses [`PinyinInput.svelte`](link-mode.md#pinyin-auto-fill-and-canonical-storage),
   editable only when the card is active and non-empty; commits via
-  `alignment.setPinyin(id, position, value)`.
+  `alignment.setPinyin(id, tokenId, value)` — keyed by the entry's stable token ID,
+  not its position in the mapping.
 - The delete button shows on hover/focus; calls `alignment.deleteById(id)`.
 - An empty mapping (no sources yet) renders a placeholder (`未定`, `- - - -`).
 

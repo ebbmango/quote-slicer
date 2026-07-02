@@ -17,7 +17,9 @@ The highlight is not just "colour the hovered token". It has to:
 
 That is a small timer state machine, and it was extracted from `Alignment` into its
 own class so it can be unit-tested with fake timers rather than only through a live
-Svelte context.
+Svelte context — `viewHighlight.svelte.spec.ts` does exactly that, running in the
+vitest **client** project (rune classes need the client Svelte runtime; see
+[Testing](testing.md)).
 
 ## `ViewHighlight` (`src/lib/context/viewHighlight.svelte.ts`)
 
@@ -72,13 +74,14 @@ on the token spans fades the highlight out; light-up is instant once the timer f
 ## Wiring and cleanup
 
 Both `InteractiveSourceText` and `InteractiveTargetText` wire `onmouseenter` on each
-token to `alignment.hoverSource(i)` / `hoverTarget(i)`, `onmouseleave` on the container
-to `alignment.hoverOut()`, and touch taps to `tapSource(i)` / `tapTarget(i)`.
+token to `alignment.highlight.hoverSource(i)` / `hoverTarget(i)`, `onmouseleave` on the
+container to `alignment.highlight.hoverOut()`, and touch taps to `tapSource(i)` /
+`tapTarget(i)` — all through the `alignment.highlight` field directly.
 
 Cleanup is owned by a single `$effect` in `QuoteWorkbench`: it calls
-`alignment.clearHighlight()` when the mode is not `view` **and** returns a teardown that
-clears it on unmount, so pending light/grace timers can never fire on a detached
-instance, and the reset runs once per mode-exit rather than once per panel.
+`alignment.highlight.clearHighlight()` when the mode is not `view` **and** returns a
+teardown that clears it on unmount, so pending light/grace timers can never fire on a
+detached instance, and the reset runs once per mode-exit rather than once per panel.
 
 > Keyboard navigation in view mode is deliberately not implemented — there is no
 > keyboard highlight.

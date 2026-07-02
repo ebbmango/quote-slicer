@@ -38,6 +38,7 @@ Then the feature-specific pages as you need them.
 | [Mappings List](mappings-list.md)               | The sidebar card GSAP Flip animations, swipe-to-delete, the `$state` re-entrancy rule                                  |
 | [Dark Mode](dark-mode.md)                       | No-flash prepaint, cross-tab theme controller, per-scheme palette, synchronized transitions                            |
 | [UI Architecture](ui-architecture.md)           | Component tree, responsibilities, context wiring, the responsive data panels/modal                                     |
+| [Testing](testing.md)                           | The two vitest projects (client/server), the load-bearing config, filename routing, e2e regression guards              |
 | [Build & Deploy](build-and-deploy.md)           | Static prerender, base path, the GitHub Pages pipeline, the proprietary icons secret                                   |
 | [File Map](file-map.md)                         | Every source file and its responsibility                                                                               |
 | [Future Features](future-features.md)           | Designed-but-unbuilt affordances: punctuation exclusion toggle, paired-mark pairing, per-breakpoint line breaks        |

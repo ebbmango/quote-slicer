@@ -137,9 +137,9 @@ specially:
   continuous highlight. The rule is `findBridgeMapping()`, an internal helper in
   `tokenState.ts` used by `deriveTargetTokenState`; see
   [Link Mode](link-mode.md#whitespace-bridging).
-- **Bridged in text output** — `buildTargetText()` treats short gaps (≤ 5 tokens, all
-  whitespace/punctuation) as contiguous, so a mapping's `targetText` renders as a
-  single phrase rather than comma-joined fragments.
+- **Bridged in text output** — `buildTargetText()` treats short gaps (indices at most
+  `MAX_BRIDGE_GAP = 5` apart, all whitespace/punctuation between) as contiguous, so a
+  mapping's `targetText` renders as a single phrase rather than comma-joined fragments.
 - **Copyable** — in line mode the whitespace tokens are rendered as
   `<span role="button">` with `user-select: text`, not `<button>`, so selecting and
   copying the target text preserves the spaces.

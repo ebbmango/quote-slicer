@@ -88,7 +88,7 @@ snapped after the rest of the page had already started easing. Now tokenization 
 only on `code`/`lang`/`theme` (all theme-independent), so it runs **once**; the light↔dark
 swap is just `colorMap` changing, which updates the inline `style` colours synchronously
 in the same frame as everything else and rides the `theme-anim` colour transition (see
-[dark mode → synchronized transitions](dark-mode.md#synchronized-transitions-htmltheme-anim)).
+[dark mode → the `theme-anim` window](dark-mode.md#the-htmltheme-anim-window)).
 The lookup lower-cases `token.color` first — Shiki emits some theme hexes upper-cased, and
 a case-sensitive miss would fall through to the raw dracula colour.
 

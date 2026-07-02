@@ -40,7 +40,8 @@ on, the bottom toolbar switches freely between `link`, `line`, and `view`.
 A **mapping** links a set of source characters to a set of target words. It carries:
 
 - a **color**, assigned at creation from a fixed 9-color palette and stable for the
-  mapping's lifetime (it never shifts when other mappings are added or removed);
+  mapping's lifetime (it never shifts when other mappings are added or removed;
+  deleting a mapping frees its color for the next new mapping);
 - **pinyin** for each source character, auto-filled from `pinyin-pro` and editable
   in the mapping's sidebar card;
 - a **display label** — a sequential number shown on the card.

@@ -38,14 +38,31 @@ risks flicker; pre-matching costs nothing at mount.
   letter-spacing that would otherwise centre the glyph block 1 px left. Font size is
   unified to `1.75rem` across textareas, token spans, and sidebar cards.
 - **Colour.** When `arrowExiting` flips true, each field gets an `.exiting` modifier and
-  animates over 400 ms (just under the 450 ms swap, so it settles flat first). The three
-  fields use different strategies — source/authorship stay at their resting opacity and
-  only raise the _placeholder_ to `currentColor`; the target field keeps element opacity
-  at 1 and dims via _text colour_ to `currentColor @ 30%`, with a fixed placeholder path
-  rather than `currentColor` to avoid compounding two opacity multipliers.
+  animates over 400 ms (just under the 450 ms swap, so it settles flat first). The morph
+  animates **one multiplier per field** so the effective opacity moves monotonically (an
+  earlier version faded the target's element opacity _and_ its placeholder colour at
+  once; the product overshot brighter before settling — an "up then down" flicker):
+  - **source / authorship** stay at their resting element opacity and only raise the
+    _placeholder's_ pseudo-element `opacity` 0.5 → 1;
+  - **target** keeps element opacity at 1 and dims via _text colour_ to
+    `color-mix(in oklab, currentColor 30%, transparent)`; its placeholder rises to
+    opacity 1 so it lands at the same effective 30 %.
+
+  Every morph transition (and the `.exiting` colour value it animates) is declared
+  **only under `.morph-*.exiting`** — never on the resting field. A resting
+  `transition: color` on an inherited colour would chase `<body>`'s easing value on a
+  theme flip (the "target text lags" bug), and resting placeholders are plain
+  `color: currentColor` dimmed by pseudo `opacity` for the same family of reasons — see
+  [Dark Mode → traps](dark-mode.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
 
 `prefers-reduced-motion` keeps the pre-match (the swap stays seamless) but applies the
 `.exiting` state instantly instead of animating it.
+
+> **The launch is one-way, and the CSS relies on it.** `advanceToLinkMode` seeds every
+> field and swaps mode; `.exiting` never comes off while text mode is visible, so no
+> reverse transition exists. If a "back to text mode" path is ever added that un-sets
+> `arrowExiting` while the fields are visible, the reverse morph will snap — add a
+> transition scoped to that path only, never a resting one.
 
 > The geometry match is exact only because the divisor buttons are zero-width — if
 > divisor sizing changes, `tracking-[2px]` / `translate-x-[1px]` must be recomputed (a
@@ -79,7 +96,7 @@ What changes between modes is _attributes_, not _which elements are mounted_:
   its own. Source opacity also encodes the mode (`opacity-70` in line, `opacity-30` in
   view), so the three modes read distinctly without ever remounting. During a _theme_
   toggle this 280 ms widens to 500 ms under `html.theme-anim` so tokens settle in step
-  with the page background — see [Dark Mode](dark-mode.md#synchronized-transitions-htmltheme-anim).
+  with the page background — see [Dark Mode](dark-mode.md#the-htmltheme-anim-window).
 - **`.merge-zone`** — the full-width line break. It is a real element at `height: 0` in
   link/view (still forcing a flex wrap, so it doubles as the plain line break) and
   transitions to `height: 1.5rem` when `.line-active`. That height transition is what

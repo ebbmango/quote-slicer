@@ -26,8 +26,10 @@ _does_ own:
 | `mappings`        | private `$state` | the full list of mappings                                                                                                                      |
 | `activeMappingId` | public `$state`  | the currently selected mapping (or `null`)                                                                                                     |
 | `meta`            | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()`                                                              |
-| `nextColorIndex`  | private `$state` | monotonic counter for assigning mapping colors                                                                                                 |
 | `listAnimating`   | public `$state`  | true while the mappings list is mid-animation; throttles mutations (see [Mappings List](mappings-list.md#the-listanimating-mutation-throttle)) |
+
+(There is deliberately no state for colour assignment — the next colour is derived
+from the mappings array at creation time; see _Mapping lifecycle_ below.)
 
 And what it derives:
 
@@ -84,17 +86,23 @@ target token can be freely added to the active mapping.
 
 ## Mapping lifecycle
 
-- **Create** — `createMapping()`: a fresh UUID, the next `colorIndex` from the
-  monotonic counter, empty token-ID arrays.
+- **Create** — `createMapping()`: a fresh UUID, the **lowest free palette slot** as
+  `colorIndex`, empty token-ID arrays.
 - **Prune** — `pruneActive()`: deletes the active mapping if it has zero source _and_
   zero target tokens. Called after every removal, so emptying a mapping out cleans it up.
 - **Deselect** — `deselect()`: `activeMappingId = null`, without deleting.
 - **Delete** — `deleteById(id)` / `deleteActive()`: removes by ID; clears
   `activeMappingId` if it matches.
 
-`colorIndex` comes from a counter that **never resets**. Color is therefore decoupled
-from list position — deleting or reordering mappings can never reassign an existing
-card's color.
+A mapping's `colorIndex` is fixed at creation — deleting or reordering other mappings
+never recolours an existing card. But deleting a mapping **releases its palette slot**:
+`createMapping()` scans the current mappings for the lowest unused `colorIndex` and
+assigns that, so a delete-then-recreate workflow reuses the freed colour instead of
+drifting forward through the palette. (An earlier design drew from a monotonic
+`nextColorIndex` counter, which never released slots.) Colour choice is thus _derived_
+from the mappings array per call rather than tracked as separate persistent state —
+there is nothing extra to keep consistent. Palette wraparound is unchanged: lookups are
+modulo `MAPPING_COLORS.length` downstream.
 
 ## Pinyin auto-fill and canonical storage
 
@@ -115,7 +123,13 @@ with `toneType: 'num'` and writes the result via `this.store.setPinyin(tokenId, 
 - The user can override pinyin in the mapping card's input. `Mapping.svelte` uses the
   **`PinyinInput.svelte`** component, which holds a local edit buffer while focused (so
   typing `"zhi1"` isn't reformatted to `"zhī"` mid-keystroke) and commits on blur via
-  `alignment.setPinyin(mappingId, position, value)`. `Alignment` is the single owner of
+  `alignment.setPinyin(mappingId, tokenId, value)`. The commit is addressed by **stable
+  token ID**, not a position into the mapping's `sourceTokenIds` — a positional index
+  could resolve to a different token after a reorder, split, or merge, and the caller
+  (the card's `sourceEntries` row) already holds `entry.tokenId`. A `tokenId` not
+  present in the mapping's `sourceTokenIds` is a silent no-op, matching the method's
+  role as a UI commit handler. This keeps the repo-wide invariant that mapping
+  operations traffic in stable IDs, never indices. `Alignment` is the single owner of
   canonicalization: it runs the raw text through `toCanonical()` (from `pinyinConvert.ts`)
   before writing to the store — the UI never canonicalizes.
 

@@ -11,7 +11,7 @@ linked per area.
 | `src/routes/+layout.svelte` | Registers GSAP plugins (lazy, `onMount`); starts the interaction-mode sensor (sync `onMount`)                                                |
 | `src/routes/+layout.ts`     | `export const prerender = true` — static output, no SSR                                                                                      |
 | `src/routes/+page.svelte`   | Root shell: sets all 4 contexts, the responsive grid + sidebar slide, the text→link arrow launch, `initAlignmentShortcuts`                   |
-| `src/routes/layout.css`     | Tailwind import, fonts, theme tokens (`--mapping-gap`, `--line-tool-*`), custom variants (`hocus`, `tablet`, `modal-wide`, …)                |
+| `src/routes/layout.css`     | Tailwind import, fonts, theme tokens (`--mapping-gap`, `--line-tool-*`), custom variants (`hocus`, `tablet`, `modal-wide`, …), the shared `.fade-y` scroll fade (parameterized by `--fade-pad`), `--default-transition-timing-function: ease` |
 | `src/routes/*.e2e.ts`       | Playwright e2e specs                                                                                                                         |
 
 ## Tokenization & data (framework-free)
@@ -20,7 +20,7 @@ linked per area.
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/tokenize.ts`          | `SourceToken` / `TargetToken` types; `tokenizeSource()`, `tokenizeTarget()`; `SOURCE_INPUT_RE` ([Tokenization](tokenization.md))                                                                                             |
 | `src/lib/line.ts`              | `splitAfterToken()`, `mergeLines()` — pure generics over `T extends { line: number }` ([Line Mode](line-mode.md))                                                                                                            |
-| `src/lib/tokenState.ts`        | `Mapping`, `MappingId`, `TokenState`, `QuoteExport*` types; `buildMappingIndex()`, `deriveSourceTokenState()`, `deriveTargetTokenState()`, `buildTargetText()`; internal `findBridgeMapping()` ([Data Model](data-model.md)) |
+| `src/lib/tokenState.ts`        | `Mapping`, `MappingId`, `TokenState`, `QuoteExport*` types; `buildMappingIndex()`, `deriveSourceTokenState()`, `deriveTargetTokenState()`, `buildTargetText()` (+ `MAX_BRIDGE_GAP`); internal `findBridgeMapping()` ([Data Model](data-model.md)) |
 | `src/lib/tokenPresentation.ts` | `tokenPresentation()` — shared per-token colour/opacity/weight → `{ style, opacityClass }` ([Mode Transitions](mode-transitions.md))                                                                                         |
 | `src/lib/pinyinConvert.ts`     | `toCanonical()` / `toDisplay()` + the 407-syllable table — numbered↔diacritic pinyin ([Link Mode](link-mode.md#pinyin-auto-fill-and-canonical-storage))                                                                      |
 | `src/lib/exportFormat.ts`      | `formatExport()` — column-aligned JSON pretty-printer ([Export](export.md))                                                                                                                                                  |
@@ -53,8 +53,8 @@ linked per area.
 | `src/lib/components/Mapping.svelte`               | One mapping card (reads `MappingView` only); quantized grid sizing; light/dark `colorVariant` + `theme` object; delete button ([Dark Mode](dark-mode.md))                                                        |
 | `src/lib/components/PinyinInput.svelte`           | Buffered pinyin editor — holds canonical input while focused, commits on blur ([Link Mode](link-mode.md#pinyin-auto-fill-and-canonical-storage))                                                                 |
 | `src/lib/components/MappingsList.svelte`          | The `<ol>` of cards; GSAP Flip add/delete animations; `swipeToDelete`; `listAnimating`; responsive grid; active-card scroll; `handleListTab`; `use:listRef`; empty state ([Mappings List](mappings-list.md))     |
-| `src/lib/components/JsonExportPanel.svelte`       | Derives `formatExport(exportData)`; feeds `HighlightedCode` the palette `colorReplacements`                                                                                                                      |
-| `src/lib/components/HighlightedCode.svelte`       | Generic Shiki highlighter; lazy-imports `shiki`; `colorReplacements` prop                                                                                                                                        |
+| `src/lib/components/JsonExportPanel.svelte`       | Derives `formatExport(exportData)`; feeds `HighlightedCode` the theme-aware palette `colorMap`                                                                                                                   |
+| `src/lib/components/HighlightedCode.svelte`       | Generic Shiki highlighter; lazy-imports `shiki`; render-time `colorMap` prop                                                                                                                                     |
 | `src/lib/components/DataPanel.svelte`             | Shared maps/json surface; picks `MappingsList` vs `JsonExportPanel`; `.fade-edges` mask                                                                                                                          |
 | `src/lib/components/DataModal.svelte`             | Minimal-viewport slide-in over the workbench; history/back integration; force-close on breakpoint exit                                                                                                           |
 | `src/lib/components/ModeToolbar.svelte`           | Bottom toolbar: link/line/view switch + two CSS-gated maps/json toggle pairs (aside vs modal)                                                                                                                    |
@@ -65,6 +65,7 @@ linked per area.
 
 | File                                 | Responsibility                                                                                                                                                                 |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/actions/autosize.ts`        | Svelte action keeping a textarea's height matched to its content (input + resize)                                                                                              |
 | `src/lib/actions/longpress.ts`       | Svelte action firing `onlongpress` after N ms; mobile force-add on source tokens                                                                                               |
 | `src/lib/actions/swipeToDelete.ts`   | Swipe-to-delete gesture state machine for mapping cards on touch ([Mappings List](mappings-list.md#swipe-to-delete-touch))                                                     |
 | `src/lib/actions/redistribute.ts`    | `redistributeRow()` / `clearRedistribute()` — hover-spread of line-mode divisors via `--rd-x`; `computeRowOffsets()` is its pure, unit-tested core ([Line Mode](line-mode.md)) |
@@ -81,14 +82,22 @@ linked per area.
 
 ## Tests
 
-| File                                        | Covers                                                               |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `src/lib/tokenize.spec.ts`                  | Target tokenizer punctuation rules                                   |
-| `src/lib/pinyinConvert.spec.ts`             | Canonical↔diacritic pinyin conversion                                |
-| `src/lib/tokenState.spec.ts`                | Token-state derivation                                               |
-| `src/lib/tokenPresentation.spec.ts`         | Per-token colour/opacity/weight output                               |
-| `src/lib/exportFormat.spec.ts`              | JSON pretty-printer                                                  |
-| `src/lib/theme/themeState.spec.ts`          | Theme resolution / continuity logic                                  |
-| `src/lib/actions/redistribute.spec.ts`      | Hover-spread offset math (`computeRowOffsets`)                       |
-| `src/lib/navigation/visualNeighbor.spec.ts` | Visual-neighbour math                                                |
-| `src/routes/**/*.e2e.ts`                    | Playwright end-to-end flows (incl. line-split overflow, rapid-click) |
+Unit specs run in one of two vitest projects, routed by filename —
+`*.svelte.spec.ts` in the **client** project (jsdom, client Svelte runtime),
+plain `*.spec.ts` in the **server** project (node). See [Testing](testing.md).
+
+| File                                          | Project | Covers                                                                              |
+| --------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `src/lib/tokenize.spec.ts`                    | server  | Target tokenizer punctuation rules; source tokenizer; `groupSourceTokens` grouping  |
+| `src/lib/line.spec.ts`                        | server  | `splitAfterToken`/`mergeLines` — immutability, line math, out-of-range throw        |
+| `src/lib/pinyinConvert.spec.ts`               | server  | Canonical↔diacritic pinyin conversion                                               |
+| `src/lib/tokenState.spec.ts`                  | server  | Token-state derivation                                                              |
+| `src/lib/tokenPresentation.spec.ts`           | server  | Per-token colour/opacity/weight output                                              |
+| `src/lib/exportFormat.spec.ts`                | server  | JSON pretty-printer                                                                 |
+| `src/lib/theme/themeState.spec.ts`            | server  | Theme resolution / continuity logic                                                 |
+| `src/lib/actions/redistribute.spec.ts`        | server  | Hover-spread offset math (`computeRowOffsets`)                                      |
+| `src/lib/navigation/visualNeighbor.spec.ts`   | server  | Visual-neighbour math                                                               |
+| `src/lib/context/tokenStore.spec.ts`          | server  | Token store: text-keyed cache, pinyin overlay (`onMount` is a no-op under node)     |
+| `src/lib/context/alignment.svelte.spec.ts`    | client  | `Alignment`: mapping lifecycle, toggle semantics, pinyin commit, export, highlight  |
+| `src/lib/context/viewHighlight.svelte.spec.ts`| client  | `ViewHighlight` cold/warm/grace timers (fake timers)                                |
+| `src/routes/**/*.e2e.ts`                      | —       | Playwright end-to-end flows (incl. line-split overflow, rapid-click, theme lockstep)|

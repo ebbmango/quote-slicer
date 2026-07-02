@@ -72,6 +72,8 @@ Start at [`docs/index.md`](docs/index.md). Pages:
 - [`docs/mappings-list.md`](docs/mappings-list.md) — sidebar card GSAP Flip animations, swipe-to-delete, the `$state` re-entrancy rule
 - [`docs/dark-mode.md`](docs/dark-mode.md) — no-flash prepaint, cross-tab theme controller, per-scheme palette, synchronized transitions
 - [`docs/ui-architecture.md`](docs/ui-architecture.md) — component tree, context wiring, responsive layout, GSAP patterns
+- [`docs/testing.md`](docs/testing.md) — the two vitest projects (client/server), load-bearing config, filename routing, e2e regression guards
 - [`docs/build-and-deploy.md`](docs/build-and-deploy.md) — static prerender, base path, GitHub Pages, icons secret
 - [`docs/file-map.md`](docs/file-map.md) — every file and its responsibility
+- [`docs/future-features.md`](docs/future-features.md) — designed-but-unbuilt affordances (punctuation exclusion, paired marks, per-breakpoint line breaks)
 - [`docs/implementation-notes/`](docs/implementation-notes/index.md) — running change log (parsed into the docs above; `old/` = already parsed)

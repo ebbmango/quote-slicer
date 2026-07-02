@@ -28,6 +28,10 @@ and `Alignment` _derive_ their token views from it — neither keeps a copy.
 > avoid "token cache" (the cache is only one part of it). See
 > [`CONTEXT.md`](../CONTEXT.md).
 
+The cache and overlay behaviour below is unit-tested in `tokenStore.spec.ts` — under
+plain node, since `onMount` (which arms the animation) is a no-op there. See
+[Testing](testing.md).
+
 ## The text-keyed cache
 
 The cache answers "have the tokens for _this exact text_ been line-edited?"
