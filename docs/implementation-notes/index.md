@@ -19,12 +19,30 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-| Date       | Note                                                                                                                             | Commits         |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 2026-07-02 | [Text-field chase, card-opacity snap, and body-level color-scheme](./26-07-02-text-fields-card-opacity-and-body-color-scheme.md) | _(uncommitted)_ |
-| 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./26-07-02-theme-lockstep-easing-and-flushsync.md)                         | `fb0265f`       |
+_None — everything below has been folded into the docs._
 
 ## Archived notes (already parsed into the docs)
+
+### Folded in on 2026-07-02
+
+This pass consumed the 2026-07-02 run. It added a new [Testing](../testing.md) page
+(the two vitest projects, the load-bearing client-runtime config, the filename-routing
+trap) and revised link mode (`setPinyin` keyed by token ID, freed colour slots reused
+by `createMapping`), the file map (autosize action, `colorMap`, the new specs and their
+projects, the shared `.fade-y` rule), mode transitions (the `.exiting`-scoped morph and
+its one-way constraint), view mode (the `alignment.highlight` call surface), data
+model / tokenization (`MAX_BRIDGE_GAP`), and build-and-deploy (test surface pointer).
+The theme-lockstep and text-field notes were largely pre-folded into
+[Dark Mode](../dark-mode.md) by the commits themselves; stale cross-page anchors to it
+were repaired.
+
+| Date       | Note                                                                                                                                  | Commits                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./old/26-07-02-theme-lockstep-easing-and-flushsync.md)                            | `fb0265f`                                  |
+| 2026-07-02 | [Text-field chase, card-opacity snap, and body-level color-scheme](./old/26-07-02-text-fields-card-opacity-and-body-color-scheme.md)    | `628fc63`                                  |
+| 2026-07-02 | [Vitest client project: unit-testing runes modules](./old/26-07-02-vitest-client-project.md)                                            | `4832b58`, `84b20c6`                       |
+| 2026-07-02 | [Alignment: setPinyin keyed by tokenId, freed color slots reused](./old/26-07-02-alignment-pinyin-tokenid-and-color-reuse.md)           | `f096bbc`, `2aafb71`                       |
+| 2026-07-02 | [Lib cleanup wave: reorg for discoverability, dedupe, named constants](./old/26-07-02-lib-cleanup-wave.md)                              | `d6884e9`, `3a43d10`, `25cde28`, `8d4e99c` |
 
 ### Folded in on 2026-06-27
 
