@@ -5,14 +5,14 @@ linked per area.
 
 ## Routes
 
-| File                                        | Responsibility                                                                                                                               |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app.html`                              | HTML shell + the no-flash theme **prepaint script** (runs before CSS/JS) ([Dark Mode](dark-mode.md#the-no-flash-prepaint-script-srcapphtml)) |
-| `src/routes/+layout.svelte`                 | Registers GSAP plugins (lazy, `onMount`); starts the interaction-mode sensor (sync `onMount`)                                                |
-| `src/routes/+layout.ts`                     | `export const prerender = true` — static output, no SSR                                                                                      |
-| `src/routes/+page.svelte`                   | Root shell: sets all 4 contexts, the responsive grid + sidebar slide, the text→link arrow launch, `initAlignmentShortcuts`                   |
-| `src/routes/layout.css`                     | Tailwind import, fonts, theme tokens (`--mapping-gap`, `--line-tool-*`), custom variants (`hocus`, `tablet`, `modal-wide`, …)                |
-| `src/routes/demo/**`, `src/routes/*.e2e.ts` | Playwright demo routes + e2e specs                                                                                                           |
+| File                        | Responsibility                                                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app.html`              | HTML shell + the no-flash theme **prepaint script** (runs before CSS/JS) ([Dark Mode](dark-mode.md#the-no-flash-prepaint-script-srcapphtml)) |
+| `src/routes/+layout.svelte` | Registers GSAP plugins (lazy, `onMount`); starts the interaction-mode sensor (sync `onMount`)                                                |
+| `src/routes/+layout.ts`     | `export const prerender = true` — static output, no SSR                                                                                      |
+| `src/routes/+page.svelte`   | Root shell: sets all 4 contexts, the responsive grid + sidebar slide, the text→link arrow launch, `initAlignmentShortcuts`                   |
+| `src/routes/layout.css`     | Tailwind import, fonts, theme tokens (`--mapping-gap`, `--line-tool-*`), custom variants (`hocus`, `tablet`, `modal-wide`, …)                |
+| `src/routes/*.e2e.ts`       | Playwright e2e specs                                                                                                                         |
 
 ## Tokenization & data (framework-free)
 
