@@ -11,7 +11,7 @@ GSAP and its plugins are lazy-loaded inside `onMount`.
 ```bash
 npm run dev          # start dev server
 npx tsc --noEmit    # type-check
-npx vitest           # unit tests (src/lib/vitest-examples/)
+npx vitest           # unit tests; two projects: client (*.svelte.spec.ts, jsdom, runes) + server (plain ts, node)
 npx playwright test  # e2e tests
 ```
 
