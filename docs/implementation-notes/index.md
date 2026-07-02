@@ -21,6 +21,7 @@ level always shows only "not yet documented" work.
 
 | Date | Note | Commits |
 |------|------|---------|
+| 2026-07-02 | [Text-field chase, card-opacity snap, and body-level color-scheme](./26-07-02-text-fields-card-opacity-and-body-color-scheme.md) | _(uncommitted)_ |
 | 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./26-07-02-theme-lockstep-easing-and-flushsync.md) | `fb0265f` |
 
 ## Archived notes (already parsed into the docs)

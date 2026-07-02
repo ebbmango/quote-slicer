@@ -151,26 +151,38 @@ Three independent bugs combined; all three are fixed:
 Every visible colour on the page must settle on its new value at the same rate on a
 theme flip — no element finishing ahead of or behind the page background.
 
-### Never change `color-scheme` during the flip (Chrome throttle)
+### Never change the root `color-scheme` while transitions can run (Chrome throttle)
 
 The single most important rule, and the least obvious. Chrome runs a
 `background-color` transition on the **compositor** but a `color` transition on the
-**main thread** — and it _throttles the `color` transition to roughly half rate when
-`color-scheme` changes in the same frame as the flip._ With the old code
-(`applyDocumentTheme` set `document.documentElement.style.colorScheme = mode` inline on
-every toggle, and `.dark` also carried `color-scheme: dark`), the background settled in
-~500 ms while all text dragged to ~900 ms — text visibly "caught up" late. It was not
-paint jank and not DOM size: a bare test page synced fine, and toggling only the `.dark`
-class (leaving `color-scheme` alone) synced fine; adding the `color-scheme` change was
-the sole trigger.
+**main thread** — and it _runs every `color` transition at roughly half speed when the
+**root element's** `color-scheme` changed in the same frame, mid-flight, **or within
+~500 ms before the transition started**._ With the original code
+(`document.documentElement.style.colorScheme = mode` inline on every toggle, and
+`.dark` also carrying `color-scheme: dark`), the background settled in ~500 ms while
+all text dragged to ~900 ms. It was not paint jank and not DOM size: a bare test page
+synced fine, and toggling only the `.dark` class (leaving `color-scheme` alone) synced
+fine; adding the `color-scheme` change was the sole trigger.
 
-Fix: `color-scheme` is no longer set via CSS (removed from `html` / `html.dark`) or
-synchronously on a flip. `systemTheme.ts` applies it inline **after** the transition
-window (`scheduleColorScheme`, debounced to `THEME_ANIM_MS + 60`), so no `color`
-transition is running when it changes. The initial value is still stamped inline by the
-app.html prepaint (pre-paint, no transition) and re-asserted once on controller init.
-Native form controls / scrollbars therefore adopt the new scheme ~560 ms after a flip
-instead of instantly — imperceptible, and the whole page now transitions in lockstep.
+A first fix deferred the root write past the transition window (a debounced timer at
+`THEME_ANIM_MS + 60`). That only **moved** the poison window: because the penalty also
+hits transitions that _start_ within ~500 ms _after_ a root `color-scheme` change, a
+second toggle landing 0–500 ms after the deferred write (which in practice meant
+"toggle again right as the button's 800 ms orbit settles") still throttled every text
+colour to ~1 s while backgrounds finished in 500 ms — the on-and-off "everything that
+is text lags" Chrome glitch. No deferral schedule can dodge that for an
+arbitrarily-timed next click.
+
+Fix: live `color-scheme` changes go inline on **`<body>`**, synchronously with the
+class flip (`applyColorScheme` in `systemTheme.ts`). Body-level changes carry no
+penalty at any offset (measured on a minimal fixture: same-frame, before, and
+mid-flight all settle ~440 ms) and still reach every form control, caret, and inner
+scrollbar via inheritance. `<html>` keeps only the app.html prepaint value (correct
+pre-hydration first paint); it goes stale after live toggles, which only affects the
+root scrollbar and canvas default — the layout is a non-scrolling `h-dvh` grid and
+every surface paints its own background, so neither is ever visible. Native form
+controls now re-theme in the same frame as the flip, and there is no timer left to
+collide with.
 
 ### The load-bearing rule: transition colour once, at the root, and inherit
 
@@ -210,9 +222,9 @@ settle with it, on every engine, for free.
 `systemTheme.ts` calls `flashThemeTransition()` on a real mode change, adding
 `theme-anim` to `<html>` for 500 ms (debounced). Its only job now is to _widen_ the
 handful of elements whose own colour transition is normally faster — the tinted tokens
-(280→500 ms) and the `morph-target` textarea — so their explicit-colour shift matches the
-page during a theme flip without slowing the arrow-launch mode-crossfade the rest of the
-time.
+(280→500 ms) — and to arm the Shiki spans' colour transition, so their explicit-colour
+shift matches the page during a theme flip without slowing the arrow-launch
+mode-crossfade the rest of the time.
 
 ### Traps that reintroduce the bug (all fixed, keep them fixed)
 
@@ -234,13 +246,46 @@ time.
   settling after everything else. `layout.css` pins
   `--default-transition-timing-function: ease` in `@theme`, so every Tailwind transition
   shares the page's curve. Don't add per-element `ease-*` utilities that diverge from it.
+- **A resting `color` transition on the text fields.** The `.morph-*` textareas used to
+  carry `transition: color 400ms ease-out` permanently (for the arrow-launch morph).
+  Their colour is inherited, so this is the compounding trap above — with a twist per
+  engine: WebKit showed the chase in computed style (target text settled ~900 ms), while
+  **Chromium reported lockstep in `getComputedStyle` but painted the chase anyway**
+  (painted pixels sat at ~50 % when the page was done). Painted-pixel measurement is the
+  only truth for form controls. The morph transitions (and the `.exiting` colour values
+  they animate) now live only under `.morph-*.exiting` — the destination state of the
+  one-way arrow launch — so resting fields ride inheritance untransitioned.
+- **Placeholder colour must be PLAIN `currentColor` — never a colour function of it.**
+  Under a dark OS scheme (the prepaint stamps `color-scheme: dark` on `<html>`),
+  Chromium fails to recompute `::placeholder` colours built from `color-mix()` or
+  relative-colour syntax over `currentColor` when the inherited colour changes: after
+  a toggle the placeholder keeps the previous theme's ink and camouflages into the new
+  background. The UA default is exactly such a `color-mix`, so leaving the colour to
+  the UA has the same bug. The fields declare `color: currentColor` with the 50 %
+  dimming on the pseudo-element's `opacity` (identical visual math; plain
+  `currentColor` and `var()`-based colours recompute correctly). Separately, pairing
+  any author placeholder colour with a `transition: color` arms the inherited-change
+  chase (the "target placeholder lags" symptom) — placeholders transition only
+  `opacity`, and only under `.exiting`.
+- **State-dependent inline `opacity` without an opacity transition.** The mapping card's
+  bottom text opacity derives from `isDark` (`0.5`/`1` inactive-dark vs rest). With only
+  `transition-colors` on the span, the flushed inline opacity snapped in one frame while
+  every colour eased over 500 ms — the "bottom text flickers" symptom in all three
+  engines. The spans use `transition-[color,opacity] duration-500`. Any inline style
+  derived from `theme.current` must either be transitioned or be theme-invariant.
 
 ### Two more supporting fixes
 
-- **`::placeholder` uses `currentColor`.** Browsers don't re-resolve `light-dark()`
-  on `::placeholder` when `color-scheme` changes — the colour freezes at first paint.
-  Switching the target textarea's placeholder to `currentColor` makes it inherit
-  through the normal cascade and update on theme flip.
+- **`::placeholder` is `currentColor` + pseudo `opacity`, transitioned never (colour)
+  / only under `.exiting` (opacity).** Three placeholder traps stack here: browsers
+  don't re-resolve `light-dark()` on `::placeholder` when `color-scheme` changes (rules
+  out `var(--page-fg)`); Chromium under a dark OS scheme doesn't recompute
+  colour-functions-of-`currentColor` on `::placeholder` (rules out `color-mix` and the
+  UA default — see the trap above); and an author colour plus a colour transition
+  chases the flip. Plain `color: currentColor; opacity: 0.5` dodges all three and
+  rides `<body>`'s transition in lockstep (verified Chromium / WebKit / Firefox, light
+  and dark OS). The arrow-launch morph brightens the placeholder by transitioning the
+  pseudo-element's `opacity` 0.5 → 1 under `.exiting`.
 - **JSON export recolours synchronously.** `HighlightedCode` used to re-tokenize on a
   theme flip to swap Shiki's inline colours — an _async_ step, so the JSON panel snapped
   a frame late. It now tokenizes once with the raw `dracula` theme (structure and base

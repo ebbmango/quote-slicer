@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeRowOffsets } from './rowSpread';
+import { computeRowOffsets } from './redistribute';
 
 const opts = { max: 24, perGap: 8 };
 

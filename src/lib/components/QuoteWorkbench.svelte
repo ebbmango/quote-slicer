@@ -277,60 +277,69 @@
 	     fade, so nothing compounds.
 	   400ms ease-out settles flat just before the swap; resting look is untouched. */
 
-	/* source + authorship: only the placeholder colour rises to full currentColor;
-	   the element's own opacity (0.3 / 0.4) already provides the token dimming. */
+	/* The colour transitions live ONLY under .exiting (the destination state of the
+	   morph, which is where the engine reads transition-* from), never on the resting
+	   field. A resting `transition: color` on an element whose colour is inherited
+	   makes it EASE TOWARD <body>'s already-easing value on a theme flip, so it
+	   settles at ~2× the page's 500ms — the "target text lags" bug. WebKit shows the
+	   chase in computed style; Chromium hides it there but paints it anyway (painted
+	   pixels sat at ~50% when the page was done). Same rule as .tok in layout.css:
+	   inherited colour must ride inheritance untransitioned. .exiting is one-way
+	   (advanceToLinkMode seeds every field and swaps mode), so there is no
+	   remove-the-class path that would need the reverse transition. */
+
+	/* Placeholder colour is PLAIN currentColor with the 50% dimming carried by the
+	   pseudo-element's opacity — never a colour *function* of currentColor. When the
+	   root color-scheme is dark (dark-OS users: the app.html prepaint stamps it),
+	   Chromium fails to recompute ::placeholder colours built from currentColor via
+	   color-mix() / relative-color syntax when the inherited colour changes — the
+	   placeholder stays at the PREVIOUS theme's ink and camouflages into the new
+	   background (the UA default is exactly such a color-mix, so leaving it to the
+	   UA has the same bug). Plain currentColor and var()-based colours recompute
+	   correctly; plain currentColor also rides <body>'s theme transition in
+	   lockstep, and opacity is theme-invariant so nothing here needs a transition
+	   on a flip. (var(--page-fg) is avoided for the older reason: light-dark()
+	   inside it never re-resolves on ::placeholder.) */
 	.morph-source::placeholder,
+	.morph-target::placeholder,
 	.morph-author::placeholder {
-		transition: color 400ms ease-out;
+		color: currentColor;
+		opacity: 0.5;
 	}
+
+	/* The morph animates the placeholder's OPACITY (0.5 → 1), not its colour: same
+	   visual as the old colour-alpha rise, without arming any colour transition. */
 	.morph-source.exiting::placeholder,
 	.morph-author.exiting::placeholder {
-		color: currentColor;
+		transition: opacity 400ms ease-out;
+		opacity: 1;
 	}
 
 	/* target text: element opacity stays at 1, so the dimming is carried by the text
 	   colour fading to currentColor @ 30% (== target token's currentColor × 0.3).
 	   currentColor here resolves to the stable inherited colour, so the typed text
-	   dims monotonically. */
-	.morph-target {
-		transition: color 400ms ease-out;
-	}
+	   dims monotonically. (Element-level color-mix, not ::placeholder — the Chromium
+	   staleness above is placeholder-specific, and this state is one-way and
+	   unmounts 450ms later.) */
 	.morph-target.exiting {
+		transition: color 400ms ease-out;
 		color: color-mix(in oklab, currentColor 30%, transparent);
 	}
-	/* target placeholder: uses currentColor (the element's own computed colour)
-	   rather than var(--page-fg) directly. var(--page-fg) is defined via
-	   light-dark(), and browsers don't re-resolve that function on ::placeholder
-	   when color-scheme changes — the colour would be frozen at the initial
-	   theme value. currentColor properly inherits through the cascade, so it
-	   updates and transitions with the rest of the page.
-	   During .exiting the element's colour animates to 30% alpha (see above);
-	   the placeholder explicitly resets to the full element colour (not the
-	   50%-mixed value) so its effective opacity also lands at 30% and matches
-	   the original intention. */
-	.morph-target::placeholder {
-		color: color-mix(in oklab, currentColor 50%, transparent);
-		transition: color 400ms ease-out;
-	}
+	/* target placeholder under .exiting: rises to the element's full (animating)
+	   colour — currentColor at opacity 1 — so its effective opacity lands at 30%
+	   with the element, matching the token-mode look at the swap. */
 	.morph-target.exiting::placeholder {
-		color: currentColor;
-	}
-
-	/* Widen the target's colour transition to match the 500ms page background
-	   during a theme flip. Scoped to the theme-switch window only; the 400ms
-	   mode-crossfade above is untouched for normal arrow-exit morph. */
-	:global(html.theme-anim) .morph-target,
-	:global(html.theme-anim) .morph-target::placeholder {
-		transition: color 500ms ease;
+		transition: opacity 400ms ease-out;
+		opacity: 1;
 	}
 
 	/* Reduced motion: keep the pre-match (so the swap is still seamless) but drop the
 	   easing — the .exiting state applies instantly at click instead of animating. */
 	@media (prefers-reduced-motion: reduce) {
-		.morph-source::placeholder,
-		.morph-author::placeholder,
-		.morph-target,
-		.morph-target::placeholder {
+		.morph-source.exiting::placeholder,
+		.morph-author.exiting::placeholder,
+		.morph-target.exiting,
+		.morph-target.exiting::placeholder {
 			transition: none;
 		}
 	}

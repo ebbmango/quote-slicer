@@ -219,13 +219,17 @@
 		class="flex h-6 w-full items-center justify-center overflow-hidden rounded-b-md transition-colors duration-500"
 		style="background: {theme.botBg};"
 	>
+		<!-- transition-[color,opacity]: botTextOpacity/botTextEmptyOpacity depend on
+		     isDark, so on a theme flip the opacity must ease alongside the 500ms colour
+		     transition — transition-colors alone let it snap in one frame (the
+		     bottom-text "flicker" visible in every browser). -->
 		{#if mappingView.targetText}
-			<span class="truncate px-3 font-ss4 text-xs font-[380] transition-colors duration-500" style="color: {theme.botText}; opacity: {botTextOpacity};"
+			<span class="truncate px-3 font-ss4 text-xs font-[380] transition-[color,opacity] duration-500" style="color: {theme.botText}; opacity: {botTextOpacity};"
 				>&ldquo;{mappingView.targetText}&rdquo;</span
 			>
 		{:else}
 			<span
-				class="font-ss4 text-xs font-[350] italic transition-colors duration-500"
+				class="font-ss4 text-xs font-[350] italic transition-[color,opacity] duration-500"
 				style="color: {theme.botText}; opacity: {botTextEmptyOpacity};">no translation</span
 			>
 		{/if}

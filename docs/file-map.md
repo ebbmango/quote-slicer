@@ -67,8 +67,7 @@ linked per area.
 |------|----------------|
 | `src/lib/actions/longpress.ts` | Svelte action firing `onlongpress` after N ms; mobile force-add on source tokens |
 | `src/lib/actions/swipeToDelete.ts` | Swipe-to-delete gesture state machine for mapping cards on touch ([Mappings List](mappings-list.md#swipe-to-delete-touch)) |
-| `src/lib/actions/redistribute.ts` | `redistributeRow()` / `clearRedistribute()` — hover-spread of line-mode divisors via `--rd-x` ([Line Mode](line-mode.md)) |
-| `src/lib/actions/rowSpread.ts` | `computeRowOffsets()` — the pure spread math behind `redistribute` |
+| `src/lib/actions/redistribute.ts` | `redistributeRow()` / `clearRedistribute()` — hover-spread of line-mode divisors via `--rd-x`; `computeRowOffsets()` is its pure, unit-tested core ([Line Mode](line-mode.md)) |
 | `src/lib/actions/globalShortcuts.ts` | `initAlignmentShortcuts()` — document-level Delete/Backspace + click-to-deselect (panels matched by `data-zone`) |
 
 ## Navigation
@@ -90,6 +89,6 @@ linked per area.
 | `src/lib/tokenPresentation.spec.ts` | Per-token colour/opacity/weight output |
 | `src/lib/exportFormat.spec.ts` | JSON pretty-printer |
 | `src/lib/themeState.spec.ts` | Theme resolution / continuity logic |
-| `src/lib/actions/rowSpread.spec.ts` | Hover-spread offset math |
+| `src/lib/actions/redistribute.spec.ts` | Hover-spread offset math (`computeRowOffsets`) |
 | `src/lib/navigation/visualNeighbor.spec.ts` | Visual-neighbour math |
 | `src/routes/**/*.e2e.ts` | Playwright end-to-end flows (incl. line-split overflow, rapid-click) |

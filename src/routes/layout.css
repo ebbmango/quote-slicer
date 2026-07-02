@@ -94,14 +94,14 @@
    dark and overrides the author's inline `color-scheme: light`, so a
    light-dark() palette ignored the user's toggle. The class is ours and wins.
 
-   `color-scheme` is deliberately NOT set here (nor on `.dark`). It's applied
-   inline on <html> by the app.html prepaint (initial) and the theme controller
-   (systemTheme.ts) — and, crucially, the controller changes it only AFTER the
-   colour-transition window, never in the same frame as the flip. Chrome throttles
-   a `color` transition to ~half rate when `color-scheme` changes mid-transition,
-   so the page background finished ~500ms while text dragged to ~900ms. Keeping
-   color-scheme out of the flip frame lets `color` and `background-color` settle
-   together. It stays set for native form controls / scrollbars. */
+   `color-scheme` is deliberately NOT set here (nor on `.dark`). The app.html
+   prepaint stamps it inline on <html> for the pre-hydration first paint; every
+   LIVE change goes inline on <body> (systemTheme.ts), synchronously with the
+   class flip. Root-level is off-limits while transitions can run: Chromium runs
+   `color` transitions at ~half speed whenever the ROOT color-scheme changed
+   mid-flight or within ~500ms before the transition start, and no deferral
+   schedule can dodge that window for an arbitrarily-timed next flip. Body-level
+   changes carry no penalty and still reach form controls via inheritance. */
 html {
 	--page-bg: #ffffff;
 	--page-fg: #1b1b1b;

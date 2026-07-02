@@ -25,13 +25,21 @@ function applyThemeClass(mode: Mode) {
 	document.documentElement.classList.toggle('dark', mode === 'dark');
 }
 
-// `color-scheme` drives native form controls / scrollbars. It is applied inline on
-// <html> (the app.html prepaint sets the initial value pre-paint) — NOT via the
-// `.dark` CSS class and NOT in the same frame as a theme flip. Chrome throttles a
-// `color` transition to ~half the rate of `background-color` when `color-scheme`
-// changes mid-transition, so text lagged the background badly. See scheduleColorScheme.
+// `color-scheme` drives native form controls / scrollbars. Live changes go on
+// <body>, NOT <html>: Chromium runs every `color` transition at ~half speed when
+// the ROOT element's color-scheme changed in the same frame, mid-flight, or within
+// ~500ms before the transition starts. A deferred root write (the previous fix)
+// only moved the poison window — a second flip landing 0–500ms after the deferred
+// write (≈ "toggle again once the button settles") still throttled text to ~1s and
+// desynced it from the background. Body-level color-scheme is penalty-free at ANY
+// offset (measured: same-frame/before/mid-flight all settle ~440ms) and still
+// propagates to every form control, caret, and inner scrollbar via inheritance.
+// <html> keeps only the app.html prepaint value (correct pre-hydration first
+// paint); it goes stale after live toggles, which only affects the root scrollbar
+// and canvas default — the layout is a non-scrolling h-dvh grid and every surface
+// paints its own background, so neither is ever visible.
 function applyColorScheme(mode: Mode) {
-	document.documentElement.style.colorScheme = mode;
+	document.body.style.colorScheme = mode;
 }
 
 // During an actual theme flip, mark <html> for the length of the page's 500ms
@@ -49,20 +57,6 @@ function flashThemeTransition() {
 		root.classList.remove('theme-anim');
 		themeAnimTimer = undefined;
 	}, THEME_ANIM_MS);
-}
-
-// Apply the new color-scheme only AFTER the colour transition has finished, so the
-// mid-transition color-scheme change can't throttle Chrome's `color` transition
-// (which desynced text from the background). Debounced so a second flip within the
-// window resets the timer and only the final scheme lands. The small buffer past
-// THEME_ANIM_MS ensures the transition is fully settled first.
-let colorSchemeTimer: ReturnType<typeof setTimeout> | undefined;
-function scheduleColorScheme(mode: Mode) {
-	if (colorSchemeTimer !== undefined) clearTimeout(colorSchemeTimer);
-	colorSchemeTimer = setTimeout(() => {
-		applyColorScheme(mode);
-		colorSchemeTimer = undefined;
-	}, THEME_ANIM_MS + 60);
 }
 
 export function adaptiveTheme() {
@@ -88,7 +82,8 @@ export function adaptiveTheme() {
 	let notify = () => {};
 
 	// Initial paint: no transition is running, so set both class and color-scheme
-	// immediately (the prepaint already stamped color-scheme inline; this reasserts it).
+	// immediately (the prepaint stamped <html>'s color-scheme pre-paint; this seeds
+	// the live <body> copy to match).
 	applyThemeClass(currentMode);
 	applyColorScheme(currentMode);
 	if (initial.fresh) write(initial.state);
@@ -97,15 +92,11 @@ export function adaptiveTheme() {
 		const changed = state.mode !== currentMode;
 		currentMode = state.mode;
 		applyThemeClass(currentMode);
-		if (changed) {
-			// Flip drives the 500ms colour transition. Defer the color-scheme change
-			// past the window so it doesn't throttle Chrome's `color` transition.
-			flashThemeTransition();
-			scheduleColorScheme(currentMode);
-		} else {
-			// No visual change (e.g. reconcile adopting the same mode) — apply now.
-			applyColorScheme(currentMode);
-		}
+		// Body-level color-scheme is safe to flip synchronously with the class (no
+		// Chromium transition throttle — see applyColorScheme), so native form
+		// controls re-theme in the same frame as everything else.
+		applyColorScheme(currentMode);
+		if (changed) flashThemeTransition();
 		if (persist) write(state);
 		if (changed) {
 			// Svelte batches the resulting re-renders into a later flush; in Chromium

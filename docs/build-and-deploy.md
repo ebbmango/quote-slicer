@@ -100,7 +100,7 @@ The framework-free logic is unit-tested with vitest:
 - `src/lib/tokenPresentation.spec.ts` — per-token colour/opacity/weight output.
 - `src/lib/exportFormat.spec.ts` — the JSON pretty-printer.
 - `src/lib/themeState.spec.ts` — theme resolution / continuity logic.
-- `src/lib/actions/rowSpread.spec.ts` — the hover-spread offset math.
+- `src/lib/actions/redistribute.spec.ts` — the hover-spread offset math.
 - `src/lib/navigation/visualNeighbor.spec.ts` — the visual-neighbour math.
 
 End-to-end flows are covered by Playwright (`src/routes/*.e2e.ts`), including
