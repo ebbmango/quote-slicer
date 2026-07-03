@@ -256,14 +256,25 @@ the tools row.
   `closeModal()` clears `modalOpen` and, if our entry is still on top, calls
   `history.back()` to unwind it. A `popstate` listener closes the modal on back-nav
   (flipping `modalOpen` only, never calling `history.back()` itself, so a back-close
-  can't double-pop). SvelteKit's router APIs are used deliberately over raw
-  `history.*` (which the router intercepts/nests).
+  can't double-pop). Because `history.back()` resolves asynchronously, `closeModal`
+  sets a `suppressPop` flag so the listener ignores the matching `popstate` — without
+  it, a close followed by a quick reopen re-pushes an entry the pending back then
+  pops, and the listener would kill the just-opened modal. SvelteKit's router APIs
+  are used deliberately over raw `history.*` (which the router intercepts/nests).
 - **Content swap without re-animating.** Calling `openModal` while already open just
   reassigns `asideView` and returns early. Slide direction lives in `flyX` (`$derived`):
   maps from the left, json from the right. Svelte reads transition params only at
   transition _start_, so swapping views while open never replays the animation.
+- **One bidirectional `transition:fly`, not `in:`/`out:`.** Separate `in:`/`out:`
+  directives are not bidirectional: a tap landing inside the 450ms window started an
+  intro on top of the still-running outro and the two transforms _composed_ — the
+  panel jumped to ±2× the slide distance, teleported across the screen, or parked
+  off-screen while "open" (constant on slow mobile frames, invisible on fast
+  desktops). The single `transition:fly` reverses in-flight animation instead;
+  `data-modal.e2e.ts` hammers the toggles and asserts the panel never leaves the
+  ±viewport-width range and settles at `translateX(0)`.
 - **Breakpoint-exit force-close.** An `$effect` watches `minimal` + `modalOpen`; leaving
-  minimal while open force-closes. A `forceClose` flag (`$state`) drives the `out:fly`
+  minimal while open force-closes. A `forceClose` flag (`$state`) drives the fly
   duration to `0` so that exit is instant; `openModal` resets it to re-arm the slide.
 
 ## GSAP & lazy-loading

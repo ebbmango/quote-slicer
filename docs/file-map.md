@@ -100,4 +100,4 @@ plain `*.spec.ts` in the **server** project (node). See [Testing](testing.md).
 | `src/lib/context/tokenStore.spec.ts`          | server  | Token store: text-keyed cache, pinyin overlay (`onMount` is a no-op under node)     |
 | `src/lib/context/alignment.svelte.spec.ts`    | client  | `Alignment`: mapping lifecycle, toggle semantics, pinyin commit, export, highlight  |
 | `src/lib/context/viewHighlight.svelte.spec.ts`| client  | `ViewHighlight` cold/warm/grace timers (fake timers)                                |
-| `src/routes/**/*.e2e.ts`                      | —       | Playwright end-to-end flows (incl. line-split overflow, rapid-click, theme lockstep)|
+| `src/routes/**/*.e2e.ts`                      | —       | Playwright end-to-end flows (incl. line-split overflow, rapid-click, theme lockstep, data-modal transition interruption)|

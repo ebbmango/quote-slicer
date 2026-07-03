@@ -16,8 +16,14 @@
 	} = $props();
 
 	// Set true only when leaving the minimal breakpoint, so that close skips the
-	// slide animation (out:fly duration 0). Reset on the next open.
+	// slide animation (fly duration 0). Reset on the next open.
 	let forceClose = $state(false);
+
+	// history.back() resolves asynchronously; if the modal is reopened before the
+	// popstate lands (pushState re-adds an entry the pending back then pops), the
+	// listener would close the just-opened modal. Flag our own back() so the
+	// matching popstate is ignored. Plain variable: never read by the template.
+	let suppressPop = false;
 
 	// Slide direction: maps enters/leaves left, json enters/leaves right. Read at
 	// transition start, so a content swap while open never re-animates. Distance =
@@ -38,7 +44,10 @@
 	export function closeModal() {
 		if (!modalOpen) return;
 		modalOpen = false;
-		if (page.state.modal) history.back(); // unwind our pushed entry
+		if (page.state.modal) {
+			suppressPop = true;
+			history.back(); // unwind our pushed entry
+		}
 	}
 
 	// Leaving minimal force-closes the modal instantly (out:fly duration 0).
@@ -53,6 +62,10 @@
 	onMount(() => {
 		// Android/browser back button closes the modal (history already popped here).
 		const handlePopState = () => {
+			if (suppressPop) {
+				suppressPop = false; // our own closeModal back() — already handled
+				return;
+			}
 			if (modalOpen) modalOpen = false;
 		};
 		window.addEventListener('popstate', handlePopState);
@@ -63,8 +76,7 @@
 {#if modalOpen}
 	<div
 		class="data-modal bg-(--panel-bg)"
-		in:fly={{ x: flyX, duration: 450 }}
-		out:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
+		transition:fly={{ x: flyX, duration: forceClose ? 0 : 450 }}
 	>
 		<DataPanel view={asideView} />
 	</div>
