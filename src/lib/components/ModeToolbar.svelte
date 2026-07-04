@@ -3,6 +3,7 @@
 	import icons from '$lib/assets/icons.json';
 	import IconToggleButton from '$lib/components/IconToggleButton.svelte';
 	import { getModeContext } from '$lib/context/mode.svelte';
+	import { getBreakpointContext } from '$lib/context/breakpoints.svelte';
 
 	let {
 		asideView = $bindable(),
@@ -17,6 +18,9 @@
 	} = $props();
 
 	const modeCtx = getModeContext();
+	const breakpoints = getBreakpointContext();
+	const isModalDataSurface = $derived(breakpoints.dataSurface === 'modal');
+	const showDataToggle = $derived(breakpoints.dataSurface !== 'wide');
 
 	const mapsIcon = {
 		viewBox: icons['objects-column'].viewBox,
@@ -26,6 +30,19 @@
 		viewBox: icons['curly-brackets'].viewBox,
 		path: icons['curly-brackets'].classic.light
 	};
+
+	function dataActive(view: 'maps' | 'json') {
+		return isModalDataSurface ? modalOpen && asideView === view : asideView === view;
+	}
+
+	function toggleData(view: 'maps' | 'json') {
+		if (!isModalDataSurface) {
+			asideView = view;
+			return;
+		}
+		if (modalOpen && asideView === view) closeModal();
+		else openModal(view);
+	}
 </script>
 
 <div
@@ -33,43 +50,27 @@
 	class="flex h-full w-full flex-col items-center justify-center gap-2"
 	in:fade={{ duration: 300, delay: 250 }}
 >
-	<!-- aside variant: tablet + medium toggle which view the left aside shows -->
 	<!-- data-keep-selection: swapping maps/json must not deselect the active mapping
 	     (globalShortcuts click-to-deselect). The link/line/view group below is NOT
 	     marked, so switching tool still deselects. -->
-	<div class="subtools-aside gap-2" data-keep-selection>
-		<IconToggleButton
-			icon={mapsIcon}
-			label="maps"
-			testid="maps-aside"
-			active={asideView === 'maps'}
-			onclick={() => (asideView = 'maps')}
-		/>
-		<IconToggleButton
-			icon={jsonIcon}
-			label="json"
-			testid="json-aside"
-			active={asideView === 'json'}
-			onclick={() => (asideView = 'json')}
-		/>
-	</div>
-	<!-- modal variant: minimal viewport opens/toggles the data modal -->
-	<div class="subtools-modal gap-2" data-keep-selection>
-		<IconToggleButton
-			icon={mapsIcon}
-			label="maps"
-			testid="maps-modal"
-			active={modalOpen && asideView === 'maps'}
-			onclick={() => (modalOpen && asideView === 'maps' ? closeModal() : openModal('maps'))}
-		/>
-		<IconToggleButton
-			icon={jsonIcon}
-			label="json"
-			testid="json-modal"
-			active={modalOpen && asideView === 'json'}
-			onclick={() => (modalOpen && asideView === 'json' ? closeModal() : openModal('json'))}
-		/>
-	</div>
+	{#if showDataToggle}
+		<div class="flex gap-2" data-keep-selection>
+			<IconToggleButton
+				icon={mapsIcon}
+				label="maps"
+				testid={isModalDataSurface ? 'maps-modal' : 'maps-aside'}
+				active={dataActive('maps')}
+				onclick={() => toggleData('maps')}
+			/>
+			<IconToggleButton
+				icon={jsonIcon}
+				label="json"
+				testid={isModalDataSurface ? 'json-modal' : 'json-aside'}
+				active={dataActive('json')}
+				onclick={() => toggleData('json')}
+			/>
+		</div>
+	{/if}
 	<div class="flex gap-1.5">
 		<IconToggleButton
 			icon={{ viewBox: icons.language.viewBox, path: icons.language.sharp.light }}
@@ -108,41 +109,5 @@
 
 	#tools :global(button.opacity-20:focus-visible) {
 		@apply opacity-60;
-	}
-
-	/* Two visually identical toggle pairs; exactly one is shown per breakpoint.
-	   minimal: modal variant. tablet + medium: aside variant. desktop: neither. */
-	:global(.subtools-aside) {
-		display: none;
-	}
-
-	:global(.subtools-modal) {
-		display: flex;
-	}
-
-	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
-		:global(.subtools-aside) {
-			display: flex;
-		}
-
-		:global(.subtools-modal) {
-			display: none;
-		}
-	}
-
-	@media (min-width: 900px) {
-		:global(.subtools-aside) {
-			display: flex;
-		}
-
-		:global(.subtools-modal) {
-			display: none;
-		}
-	}
-
-	@media (min-width: 1200px) {
-		:global(.subtools-aside) {
-			display: none;
-		}
 	}
 </style>

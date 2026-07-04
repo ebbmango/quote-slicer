@@ -8,14 +8,14 @@
 	let {
 		asideView = $bindable(),
 		modalOpen = $bindable(false),
-		minimal
+		enabled
 	}: {
 		asideView: 'maps' | 'json';
 		modalOpen?: boolean;
-		minimal: boolean;
+		enabled: boolean;
 	} = $props();
 
-	// Set true only when leaving the minimal breakpoint, so that close skips the
+	// Set true only when leaving the modal data surface, so that close skips the
 	// slide animation (fly duration 0). Reset on the next open.
 	let forceClose = $state(false);
 
@@ -50,10 +50,10 @@
 		}
 	}
 
-	// Leaving minimal force-closes the modal instantly (out:fly duration 0).
+	// Leaving the modal data surface force-closes instantly (out:fly duration 0).
 	// forceClose stays set until the next openModal re-arms the animation.
 	$effect(() => {
-		if (!minimal && modalOpen) {
+		if (!enabled && modalOpen) {
 			forceClose = true;
 			closeModal();
 		}

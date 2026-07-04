@@ -8,13 +8,17 @@ const BELOW_MEDIUM_QUERY = '(max-width: 899px)';
 const TABLET_PORTRAIT_QUERY =
 	'(orientation: portrait) and (min-height: 1000px) and (max-width: 899px)';
 
+export type DataSurface = 'modal' | 'aside' | 'wide';
+
 class BreakpointContext {
 	wide = $state(false);
 	belowMedium = $state(false);
 	tabletPortrait = $state(false);
 	// Minimal viewport = below medium AND not the tall-portrait tablet layout.
-	// Only here does the maps/json toggle open a modal instead of an aside.
 	minimal = $derived(this.belowMedium && !this.tabletPortrait);
+	// One app-level answer for where maps/json controls live.
+	dataSurface: DataSurface = $derived(this.wide ? 'wide' : this.minimal ? 'modal' : 'aside');
+	usesDataModal = $derived(this.dataSurface === 'modal');
 }
 
 export function setBreakpointContext(): BreakpointContext {

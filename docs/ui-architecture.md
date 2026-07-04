@@ -163,9 +163,8 @@ hidden (`no-scrollbar`). `JsonExportPanel` / `HighlightedCode` are covered in
 `ModeToolbar` is the bottom toolbar shown in every non-text mode. It renders:
 
 - the **link / line / view** mode switcher;
-- two visually identical **maps / json** toggle pairs — `.subtools-aside` and
-  `.subtools-modal` — exactly one of which is shown per breakpoint, purely via CSS
-  `@media` (see below).
+- one **maps / json** toggle pair when `BreakpointContext.dataSurface` is `aside` or
+  `modal`; desktop (`wide`) renders no maps/json pair because both asides are visible.
 
 `IconToggleButton` collapses what were six near-duplicate buttons into one component: a
 single `<button>` wrapping an SVG path from `icons.json`, with props
@@ -227,23 +226,23 @@ The layout is a CSS grid in `+page.svelte`, with breakpoints mirrored in JS by
 | **Desktop** (`≥1200px`)                               | sidebar + main + sidebar  | both asides at once (no toggle) |
 
 `BreakpointContext` exposes `wide` (`≥1200px`), `belowMedium` (`≤899px`),
-`tabletPortrait`, and the derived **`minimal = belowMedium && !tabletPortrait`** — the
-one case with no aside to host the side content, where the modal is used instead.
+`tabletPortrait`, and the derived **`minimal = belowMedium && !tabletPortrait`**. It also
+exposes `dataSurface`: `modal` for minimal, `aside` for tablet/medium, and `wide` for
+desktop. Callers branch on that value instead of repeating the breakpoint math.
 
 ### How the toggle routes content
 
 - The **left aside** renders `maps` when `wide || asideView === 'maps'`, else `json`.
 - The **right aside** always renders `json` (only visible when `wide`).
-- At `minimal`, the left aside renders **nothing** (`{#if !breakpoints.minimal}`) so its
-  `MappingsList` copy can't coexist with the modal's copy; the modal owns the content.
-- `ModeToolbar`'s two button pairs are gated purely by `@media`: the **aside** pair
-  (always one active) shows at tablet/medium; the **modal** pair (idle until the modal
-  opens) shows at minimal; desktop shows neither.
+- At `dataSurface === 'modal'`, the left aside renders **nothing** so its `MappingsList`
+  copy can't coexist with the modal's copy; the modal owns the content.
+- `ModeToolbar` renders one maps/json pair for `aside` or `modal`, using the data-surface
+  value to decide whether clicks swap the aside view or open/close the modal. Desktop
+  (`wide`) shows neither.
 
 > These thresholds are encoded in **three** places that must stay in sync:
-> `breakpoints.svelte.ts`'s `matchMedia` queries, `+page.svelte`'s `@media` blocks, and
-> `ModeToolbar`'s `@media` blocks (plus the `tablet:` / `modal-wide:` custom variants in
-> `layout.css`).
+> `breakpoints.svelte.ts`'s `matchMedia` queries, `+page.svelte`'s grid `@media` blocks,
+> and the `tablet:` / `modal-wide:` custom variants in `layout.css`.
 
 ### The data modal
 
@@ -273,8 +272,8 @@ the tools row.
   desktops). The single `transition:fly` reverses in-flight animation instead;
   `data-modal.e2e.ts` hammers the toggles and asserts the panel never leaves the
   ±viewport-width range and settles at `translateX(0)`.
-- **Breakpoint-exit force-close.** An `$effect` watches `minimal` + `modalOpen`; leaving
-  minimal while open force-closes. A `forceClose` flag (`$state`) drives the fly
+- **Breakpoint-exit force-close.** An `$effect` watches the modal data-surface flag +
+  `modalOpen`; leaving the modal surface while open force-closes. A `forceClose` flag (`$state`) drives the fly
   duration to `0` so that exit is instant; `openModal` resets it to re-arm the slide.
 
 ## GSAP & lazy-loading

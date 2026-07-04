@@ -75,3 +75,35 @@ test.describe('data modal slide transitions (minimal viewport)', () => {
 		await expect(page.locator('.data-modal')).toHaveCount(0);
 	});
 });
+
+test.describe('data surface toolbar routing', () => {
+	const asideViewports = [
+		{ name: 'medium', size: { width: 1000, height: 740 } },
+		{ name: 'tall portrait', size: { width: 820, height: 1100 } }
+	];
+
+	for (const { name, size } of asideViewports) {
+		test(`${name} viewport uses the aside toggle, not modal controls`, async ({ page }) => {
+			await page.setViewportSize(size);
+			await page.goto('/');
+			await page.waitForLoadState('networkidle');
+			await page.waitForTimeout(500);
+			await page.getByRole('button', { name: 'next' }).click();
+
+			const maps = page.getByTestId('maps-aside');
+			const json = page.getByTestId('json-aside');
+			await expect(maps).toBeVisible();
+			await expect(json).toBeVisible();
+			await expect(page.getByTestId('maps-modal')).toHaveCount(0);
+			await expect(page.getByTestId('json-modal')).toHaveCount(0);
+
+			await expect(maps).toHaveCSS('opacity', '1');
+			await expect(json).toHaveCSS('opacity', '0.2');
+
+			await json.click();
+			await expect(page.locator('.data-modal')).toHaveCount(0);
+			await expect(maps).toHaveCSS('opacity', '0.2');
+			await expect(json).toHaveCSS('opacity', '1');
+		});
+	}
+});

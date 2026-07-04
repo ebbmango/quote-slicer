@@ -56,9 +56,9 @@
 
 <div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
 	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={modeCtx.current === 'text'}>
-		<!-- At minimal the modal owns the maps/json content, so the hidden
+		<!-- When the modal owns the maps/json content, the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
-		{#if !breakpoints.minimal}
+		{#if !breakpoints.usesDataModal}
 			<DataPanel view={breakpoints.wide || asideView === 'maps' ? 'maps' : 'json'} />
 		{/if}
 	</aside>
@@ -80,7 +80,7 @@
 				bind:this={dataModal}
 				bind:asideView
 				bind:modalOpen
-				minimal={breakpoints.minimal}
+				enabled={breakpoints.usesDataModal}
 			/>
 		</div>
 		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every mode so the
@@ -195,6 +195,7 @@
 		display: none;
 		min-height: 0;
 		min-width: 0;
+		opacity: 0;
 		overflow: hidden;
 		pointer-events: none;
 		transition:

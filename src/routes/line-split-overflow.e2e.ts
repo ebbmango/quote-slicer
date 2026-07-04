@@ -16,7 +16,9 @@ import { expect, test } from '@playwright/test';
 //
 // The settled state is self-correcting, so both are sampled *during* the animation.
 
-const SRC = '知命者不怨天，知己者不怨人。';
+// Doubled sentence: one copy only overflows the 390x480 panel by a few px now that
+// the theme toggle is top-mounted (h=0 in flow) and the quote band is taller.
+const SRC = '知命者不怨天，知己者不怨人。知命者不怨天，知己者不怨人。';
 const TGT =
 	'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
 const AUTH = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
