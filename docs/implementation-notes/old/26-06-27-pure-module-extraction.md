@@ -13,7 +13,7 @@ Three separate pieces of in-component logic were extracted into standalone, test
 
 `InteractiveSourceText` and `InteractiveTargetText` each computed per-token color, opacity class, and font weight with ~25 lines of near-identical inline logic. That logic is now in `src/lib/tokenPresentation.ts` as a single exported function `tokenPresentation(o)`.
 
-The function is pure (no DOM access, no imports of Svelte reactivity) and takes an options object covering the current mode, the token's `TokenState`, focus/highlight flags, and the two per-panel differences (source and target use slightly different default opacities and weight rules). It returns `{ style, opacityClass }`. The two panels now call it and bind the result.
+The function is pure (no DOM access, no imports of Svelte reactivity) and takes an options object covering the current tool, the token's `TokenState`, focus/highlight flags, and the two per-panel differences (source and target use slightly different default opacities and weight rules). It returns `{ style, opacityClass }`. The two panels now call it and bind the result.
 
 A spec (`tokenPresentation.spec.ts`) asserts all output strings match the originals exactly.
 

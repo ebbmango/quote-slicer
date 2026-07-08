@@ -103,4 +103,4 @@ End-to-end flows are covered by Playwright (`src/routes/*.e2e.ts`), including
 `line-split-overflow.e2e.ts` (the constrained/overflow line-edit regime),
 `rapid-click.e2e.ts` (the mapping-list re-entrancy guard), and
 `theme-lockstep.e2e.ts` (the theme-flip synchronization invariants — see
-[Dark Mode](dark-mode.md#synchronized-transitions)).
+[Themes](themes.md#synchronized-transitions)).

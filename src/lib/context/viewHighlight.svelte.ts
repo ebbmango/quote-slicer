@@ -97,7 +97,7 @@ export class ViewHighlight {
 		return this.hoveredMappingId !== null && this.mappingAt('target', i) === this.hoveredMappingId;
 	}
 
-	// Reset all state and cancel pending timers. Call when leaving view mode.
+	// Reset all state and cancel pending timers. Call when leaving view tool.
 	clearHighlight(): void {
 		this.clearLightTimer();
 		this.clearGrace();

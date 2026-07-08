@@ -68,15 +68,15 @@ By default the export would look like a generic code preview. To make it feel na
 applied **at render**, `style="color: {colorMap[token.color] ?? token.color}"`. The base
 theme is **dracula** (chosen because its token colors are well-known hex values, easy to
 target), and `JsonExportPanel` passes a map that swaps dracula's hexes for the app's
-mapping palette. The map is **theme-aware** — `mode = appTheme.current` selects the
-light or dark variant — so the export tracks the app's [dark mode](dark-mode.md):
+mapping palette. The map is **theme-aware** — `themeName = appTheme.current` selects the
+light or dark variant — so the export tracks the app's [dark theme](themes.md):
 
 | Role                           | dracula hex(es)                            | replaced with                   |
 | ------------------------------ | ------------------------------------------ | ------------------------------- |
-| strings                        | `#f1fa8c`, `#e9f284`                       | `colors.compostella[mode].base` |
+| strings                        | `#f1fa8c`, `#e9f284`                       | `colors..base` |
 | properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey           |
-| numbers                        | `#bd93f9`                                  | `colors.azure[mode].base`       |
-| `undefined` literal            | `#ff5555`                                  | `colors.sugar[mode].base`       |
+| numbers                        | `#bd93f9`                                  | `colors..base`       |
+| `undefined` literal            | `#ff5555`                                  | `colors..base`       |
 
 This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
 alongside the index-keyed array — the recolor wants _specific_ palette entries.
@@ -88,7 +88,7 @@ snapped after the rest of the page had already started easing. Now tokenization 
 only on `code`/`lang`/`theme` (all theme-independent), so it runs **once**; the light↔dark
 swap is just `colorMap` changing, which updates the inline `style` colours synchronously
 in the same frame as everything else and rides the `theme-anim` colour transition (see
-[dark mode → the `theme-anim` window](dark-mode.md#the-htmltheme-anim-window)).
+[dark theme → the `theme-anim` window](themes.md#the-htmltheme-anim-window)).
 The lookup lower-cases `token.color` first — Shiki emits some theme hexes upper-cased, and
 a case-sensitive miss would fall through to the raw dracula colour.
 

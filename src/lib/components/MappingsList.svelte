@@ -26,7 +26,7 @@
 	}
 
 	// --- List enter/exit animation -------------------------------------------
-	// Add and delete are animated as two readable phases (see docs/link-mode.md):
+	// Add and delete are animated as two readable phases (see docs/link-tool.md):
 	//   add    — neighbours make way (Flip), then the new card slides in from its
 	//            column edge after the gap is half-open.
 	//   delete — the card slides out to its column edge first, then the gap closes
@@ -283,7 +283,7 @@
 				// drives the tick that completes THIS tween). Writing $state (`closing`)
 				// re-entrantly during a flush silently wedges Svelte's scheduler — the
 				// whole app's reactivity dies with no error. Defer the $state write one
-				// microtask so it lands after the flush unwinds. See docs/link-mode.md.
+				// microtask so it lands after the flush unwinds. See docs/link-tool.md.
 				queueMicrotask(() => {
 					closeTweens = closeTweens.filter((t) => t !== tween);
 					closing = Math.max(0, closing - 1);

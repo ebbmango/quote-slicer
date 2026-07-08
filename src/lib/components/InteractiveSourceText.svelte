@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { groupSourceTokens, type SourceToken } from '$lib/tokenize';
-	import { getModeContext } from '$lib/context/mode.svelte';
+	import { getToolContext } from '$lib/context/tool.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { longpress } from '$lib/actions/longpress';
 	import { clearRedistribute } from '$lib/actions/redistribute';
 	import LineDivisor from '$lib/components/LineDivisor.svelte';
 	import { divisorColor, type MappingColorVariant } from '$lib/constants/colors';
 	import { tokenPresentation } from '$lib/tokenPresentation';
-	import { interactionMode } from '$lib/context/interactionMode.svelte';
+	import { interactionMedium } from '$lib/context/interactionMedium.svelte';
 	import { theme as appTheme } from '$lib/theme';
 
 	// Row-spread params for this panel's split zones (see redistribute.ts).
@@ -17,7 +17,7 @@
 	// target (or vertical vs horizontal) divisors a different hue later.
 	const DIVISOR_FIELD: keyof MappingColorVariant = 'source';
 
-	// Token opacity in view mode. Options: 'opacity-100' | 'opacity-70' | 'opacity-30'
+	// Token opacity in view tool. Options: 'opacity-100' | 'opacity-70' | 'opacity-30'
 	const VIEW_TOKEN_OPACITY = 'opacity-80';
 
 	let {
@@ -33,7 +33,7 @@
 		onSplit: (afterIndex: number) => void;
 		onMerge: (lineN: number) => void;
 		animating: boolean;
-		// Touch line mode: the divisor index currently highlighted in THIS panel
+		// Touch line tool: the divisor index currently highlighted in THIS panel
 		// (null if none / the other panel owns the highlight). First tap highlights,
 		// second tap on the same index activates.
 		touchedDivisorIndex?: number | null;
@@ -43,14 +43,14 @@
 
 	let container: HTMLDivElement = $state()!;
 	let lineContainer: HTMLDivElement = $state()!;
-	let mode = getModeContext();
+	let tool = getToolContext();
 	let alignment = getAlignmentContext();
-	let isLinkMode = $derived(mode.current === 'link');
-	let isLineMode = $derived(mode.current === 'line');
-	let isViewMode = $derived(!isLinkMode && !isLineMode);
-	let isTouch = $derived(interactionMode.current === 'touch');
-	const colorMode = $derived(appTheme.current);
-	// Hover-highlight reset on view-mode exit/unmount lives in QuoteWorkbench (one
+	let isLinkTool = $derived(tool.current === 'link');
+	let isLineTool = $derived(tool.current === 'line');
+	let isViewTool = $derived(!isLinkTool && !isLineTool);
+	let isTouch = $derived(interactionMedium.current === 'touch');
+	const colorTheme = $derived(appTheme.current);
+	// Hover-highlight reset on view-tool exit/unmount lives in QuoteWorkbench (one
 	// owner) — see its clearHighlight $effect.
 	let focusedIndex: number | null = $state(null);
 
@@ -61,9 +61,9 @@
 	// children of the row container. See groupSourceTokens.
 	let groups = $derived(groupSourceTokens(tokens));
 
-	// Clear any lingering divisor-hover redistribution when leaving line mode.
+	// Clear any lingering divisor-hover redistribution when leaving line tool.
 	$effect(() => {
-		if (!isLineMode) clearRedistribute(lineContainer);
+		if (!isLineTool) clearRedistribute(lineContainer);
 	});
 
 	// Touch: whenever this panel holds no highlight, collapse any spread it left.
@@ -77,7 +77,7 @@
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		tokens;
 		// Leave the scroll box at `auto` height so it follows content in flow —
-		// including the line-separator height transitions that animate the mode
+		// including the line-separator height transitions that animate the tool
 		// change. The token store owns an explicit pixel height while a split/merge tweens;
 		// don't fight it.
 		if (!container || animating) return;
@@ -85,10 +85,10 @@
 	});
 
 	function handleClick(e: MouseEvent, i: number) {
-		if (!isLinkMode) {
-			// Tapping a token in line mode clears any touch highlight.
-			if (isLineMode) onClearTouchDivisor();
-			// View mode: tap-to-highlight on touch (mouse uses hover).
+		if (!isLinkTool) {
+			// Tapping a token in line tool clears any touch highlight.
+			if (isLineTool) onClearTouchDivisor();
+			// View tool: tap-to-highlight on touch (mouse uses hover).
 			else if (isTouch) alignment.highlight.tapSource(i);
 			return;
 		}
@@ -99,31 +99,31 @@
 		if (e.target === e.currentTarget) {
 			onClearTouchDivisor();
 			alignment.deselect();
-			// View mode: tapping empty space clears the highlight.
-			if (isViewMode && isTouch) alignment.highlight.clearHighlight();
+			// View tool: tapping empty space clears the highlight.
+			if (isViewTool && isTouch) alignment.highlight.clearHighlight();
 		}
 	}
 
 	// Resolved color/opacity for token `i` (see tokenPresentation). Color and the
-	// active/idle/unmapped ladder only apply in link mode, so state is read only
+	// active/idle/unmapped ladder only apply in link tool, so state is read only
 	// there (and never for punctuation, which can't anchor a mapping).
 	function pres(i: number) {
 		const token = tokens[i];
 		return tokenPresentation({
-			mode: isLinkMode ? 'link' : isLineMode ? 'line' : 'view',
-			state: isLinkMode && token.type !== 'punctuation' ? alignment.stateOfSource(i) : null,
+			tool: isLinkTool ? 'link' : isLineTool ? 'line' : 'view',
+			state: isLinkTool && token.type !== 'punctuation' ? alignment.stateOfSource(i) : null,
 			focused: focusedIndex === i,
-			highlighted: isViewMode && alignment.highlight.isSourceHighlighted(i),
+			highlighted: isViewTool && alignment.highlight.isSourceHighlighted(i),
 			viewOpacity: VIEW_TOKEN_OPACITY,
 			fontWeight: false
 		});
 	}
 </script>
 
-<!-- One DOM tree for every mode so spans/separators persist across mode changes
+<!-- One DOM tree for every tool so spans/separators persist across tool changes
      and their color/height transitions can animate instead of snapping. The
-     line-mode split/merge buttons are always present (net-zero width / collapsed
-     height) and only become interactive in line mode. -->
+     line-tool split/merge buttons are always present (net-zero width / collapsed
+     height) and only become interactive in line tool. -->
 <div
 	bind:this={container}
 	data-scrollbox
@@ -133,22 +133,22 @@
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
 		bind:this={lineContainer}
-		role={isLineMode ? undefined : 'listbox'}
-		tabindex={isLineMode ? undefined : -1}
-		aria-multiselectable={isLineMode ? undefined : true}
-		aria-label={isLineMode ? undefined : 'Source tokens'}
+		role={isLineTool ? undefined : 'listbox'}
+		tabindex={isLineTool ? undefined : -1}
+		aria-multiselectable={isLineTool ? undefined : true}
+		aria-label={isLineTool ? undefined : 'Source tokens'}
 		// change text to 1.75rem
 		class="flex w-full flex-wrap content-start justify-center gap-px bg-transparent font-wenkai text-[1.75rem] leading-10 font-light"
-		class:select-none={isLinkMode}
+		class:select-none={isLinkTool}
 		class:flipping={animating}
 		onclick={handleContainerClick}
 		onmouseleave={() => {
-			if (isViewMode && !isTouch) alignment.highlight.hoverOut();
+			if (isViewTool && !isTouch) alignment.highlight.hoverOut();
 		}}
 	>
 		{#snippet tokenSpan(i: number)}
 			{@const token = tokens[i]}
-			{@const interactive = isLinkMode && token.type !== 'punctuation'}
+			{@const interactive = isLinkTool && token.type !== 'punctuation'}
 			{@const p = pres(i)}
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<span
@@ -165,7 +165,7 @@
 				style={p.style}
 				onclick={(e) => handleClick(e, i)}
 				onmouseenter={() => {
-					if (isViewMode && !isTouch) alignment.highlight.hoverSource(i);
+					if (isViewTool && !isTouch) alignment.highlight.hoverSource(i);
 				}}
 				onfocus={(e) => {
 					if (interactive && e.currentTarget.matches(':focus-visible')) focusedIndex = i;
@@ -176,7 +176,7 @@
 				use:longpress={{
 					duration: 500,
 					onlongpress: () => {
-						if (isLinkMode) alignment.toggleSource(i, { force: true });
+						if (isLinkTool) alignment.toggleSource(i, { force: true });
 					}
 				}}>{token.text}</span
 			>
@@ -199,7 +199,7 @@
 					kind={isMerge ? 'merge' : 'split'}
 					surface="zone"
 					divisorIndex={di}
-					color={divisorColor(di, DIVISOR_FIELD, colorMode)}
+					color={divisorColor(di, DIVISOR_FIELD, colorTheme)}
 					container={lineContainer}
 					spread={SPREAD}
 					{touchedDivisorIndex}

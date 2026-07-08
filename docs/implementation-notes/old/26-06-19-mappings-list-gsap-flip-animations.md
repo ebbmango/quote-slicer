@@ -94,9 +94,9 @@ The empty-state "No mappings." overlay is a separate `{#if length === 0 && outro
 
 ### Symptom
 
-Rapidly clicking the same hanzi token in link mode — which creates a mapping on odd clicks and deletes it on even clicks — froze the entire app after roughly 10 clicks. Once frozen:
+Rapidly clicking the same hanzi token in link tool — which creates a mapping on odd clicks and deletes it on even clicks — froze the entire app after roughly 10 clicks. Once frozen:
 
-- Mode/tool switches stopped rendering.
+- Tool switches stopped rendering.
 - The JSON export panel went stale (typing in the authorship field updated the textarea but the JSON never recomputed).
 - Native textarea input and DOM scroll still worked.
 - No exception was thrown. No `pageerror`, no `console.error`, no pegged main thread.

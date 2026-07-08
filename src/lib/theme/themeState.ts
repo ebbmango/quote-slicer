@@ -1,42 +1,79 @@
-import type { ThemeMode as Mode } from '../types';
+import type { ThemeName } from '../types';
 
 export type ThemeSource = 'system' | 'user';
 
 export type StoredThemeState = {
-	version: 2;
-	mode: Mode;
+	version: 3;
+	theme: ThemeName;
 	source: ThemeSource;
 	/** The OS preference in effect when this state was written. */
-	osAtPick: Mode;
+	osThemeAtPick: ThemeName;
 };
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 
-export const THEME_STATE_KEY = 'quote-slicer:theme-state:v2';
+export const THEME_STATE_KEY = 'quote-slicer:theme-state:v3';
+export const LEGACY_THEME_STATE_KEY = 'quote-slicer:theme-state:v2';
 
-export function toMode(systemIsDark: boolean): Mode {
+type RawThemeState = {
+	version?: unknown;
+	theme?: unknown;
+	mode?: unknown;
+	source?: unknown;
+	osThemeAtPick?: unknown;
+	osAtPick?: unknown;
+};
+
+function isThemeName(value: unknown): value is ThemeName {
+	return value === 'light' || value === 'dark';
+}
+
+function isThemeSource(value: unknown): value is ThemeSource {
+	return value === 'system' || value === 'user';
+}
+
+export function toTheme(systemIsDark: boolean): ThemeName {
 	return systemIsDark ? 'dark' : 'light';
 }
 
-export function systemState(osMode: Mode): StoredThemeState {
-	return { version: 2, mode: osMode, source: 'system', osAtPick: osMode };
+export function systemThemeState(osTheme: ThemeName): StoredThemeState {
+	return { version: 3, theme: osTheme, source: 'system', osThemeAtPick: osTheme };
 }
 
-export function userState(mode: Mode, osMode: Mode): StoredThemeState {
-	return { version: 2, mode, source: 'user', osAtPick: osMode };
+export function userThemeState(theme: ThemeName, osTheme: ThemeName): StoredThemeState {
+	return { version: 3, theme, source: 'user', osThemeAtPick: osTheme };
 }
 
 export function parseThemeState(value: string | null): StoredThemeState | null {
 	if (!value) return null;
 
 	try {
-		const state = JSON.parse(value) as Partial<StoredThemeState>;
-		if (state.version !== 2) return null;
-		if (state.mode !== 'light' && state.mode !== 'dark') return null;
-		if (state.source !== 'system' && state.source !== 'user') return null;
-		if (state.osAtPick !== 'light' && state.osAtPick !== 'dark') return null;
+		const state = JSON.parse(value) as RawThemeState;
 
-		return { version: 2, mode: state.mode, source: state.source, osAtPick: state.osAtPick };
+		if (state.version === 2) {
+			if (!isThemeName(state.mode)) return null;
+			if (!isThemeSource(state.source)) return null;
+			if (!isThemeName(state.osAtPick)) return null;
+
+			return {
+				version: 3,
+				theme: state.mode,
+				source: state.source,
+				osThemeAtPick: state.osAtPick
+			};
+		}
+
+		if (state.version !== 3) return null;
+		if (!isThemeName(state.theme)) return null;
+		if (!isThemeSource(state.source)) return null;
+		if (!isThemeName(state.osThemeAtPick)) return null;
+
+		return {
+			version: 3,
+			theme: state.theme,
+			source: state.source,
+			osThemeAtPick: state.osThemeAtPick
+		};
 	} catch {
 		return null;
 	}
@@ -47,18 +84,18 @@ export function parseThemeState(value: string | null): StoredThemeState | null {
  *
  * The only thing that overrides a stored choice while the app was away is the
  * OS preference itself changing — a genuinely later change. That is detected by
- * comparing the OS mode now against `osAtPick`, the OS mode recorded when the
+ * comparing the OS theme now against `osThemeAtPick`, the OS theme recorded when the
  * stored state was written. On a first visit (or corrupt storage) we follow the
  * OS. `fresh` tells the caller whether the resolved state is new and must be
  * persisted, or is the stored state returned unchanged.
  */
 export function resolveTheme(
 	stored: StoredThemeState | null,
-	osMode: Mode
-): { mode: Mode; state: StoredThemeState; fresh: boolean } {
-	if (stored && stored.osAtPick === osMode) {
-		return { mode: stored.mode, state: stored, fresh: false };
+	osTheme: ThemeName
+): { theme: ThemeName; state: StoredThemeState; fresh: boolean } {
+	if (stored && stored.osThemeAtPick === osTheme) {
+		return { theme: stored.theme, state: stored, fresh: false };
 	}
 
-	return { mode: osMode, state: systemState(osMode), fresh: true };
+	return { theme: osTheme, state: systemThemeState(osTheme), fresh: true };
 }

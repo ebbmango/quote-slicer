@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import icons from '$lib/assets/icons.json';
 	import { theme } from '$lib/theme';
-	import type { ThemeMode as Mode } from '$lib/types';
+	import type { ThemeName } from '$lib/types';
 
 	const sun = icons['sun-bright'];
 	const moon = icons['moon'];
@@ -11,9 +11,9 @@
 	// (dark). The stack is moon-on-top / sun-on-bottom and rotates about its centre,
 	// which sits at the page's top edge. Each toggle swings the hidden icon down into
 	// view while the other arcs up and off the top of the page (clipped by .layout).
-	const initialMode = theme.current;
-	let displayedMode = initialMode;
-	let rotation = $state(initialMode === 'dark' ? 180 : 0);
+	const initialTheme = theme.current;
+	let displayedTheme = initialTheme;
+	let rotation = $state(initialTheme === 'dark' ? 180 : 0);
 
 	// On SSR theme.current is always 'light', so the server renders rotation 0
 	// (sun-first). The app.html prepaint script adds html.dark before hydration, so
@@ -28,35 +28,35 @@
 		hasHydrated = true;
 	});
 
-	const buttonForMode = (mode: Mode) => (mode === 'dark' ? moonButton : sunButton);
+	const buttonForTheme = (themeName: ThemeName) => (themeName === 'dark' ? moonButton : sunButton);
 
 	// Only the visible control is tabbable; after a keyboard toggle move focus to the
 	// control that just rotated into view so the user stays on the live button.
 	let focusRequest = 0;
-	const focusCurrentControl = async (mode: Mode) => {
+	const focusCurrentControl = async (themeName: ThemeName) => {
 		const request = ++focusRequest;
 		await tick();
 		if (request !== focusRequest) return;
-		buttonForMode(mode)?.focus({ preventScroll: true });
+		buttonForTheme(themeName)?.focus({ preventScroll: true });
 	};
 
 	function toggle(event: MouseEvent & { currentTarget: HTMLButtonElement }) {
-		const nextMode = theme.current === 'dark' ? 'light' : 'dark';
+		const nextTheme = theme.current === 'dark' ? 'light' : 'dark';
 		const shouldPreserveFocus = document.activeElement === event.currentTarget;
 		rotation += 180;
-		displayedMode = nextMode;
-		theme.current = nextMode;
+		displayedTheme = nextTheme;
+		theme.current = nextTheme;
 
-		if (shouldPreserveFocus) void focusCurrentControl(nextMode);
+		if (shouldPreserveFocus) void focusCurrentControl(nextTheme);
 	}
 
 	// Reading theme.current here subscribes the component to external changes (OS
-	// preference, cross-tab sync); when the mode moves out from under us, spin to match.
+	// preference, cross-tab sync); when the theme moves out from under us, spin to match.
 	$effect(() => {
-		const currentMode = theme.current;
-		if (currentMode === displayedMode) return;
+		const currentTheme = theme.current;
+		if (currentTheme === displayedTheme) return;
 		rotation += 180;
-		displayedMode = currentMode;
+		displayedTheme = currentTheme;
 	});
 </script>
 
@@ -74,7 +74,7 @@
 			class="control is-moon"
 			onclick={toggle}
 			type="button"
-			aria-label="Switch to light mode"
+			aria-label="Switch to light theme"
 			tabindex={theme.current === 'dark' ? 0 : -1}
 		>
 			<span class="counter">
@@ -88,7 +88,7 @@
 			class="control is-sun"
 			onclick={toggle}
 			type="button"
-			aria-label="Switch to dark mode"
+			aria-label="Switch to dark theme"
 			tabindex={theme.current === 'light' ? 0 : -1}
 		>
 			<span class="counter">

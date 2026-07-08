@@ -1,4 +1,4 @@
-# Misc fixes: export whitespace, punctuation mappings, copyable spaces, indicator style, view-mode authorship
+# Misc fixes: export whitespace, punctuation mappings, copyable spaces, indicator style, view-tool authorship
 
 > Commits: `90d6f2e`, `45b1ba8`, `f3f14f8`, `a190a26`, `98c0356`
 > Date: 2026-06-14
@@ -28,7 +28,7 @@ fix, no further action needed.)
 
 ## Whitespace tokens selectable as plain text (`f3f14f8`)
 
-Target whitespace tokens (the inter-word gaps, used as split affordances in line mode) were
+Target whitespace tokens (the inter-word gaps, used as split affordances in line tool) were
 rendered as `<button>`. Browsers exclude `<button>` content from text selection/copy, so copying
 target text collapsed multi-word spans into newlines (spaces lost). Whitespace tokens are now
 `<span role="button">` with explicit `user-select: text` / `-webkit-user-select: text`, keeping
@@ -43,8 +43,8 @@ indicator additionally getting `skewX(-10deg)`. The merge-zone hover transition 
 200ms to 340ms and its hover-expanded width shrank from 100% to 30% (background-size multiplier
 2x → 1.5x), so the merge indicator grows more gently on hover/focus.
 
-## Disable authorship textarea in view mode (`98c0356`)
+## Disable authorship textarea in view tool (`98c0356`)
 
-View mode (`'view'`) is meant to be read-only, but the authorship `<textarea>` in
-`QuoteWorkbench.svelte` stayed editable. Added `disabled={mode.current === 'view'}` plus a
+View tool (`'view'`) is meant to be read-only, but the authorship `<textarea>` in
+`QuoteWorkbench.svelte` stayed editable. Added `disabled={tool.current === 'view'}` plus a
 `disabled:cursor-default` class.

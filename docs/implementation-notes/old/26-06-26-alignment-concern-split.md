@@ -5,9 +5,9 @@
 
 ## Overview
 
-`Alignment` had grown to carry two unrelated responsibilities: the link-mode
+`Alignment` had grown to carry two unrelated responsibilities: the link-tool
 mapping model (mappings list, active mapping, toggle state machine, pinyin,
-export) and the view-mode hover-highlight timer machine. This commit pulls both
+export) and the view-tool hover-highlight timer machine. This commit pulls both
 out cleanly. The timer machine becomes `ViewHighlight`; the index-building
 logic moves into a pure function `buildMappingIndex` in `tokenState.ts`. No
 caller API changed.
@@ -16,7 +16,7 @@ caller API changed.
 
 Two separate issues pushed toward this split.
 
-**Testability.** The view-mode highlight logic — a three-state machine (cold/warm/grace)
+**Testability.** The view-tool highlight logic — a three-state machine (cold/warm/grace)
 built on `setTimeout` — was buried inside `Alignment` and could only be exercised
 through a live Svelte context. Writing fake-timer tests for it required mocking
 the whole class. Extracted as `ViewHighlight`, it can be instantiated directly

@@ -17,17 +17,17 @@ or a modal. Feature-specific behaviour is covered elsewhere and linked from here
 ├── main
 │   ├── ThemeToggle.svelte         orbiting moon/sun light–dark switch
 │   ├── QuoteWorkbench.svelte      the centre workbench
-│   │   ├── <textarea> source      text mode only (IME-filtered)
-│   │   ├── <textarea> target      text mode only
+│   │   ├── <textarea> source      text tool only (IME-filtered)
+│   │   ├── <textarea> target      text tool only
 │   │   ├── <div role="grid">      link/line/view: the token workspace
 │   │   │   ├── InteractiveSourceText.svelte   ┐ render tokens + a
 │   │   │   │   └── LineDivisor.svelte (×N)     │ LineDivisor between
-│   │   │   └── InteractiveTargetText.svelte   ┘ them (line mode)
+│   │   │   └── InteractiveTargetText.svelte   ┘ them (line tool)
 │   │   │       └── LineDivisor.svelte (×N)
-│   │   └── <textarea> authorship  always present (disabled in view mode)
+│   │   └── <textarea> authorship  always present (disabled in view tool)
 │   ├── DataModal.svelte           minimal viewport: slide-in over the workbench
 │   │   └── DataPanel.svelte
-│   └── tools: arrow (text) | ModeToolbar.svelte (otherwise)
+│   └── tools: arrow (text) | ToolToolbar.svelte (otherwise)
 │       └── IconToggleButton.svelte (×N)
 └── DataPanel.svelte               sidebar-right  (always view='json', desktop only)
 ```
@@ -43,18 +43,18 @@ and the edge-fade mask live in exactly one place and the copies can't drift.
 The root shell — historically a 447-line file, now thin after extracting each
 self-contained piece into its own component/context. It:
 
-- sets up the four contexts (in order: `mode`, `breakpoints`, `tokenStore`,
+- sets up the four contexts (in order: `tool`, `breakpoints`, `tokenStore`,
   `alignment` — `alignment` takes the store);
 - owns `sourceText` / `targetText` / `authorship`, and the `asideView` / `modalOpen`
-  state threaded into `DataModal` and `ModeToolbar`;
+  state threaded into `DataModal` and `ToolToolbar`;
 - owns the responsive grid layout and the sidebar open/close animation
   (see [Responsive layout](#responsive-layout) and
-  [Mode Transitions](mode-transitions.md#the-sidebar-slide-leaving-text-mode));
+  [Tool Transitions](tool-transitions.md#the-sidebar-slide-leaving-text-tool));
 - owns the text→link **arrow launch**
-  (see [Mode Transitions](mode-transitions.md#the-arrow-launch-text--link)) — the one
+  (see [Tool Transitions](tool-transitions.md#the-arrow-launch-text--link)) — the one
   piece of bespoke per-page interaction left in the file;
 - calls `initAlignmentShortcuts(alignment)` once in `onMount`
-  (see [Keyboard & Navigation](keyboard-navigation.md#document-level-shortcuts)).
+  (see [Keyboard & Navigation](mediums-and-keyboard-navigation.md#document-level-shortcuts)).
 
 ### `QuoteWorkbench.svelte`
 
@@ -62,7 +62,7 @@ self-contained piece into its own component/context. It:
   for rendering. It does **not** push tokens into `Alignment` — `Alignment` reads the
   same store itself. The _only_ thing it pushes is the raw text, via
   `alignment.setMeta({ sourceText, targetText, authorship })` in an `$effect`.
-- **Text mode:** renders the source/target textareas, with real-time Han-character
+- **Text tool:** renders the source/target textareas, with real-time Han-character
   filtering on the source field via a single `filterSourceInput()` helper shared by
   `oninput` and `oncompositionend` (both paths are required — IME input only settles on
   `compositionend`; filtering is skipped while `isComposing`). The helper also owns the
@@ -76,7 +76,7 @@ self-contained piece into its own component/context. It:
   authorship ref) and forwards split/merge into the store; passes `store.animating` down
   to the panels.
 - Creates the single `createTokenGridNav()` instance and wires it to the grid container
-  with a mode-dependent config (see [Keyboard & Navigation](keyboard-navigation.md)).
+  with a tool-dependent config (see [Keyboard & Navigation](mediums-and-keyboard-navigation.md)).
 - Tags each panel wrapper `data-zone` + `data-flip-id` so the navigator can resolve
   panels and the store can reposition them as units.
 - The authorship textarea carries `autocomplete="off"`. Unlike the source/target fields
@@ -88,17 +88,17 @@ self-contained piece into its own component/context. It:
 ### `InteractiveSourceText.svelte` / `InteractiveTargetText.svelte`
 
 Render the source/target tokens as a flat flex-wrap layout, using **one DOM tree for
-all modes** (see [Mode Transitions](mode-transitions.md#the-persistent-dom-crossfade-link--line--view)).
+all tools** (see [Tool Transitions](tool-transitions.md#the-persistent-dom-crossfade-link--line--view)).
 
 - Per-token colour/opacity/weight comes from the shared `tokenPresentation()` pure
-  function (see [Mode Transitions](mode-transitions.md#the-two-transitions-that-carry-the-motion)),
-  selected for the current `appTheme.current` mode.
-- **Link mode:** interactive `role="option"` spans (source: non-punctuation only); click
+  function (see [Tool Transitions](tool-transitions.md#the-two-transitions-that-carry-the-motion)),
+  selected for the current `appTheme.current` theme.
+- **Link tool:** interactive `role="option"` spans (source: non-punctuation only); click
   → `toggleSource`/`toggleTarget`; the source panel also wires the `longpress` action for
   mobile force-add.
-- **Line mode:** the split/merge affordances become active, each rendered via a shared
-  [`LineDivisor`](line-mode.md#the-line-tool-affordances) between tokens.
-- **View mode:** token hover/tap is wired to the [view-mode highlight](view-mode.md).
+- **Line tool:** the split/merge affordances become active, each rendered via a shared
+  [`LineDivisor`](line-tool.md#the-line-tool-affordances) between tokens.
+- **View tool:** token hover/tap is wired to the [view-tool highlight](view-tool.md).
 - Both mark their scroll box `data-scrollbox` and gate a height `$effect` on the
   `animating` prop. Neither owns Alt+Space or Escape — those route through the navigator.
 - Both scroll boxes carry the shared **`.fade-y`** soft top/bottom scroll fade — a single
@@ -125,8 +125,8 @@ One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview
   keyed by `isActive`, so the markup reads `theme.cardBg` instead of repeating
   `isActive ? a : b`. The delete button's colours come from `colorVariant` directly
   (not `isActive`) and the icon `<svg>` is `{#key isDark}`'d — both
-  [dark-mode flash fixes](dark-mode.md#the-delete-button-colour-flash).
-- Pinyin editing uses [`PinyinInput.svelte`](link-mode.md#pinyin-auto-fill-and-canonical-storage),
+  [theme flash fixes](themes.md#the-delete-button-colour-flash).
+- Pinyin editing uses [`PinyinInput.svelte`](link-tool.md#pinyin-auto-fill-and-canonical-storage),
   editable only when the card is active and non-empty; commits via
   `alignment.setPinyin(id, tokenId, value)` — keyed by the entry's stable token ID,
   not its position in the mapping.
@@ -158,11 +158,11 @@ hard-clipping it. Because the fade signals scrollability, the native scrollbars 
 hidden (`no-scrollbar`). `JsonExportPanel` / `HighlightedCode` are covered in
 [Export](export.md).
 
-### `ModeToolbar` / `IconToggleButton`
+### `ToolToolbar` / `IconToggleButton`
 
-`ModeToolbar` is the bottom toolbar shown in every non-text mode. It renders:
+`ToolToolbar` is the bottom toolbar shown in every non-text tool. It renders:
 
-- the **link / line / view** mode switcher;
+- the **link / line / view** tool switcher;
 - one **maps / json** toggle pair when `BreakpointContext.dataSurface` is `aside` or
   `modal`; desktop (`wide`) renders no maps/json pair because both asides are visible.
 
@@ -177,14 +177,14 @@ single `<button>` wrapping an SVG path from `icons.json`, with props
 
 The light/dark switch — an orbiting moon/sun pair. Reads/writes `theme.current` and
 carries the Firefox-specific repaint and hydration workarounds. Covered in
-[Dark Mode → The toggle button](dark-mode.md#the-toggle-button-themetogglesvelte).
+[Themes → The toggle button](themes.md#the-toggle-button-themetogglesvelte).
 
 ### `LineDivisor`
 
 The single owner of the line-tool split/merge affordance (`.split-zone` · `.ws-split` ·
 `.merge-zone`), its touch two-tap state machine, the hover-spread wiring, and the divisor
 CSS — shared by both interactive panels so a behaviour change lands in one place. See
-[Line Mode](line-mode.md#the-line-tool-affordances).
+[Line Tool](line-tool.md#the-line-tool-affordances).
 
 ### `DataModal`
 
@@ -197,7 +197,7 @@ Four contexts, all set once at the root and read via `getContext` anywhere:
 
 | Context             | Set / get                                            | File                            |
 | ------------------- | ---------------------------------------------------- | ------------------------------- |
-| `ModeContext`       | `setModeContext` / `getModeContext`                  | `context/mode.svelte.ts`        |
+| `ToolContext`       | `setToolContext` / `getToolContext`                  | `context/tool.svelte.ts`        |
 | `BreakpointContext` | `setBreakpointContext` / `getBreakpointContext`      | `context/breakpoints.svelte.ts` |
 | token store         | `setTokenStoreContext` / `getTokenStoreContext`      | `context/tokenStore.svelte.ts`  |
 | `Alignment`         | `setAlignmentContext(store)` / `getAlignmentContext` | `context/alignment.svelte.ts`   |
@@ -208,10 +208,10 @@ push tokens into `Alignment`; `Alignment` derives its own view from the store ke
 `meta`. So there is exactly one token owner, no two-way `$effect` sync, and split/merge
 can never be handed a pinyin-less array. See [Token Store](token-store.md).
 
-> The interaction-mode sensor (`interactionMode.svelte.ts`) is **not** a context — it's a
+> The interaction-medium sensor (`interactionMedium.svelte.ts`) is **not** a context — it's a
 > global module singleton, because it works through a `data-` attribute on `<html>` that
 > CSS reads directly. See
-> [Keyboard & Navigation](keyboard-navigation.md#the-interaction-mode-sensor).
+> [Keyboard & Navigation](mediums-and-keyboard-navigation.md#the-interaction-medium-sensor).
 
 ## Responsive layout
 
@@ -236,7 +236,7 @@ desktop. Callers branch on that value instead of repeating the breakpoint math.
 - The **right aside** always renders `json` (only visible when `wide`).
 - At `dataSurface === 'modal'`, the left aside renders **nothing** so its `MappingsList`
   copy can't coexist with the modal's copy; the modal owns the content.
-- `ModeToolbar` renders one maps/json pair for `aside` or `modal`, using the data-surface
+- `ToolToolbar` renders one maps/json pair for `aside` or `modal`, using the data-surface
   value to decide whether clicks swap the aside view or open/close the modal. Desktop
   (`wide`) shows neither.
 

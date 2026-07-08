@@ -53,7 +53,7 @@ escapes — `\p{Ps}` (opening brackets) and `\p{Pi}` (initial quotes) bind to th
 that _follows_; everything else binds to the token that _precedes_ — rather than a
 hand-maintained list. **Grouping never crosses a `.line` boundary**, so a line split
 that lands between a character and its punctuation simply puts them in different groups,
-and this invariant is what makes the [line-mode no-split rule](line-mode.md#source-panel-interactivesourcetext)
+and this invariant is what makes the [line-tool no-split rule](line-tool.md#source-panel-interactivesourcetext)
 safe.
 
 ## Target tokenizer
@@ -121,26 +121,26 @@ After the tokens of each line segment — but **not** after the last line — a 
 if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 ```
 
-This token is the **merge affordance** in line mode: clicking it merges the two lines
-it sits between. See [Line Mode](line-mode.md#the-line-tool-affordances).
+This token is the **merge affordance** in line tool: clicking it merges the two lines
+it sits between. See [Line Tool](line-tool.md#the-line-tool-affordances).
 
 ## Whitespace strategy
 
 Whitespace tokens (type `'whitespace'`) exist in the target stream but are treated
 specially:
 
-- **Not interactive in link mode** — `Alignment.toggleTarget` early-returns for
+- **Not interactive in link tool** — `Alignment.toggleTarget` early-returns for
   whitespace (and punctuation), so they can't be added to a mapping.
 - **Never stored in a mapping** — no `Mapping` will ever hold a whitespace token ID.
 - **Bridged visually** — a whitespace token flanked on both sides by tokens from the
   _same_ mapping inherits that mapping's color, so a multi-word phrase reads as one
   continuous highlight. The rule is `findBridgeMapping()`, an internal helper in
   `tokenState.ts` used by `deriveTargetTokenState`; see
-  [Link Mode](link-mode.md#whitespace-bridging).
+  [Link Tool](link-tool.md#whitespace-bridging).
 - **Bridged in text output** — `buildTargetText()` treats short gaps (indices at most
   `MAX_BRIDGE_GAP = 5` apart, all whitespace/punctuation between) as contiguous, so a
   mapping's `targetText` renders as a single phrase rather than comma-joined fragments.
-- **Copyable** — in line mode the whitespace tokens are rendered as
+- **Copyable** — in line tool the whitespace tokens are rendered as
   `<span role="button">` with `user-select: text`, not `<button>`, so selecting and
   copying the target text preserves the spaces.
 

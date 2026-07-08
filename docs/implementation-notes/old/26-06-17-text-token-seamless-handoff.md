@@ -5,14 +5,14 @@
 
 ## Overview
 
-The transition from text-entry mode to token mode no longer has a visible snap. Instead of
-crossfading two DOM trees, each textarea pre-matches its token-mode appearance during the 450ms
+The transition from text-entry tool to token tool no longer has a visible snap. Instead of
+crossfading two DOM trees, each textarea pre-matches its token-tool appearance during the 450ms
 arrow launch animation, so the DOM swap at 450ms lands on a screen that already looks like the
 destination.
 
 ## Motivation
 
-When the user clicks the arrow button to advance from text mode to link mode, Svelte replaces the
+When the user clicks the arrow button to advance from text tool to link tool, Svelte replaces the
 textarea block with the token grid at 450ms. Previously that swap was a hard cut — the textarea
 disappeared and the tokens appeared with slightly different colours, sizes, or spacing, creating a
 perceptible flash even though the text itself hadn't changed.

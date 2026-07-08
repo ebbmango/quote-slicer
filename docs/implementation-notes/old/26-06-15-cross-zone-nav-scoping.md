@@ -6,19 +6,19 @@
 ## Overview
 
 Fixes a bug where `tokenGridNav`'s "find a default element to focus" fallback could
-match an element in the _wrong_ zone in line mode, and removes the mode restriction
-on Alt+Enter / edge-Arrow cross-zone jumps so they work the same in every mode.
+match an element in the _wrong_ zone in line tool, and removes the tool restriction
+on Alt+Enter / edge-Arrow cross-zone jumps so they work the same in every tool.
 
 ## Motivation
 
 `tokenGridNav`'s `findDefaultEl` fallback builds a selector by string-prefixing
 `config.itemSelector()` with the zone (e.g. `[data-zone="target"] .split-zone`). In
-line mode `itemSelector()` is a comma-separated list (`.split-zone, .merge-zone,
+line tool `itemSelector()` is a comma-separated list (`.split-zone, .merge-zone,
 .ws-split`), and string-prefixing only scopes the _first_ branch — `.merge-zone`
 and `.ws-split` were left unscoped and could match the other zone's elements.
 
 Separately, `crossZoneJump()` gated Alt+Enter and edge-of-row Arrow jumps to
-link mode only, for no clear reason — line mode users couldn't jump between
+link tool only, for no clear reason — line tool users couldn't jump between
 source and target with the keyboard.
 
 ## Implementation Details
@@ -33,7 +33,7 @@ source and target with the keyboard.
   `tokenGridNav`'s `handleKeydown` itself, replacing four duplicated inline
   `onkeydown` handlers across `InteractiveSourceText.svelte` and
   `InteractiveTargetText.svelte`.
-- `QuoteWorkbench.svelte`: in line mode, `onActivate` now re-focuses the same
+- `QuoteWorkbench.svelte`: in line tool, `onActivate` now re-focuses the same
   divisor after a split/merge — it reads `data-divisor-index` before calling
   `el.click()`, then after a `tick()` re-queries
   `[data-zone="${zone}"] [data-divisor-index="${divisorIndex}"]` and focuses

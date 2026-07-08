@@ -16,7 +16,7 @@ The single owner of the source/target token arrays. Tokenizes, holds the text-ke
 _Avoid_: lineEdit (former name), line manager, split service, token cache (the cache is only part of it)
 
 **line edit**:
-The operation — splitting or merging a line break, with its single animation — that the token store performs. The user-facing mode that triggers it is the **line tool** (mode key `'line'`).
+The operation — splitting or merging a line break, with its single animation — that the token store performs. The user-facing tool that triggers it is the **line tool** (tool key `'line'`).
 _Avoid_: naming a module "line edit"; the implementing module is the **token store**
 
 **line divisor**:
@@ -28,7 +28,7 @@ The bundle of DOM refs a single line edit animates over — each panel's wrapper
 _Avoid_: animation context, refs, targets
 
 **ViewHighlight**:
-The view-mode hover-highlight timer state machine, extracted from `Alignment`. Owns `hoveredMappingId` (`$state`), the cold/warm/grace delay logic, and the mouse/touch input methods (`hoverSource`, `hoverTarget`, `hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`, `clearHighlight`). `Alignment` constructs one internally and passes a resolver closure over its live `sourceMappingIndex`/`targetMappingIndex` maps, then exposes it as a `readonly highlight` field; callers reach it directly (`alignment.highlight.hoverSource(i)`) rather than through pass-through forwarders. Located at `src/lib/context/viewHighlight.svelte.ts`.
+The view-tool hover-highlight timer state machine, extracted from `Alignment`. Owns `hoveredMappingId` (`$state`), the cold/warm/grace delay logic, and the mouse/touch input methods (`hoverSource`, `hoverTarget`, `hoverOut`, `tapSource`, `tapTarget`, `isSourceHighlighted`, `isTargetHighlighted`, `clearHighlight`). `Alignment` constructs one internally and passes a resolver closure over its live `sourceMappingIndex`/`targetMappingIndex` maps, then exposes it as a `readonly highlight` field; callers reach it directly (`alignment.highlight.hoverSource(i)`) rather than through pass-through forwarders. Located at `src/lib/context/viewHighlight.svelte.ts`.
 _Avoid_: "hover state", "highlight machine"
 
 **token-grid DOM contract**:

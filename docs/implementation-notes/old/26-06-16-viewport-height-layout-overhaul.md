@@ -38,11 +38,11 @@ The band container itself got `overflow-hidden rounded-[20px]` so that when the 
 
 Source panel, target panel, and authorship textarea each gain a `fade-y` class that applies a `mask-image` linear gradient — transparent at the top and bottom edges, opaque in the middle. The fade depth (0.75 rem on panels, 0.5 rem on authorship) matches the element's `py-3` / `py-2` padding, so at the scroll extremes the first and last lines sit past the fade at full opacity. Only content that is mid-scroll dims at the edge. Because `mask-image` is transparency-based it works over any background (the page's white and the modal's `#f9f9f9`).
 
-### Text-mode textarea alignment
+### Text-tool textarea alignment
 
-A follow-up commit wrapped the text-mode textareas in a shared `flex flex-col min-h-0 w-full px-1` container and applied the same `fade-y`, `px-2 py-3`, `no-scrollbar`, and `leading-10` classes used by the view-mode token panels. The textareas are direct flex-column children (not wrapped like the token panels) because `autosize` applies an inline `height` style; they must sit on the column's main axis for `flex-shrink + min-h-0 + overflow-y-auto` to cap and scroll them rather than push siblings out of the way.
+A follow-up commit wrapped the text-tool textareas in a shared `flex flex-col min-h-0 w-full px-1` container and applied the same `fade-y`, `px-2 py-3`, `no-scrollbar`, and `leading-10` classes used by the view-tool token panels. The textareas are direct flex-column children (not wrapped like the token panels) because `autosize` applies an inline `height` style; they must sit on the column's main axis for `flex-shrink + min-h-0 + overflow-y-auto` to cap and scroll them rather than push siblings out of the way.
 
-The tools area at the bottom received `min-h-14` so the text-mode "next" arrow and the view-mode `ModeToolbar` occupy the same footprint, keeping the flex-1 band height constant across the mode switch.
+The tools area at the bottom received `min-h-14` so the text-tool "next" arrow and the view-tool `ToolToolbar` occupy the same footprint, keeping the flex-1 band height constant across the tool switch.
 
 ## Design Decisions
 

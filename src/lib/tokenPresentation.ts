@@ -5,30 +5,30 @@ import { HIGHLIGHT_COLOR } from '$lib/constants/colors';
 // panels. DOM-free and pure so it's unit-testable and lives in one place instead
 // of being copied into each panel's `tokenStyle` / `tokenOpacity`.
 //
-// `state` is only read in link mode; callers pass `null` outside it (and for source
+// `state` is only read in link tool; callers pass `null` outside it (and for source
 // punctuation, which never carries a mapping state). `viewOpacity` and `fontWeight`
 // are the only per-panel differences: source uses opacity-80 / no weight, target
 // uses opacity-85 / a 350|600 weight.
 export function tokenPresentation(o: {
-	mode: 'link' | 'line' | 'view';
+	tool: 'link' | 'line' | 'view';
 	state: TokenState | null;
 	focused: boolean;
 	highlighted: boolean;
 	viewOpacity: string;
 	fontWeight: boolean;
 }): { style: string; opacityClass: string } {
-	const { mode, state, focused, highlighted, viewOpacity, fontWeight } = o;
+	const { tool, state, focused, highlighted, viewOpacity, fontWeight } = o;
 
-	if (mode === 'line') return { style: '', opacityClass: 'opacity-70' };
+	if (tool === 'line') return { style: '', opacityClass: 'opacity-70' };
 
-	if (mode === 'view') {
+	if (tool === 'view') {
 		return {
 			style: highlighted ? `color: ${HIGHLIGHT_COLOR};` : '',
 			opacityClass: highlighted ? 'opacity-100' : viewOpacity
 		};
 	}
 
-	// link mode — source punctuation (state null) gets no color, just dimmed.
+	// link tool — source punctuation (state null) gets no color, just dimmed.
 	if (state === null) return { style: '', opacityClass: 'opacity-30' };
 
 	const weight = (px: string) => (fontWeight ? ` font-weight: ${px};` : '');

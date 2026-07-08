@@ -54,7 +54,7 @@ than `'punctuation'`.
 
 ## Design Decisions
 
-- Single tokenizer reduces the surface area for the export/link-mode/line-mode code to reason
+- Single tokenizer reduces the surface area for the export/link-tool/line-tool code to reason
   about — there is now exactly one shape of `TargetToken[]` for any given text.
 - The interior/flanking distinction is a deliberate tradeoff: it makes hyphenated compounds and
   numbers mappable piece-by-piece, at the cost of a denser regex with lookaround. 137 lines of

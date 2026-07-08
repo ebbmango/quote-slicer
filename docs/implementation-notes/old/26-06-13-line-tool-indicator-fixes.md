@@ -1,11 +1,11 @@
-# Line mode: indicator cleanup and pinyin-preserving split/merge
+# Line tool: indicator cleanup and pinyin-preserving split/merge
 
 > Commits: `d0bf212`, `dd63b53`, `b63ecbb`
 > Date: 2026-06-13
 
 ## Overview
 
-Three related fixes to line mode: a visual rework of the split/merge
+Three related fixes to line tool: a visual rework of the split/merge
 indicator lines, removal of a redundant merge affordance in the target panel,
 and a fix for pinyin annotations getting dropped on the first source
 split/merge.

@@ -11,9 +11,9 @@
 	//
 	// The panel owns its token stream, its row container, and its panel-specific
 	// `SPREAD` tuning + palette field; it passes those down and delegates the
-	// divisor through this one interface. See docs/line-mode.md.
-	import { getModeContext } from '$lib/context/mode.svelte';
-	import { interactionMode } from '$lib/context/interactionMode.svelte';
+	// divisor through this one interface. See docs/line-tool.md.
+	import { getToolContext } from '$lib/context/tool.svelte';
+	import { interactionMedium } from '$lib/context/interactionMedium.svelte';
 	import {
 		redistributeRow,
 		clearRedistribute,
@@ -63,10 +63,10 @@
 		onClearTouch?: () => void;
 	} = $props();
 
-	const mode = getModeContext();
-	let isLineMode = $derived(mode.current === 'line');
-	let isTouch = $derived(interactionMode.current === 'touch');
-	let touchLit = $derived(isLineMode && isTouch && touchedDivisorIndex === divisorIndex);
+	const tool = getToolContext();
+	let isLineTool = $derived(tool.current === 'line');
+	let isTouch = $derived(interactionMedium.current === 'touch');
+	let touchLit = $derived(isLineTool && isTouch && touchedDivisorIndex === divisorIndex);
 
 	function activate() {
 		// Snap any first-tap / hover spread back instantly so its `--rd-x` ease isn't
@@ -79,7 +79,7 @@
 	// the same divisor activates. Mouse/keyboard activate immediately.
 	function handleClick(e: MouseEvent) {
 		e.stopPropagation();
-		if (!isLineMode) return;
+		if (!isLineTool) return;
 		if (!isTouch) {
 			activate();
 			return;
@@ -95,7 +95,7 @@
 
 	// Mouse/keyboard hover feedback for split surfaces only (merge spreads nothing).
 	function openSpread() {
-		if (isLineMode && !isTouch) redistributeRow(container, divisorIndex, spread);
+		if (isLineTool && !isTouch) redistributeRow(container, divisorIndex, spread);
 	}
 	function closeSpread() {
 		if (!isTouch) clearRedistribute(container);
@@ -106,7 +106,7 @@
 	<button
 		data-flip-id={flipId}
 		class="merge-zone"
-		class:line-active={isLineMode}
+		class:line-tool-active={isLineTool}
 		class:touch-lit={touchLit}
 		data-divisor-index={divisorIndex}
 		style="--line-tool-color: {color}"
@@ -122,7 +122,7 @@
 		data-flip-id={flipId}
 		role="button"
 		class="ws-split"
-		class:line-active={isLineMode}
+		class:line-tool-active={isLineTool}
 		class:touch-lit={touchLit}
 		data-divisor-index={divisorIndex}
 		style="--line-tool-color: {color}"
@@ -137,7 +137,7 @@
 {:else}
 	<button
 		class="split-zone"
-		class:line-active={isLineMode}
+		class:line-tool-active={isLineTool}
 		class:touch-lit={touchLit}
 		data-divisor-index={divisorIndex}
 		style="--line-tool-color: {color}"
@@ -170,7 +170,7 @@
 	   lives on the panel's row container (outside this component), so it's :global. */
 	:global(.flipping) .split-zone,
 	:global(.flipping) .ws-split,
-	:global(.flipping) .merge-zone.line-active .merge-indicator {
+	:global(.flipping) .merge-zone.line-tool-active .merge-indicator {
 		pointer-events: none;
 	}
 
@@ -202,8 +202,8 @@
 		outline: none;
 	}
 
-	/* Outside line mode the zone occupies its net-zero slot but takes no clicks. */
-	.split-zone:not(.line-active) {
+	/* Outside line tool the zone occupies its net-zero slot but takes no clicks. */
+	.split-zone:not(.line-tool-active) {
 		pointer-events: none;
 	}
 
@@ -223,13 +223,13 @@
 			transform 150ms ease;
 	}
 
-	:global(html[data-interaction='mouse']) .split-zone.line-active:hover .split-indicator,
-	:global(html[data-interaction='keyboard']) .split-zone.line-active:focus .split-indicator {
+	:global(html[data-interaction-medium='mouse']) .split-zone.line-tool-active:hover .split-indicator,
+	:global(html[data-interaction-medium='keyboard']) .split-zone.line-tool-active:focus .split-indicator {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
 	/* Touch-highlighted split divisor — same visual as hover/focus. No media gate:
-	   touch-lit is only set when interactionMode === 'touch'. */
+	   touch-lit is only set when interactionMedium === 'touch'. */
 	.split-zone.touch-lit .split-indicator {
 		opacity: var(--line-tool-opacity-hover);
 	}
@@ -261,7 +261,7 @@
 		-webkit-user-select: text;
 	}
 
-	.ws-split:not(.line-active) {
+	.ws-split:not(.line-tool-active) {
 		pointer-events: none;
 	}
 
@@ -284,10 +284,10 @@
 			transform 150ms ease;
 	}
 
-	/* Gate hover vs focus-visible by interaction mode so a mouse-hovered zone and
-	   a Tab-focused zone never light up at once (see interactionMode.svelte.ts). */
-	:global(html[data-interaction='mouse']) .ws-split.line-active:hover::after,
-	:global(html[data-interaction='keyboard']) .ws-split.line-active:focus::after {
+	/* Gate hover vs focus-visible by interaction medium so a mouse-hovered zone and
+	   a Tab-focused zone never light up at once (see interactionMedium.svelte.ts). */
+	:global(html[data-interaction-medium='mouse']) .ws-split.line-tool-active:hover::after,
+	:global(html[data-interaction-medium='keyboard']) .ws-split.line-tool-active:focus::after {
 		opacity: var(--line-tool-opacity-hover);
 	}
 
@@ -296,9 +296,9 @@
 	}
 
 	/* ── Merge surface: the full-width line-break band (identical in both panels) ─ */
-	/* Height animates 0 ↔ 1.5rem on the mode change so the lines "come apart"; the
+	/* Height animates 0 ↔ 1.5rem on the tool change so the lines "come apart"; the
 	   scroll box (height: auto) follows in flow. At height 0 it still forces a flex
-	   wrap, so it doubles as the plain line break in link/view modes. */
+	   wrap, so it doubles as the plain line break in link/view tools. */
 	.merge-zone {
 		display: flex;
 		align-items: center;
@@ -317,7 +317,7 @@
 	   (even via inline style, transition disabled) computed to 0px, while
 	   `min-height` worked. Looked fine in a real browser. If this ever shows up as a
 	   real bug, swap `height` for `min-height` here and re-check the close transition. */
-	.merge-zone.line-active {
+	.merge-zone.line-tool-active {
 		height: 1.5rem;
 		/* The full-width band is only here to force the flex wrap (the line break).
 		   Hover/click belong to the dashed line itself, not the empty span beside it —
@@ -325,11 +325,11 @@
 		pointer-events: none;
 	}
 
-	.merge-zone:not(.line-active) {
+	.merge-zone:not(.line-tool-active) {
 		pointer-events: none;
 	}
 
-	.merge-zone:not(.line-active) .merge-indicator {
+	.merge-zone:not(.line-tool-active) .merge-indicator {
 		opacity: 0;
 	}
 
@@ -356,15 +356,15 @@
 	/* The line itself is the only interactive part of the band (see .merge-zone).
 	   Raise it above the flanking tokens, whose tall (leading-10) line-boxes spill
 	   into the gap and would otherwise capture the hit. */
-	.merge-zone.line-active .merge-indicator {
+	.merge-zone.line-tool-active .merge-indicator {
 		pointer-events: auto;
 		cursor: pointer;
 		position: relative;
 		z-index: 2;
 	}
 
-	:global(html[data-interaction='mouse']) .merge-zone.line-active .merge-indicator:hover,
-	:global(html[data-interaction='keyboard']) .merge-zone.line-active:focus .merge-indicator {
+	:global(html[data-interaction-medium='mouse']) .merge-zone.line-tool-active .merge-indicator:hover,
+	:global(html[data-interaction-medium='keyboard']) .merge-zone.line-tool-active:focus .merge-indicator {
 		opacity: var(--line-tool-opacity-hover);
 		width: 30%;
 		background-size: calc((var(--line-tool-dash) + var(--line-tool-gap)) * 1.5) 100%;

@@ -13,7 +13,7 @@ const unmapped: TokenState = { kind: 'unmapped' };
 // refactor must NOT do.
 const src = (state: TokenState | null, focused: boolean) =>
 	tokenPresentation({
-		mode: 'link',
+		tool: 'link',
 		state,
 		focused,
 		highlighted: false,
@@ -22,7 +22,7 @@ const src = (state: TokenState | null, focused: boolean) =>
 	});
 const tgt = (state: TokenState | null, focused: boolean) =>
 	tokenPresentation({
-		mode: 'link',
+		tool: 'link',
 		state,
 		focused,
 		highlighted: false,
@@ -30,7 +30,7 @@ const tgt = (state: TokenState | null, focused: boolean) =>
 		fontWeight: true
 	});
 
-describe('tokenPresentation — source (link mode, no font-weight)', () => {
+describe('tokenPresentation — source (link tool, no font-weight)', () => {
 	it('active', () =>
 		expect(src(active, false)).toEqual({ style: `color: ${C};`, opacityClass: '' }));
 	it('active + focused', () =>
@@ -49,7 +49,7 @@ describe('tokenPresentation — source (link mode, no font-weight)', () => {
 		expect(src(null, false)).toEqual({ style: '', opacityClass: 'opacity-30' }));
 });
 
-describe('tokenPresentation — target (link mode, font-weight)', () => {
+describe('tokenPresentation — target (link tool, font-weight)', () => {
 	it('active', () =>
 		expect(tgt(active, false)).toEqual({
 			style: `color: ${C}; font-weight: 600;`,
@@ -83,7 +83,7 @@ describe('tokenPresentation — line & view (panel-agnostic but for viewOpacity)
 	it('line', () =>
 		expect(
 			tokenPresentation({
-				mode: 'line',
+				tool: 'line',
 				state: null,
 				focused: false,
 				highlighted: false,
@@ -94,7 +94,7 @@ describe('tokenPresentation — line & view (panel-agnostic but for viewOpacity)
 	it('view, not highlighted', () =>
 		expect(
 			tokenPresentation({
-				mode: 'view',
+				tool: 'view',
 				state: null,
 				focused: false,
 				highlighted: false,
@@ -105,7 +105,7 @@ describe('tokenPresentation — line & view (panel-agnostic but for viewOpacity)
 	it('view, highlighted', () =>
 		expect(
 			tokenPresentation({
-				mode: 'view',
+				tool: 'view',
 				state: null,
 				focused: false,
 				highlighted: true,

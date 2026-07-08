@@ -36,10 +36,10 @@ The extraction landed in dependency order:
 5. **`DataModal.svelte`** — the slide-in panel for minimal viewports: `modalOpen`/
    `forceClose`/`flyX` state, `openModal`/`closeModal`, the `popstate` listener for Android
    back, and the modal markup/CSS. Exposes `openModal`/`closeModal` via `bind:this`.
-6. **`IconToggleButton.svelte`** + **`ModeToolbar.svelte`** — collapses six near-duplicate
+6. **`IconToggleButton.svelte`** + **`ToolToolbar.svelte`** — collapses six near-duplicate
    maps/json toggle buttons (aside vs. modal variant, times two views) into one
-   `IconToggleButton`, and moves the link/line/view mode switcher and its CSS into
-   `ModeToolbar`.
+   `IconToggleButton`, and moves the link/line/view tool switcher and its CSS into
+   `ToolToolbar`.
 7. **`globalShortcuts.ts`** (`src/lib/actions/`) — `initAlignmentShortcuts(alignment)` moves
    the document-level Delete/Backspace and click-to-deselect handlers out of `+page.svelte`,
    called once from `onMount`.
@@ -47,19 +47,19 @@ The extraction landed in dependency order:
 
 ## Implementation Details
 
-`+page.svelte` now: sets up contexts (`mode`, `breakpoints`, `tokenStore`, `alignment` — see
+`+page.svelte` now: sets up contexts (`tool`, `breakpoints`, `tokenStore`, `alignment` — see
 [[26-06-14-token-store-consolidation]]), owns `sourceText`/`targetText`/`authorship` and the
-`asideView`/`modalOpen` state that's threaded into `DataModal` and `ModeToolbar`, and keeps
-the text→link mode "arrow launch" animation (the one piece of bespoke interaction left
+`asideView`/`modalOpen` state that's threaded into `DataModal` and `ToolToolbar`, and keeps
+the text→link tool "arrow launch" animation (the one piece of bespoke interaction left
 in-file). Everything else is composition: `<DataPanel>` for the two asides, `<DataModal
-bind:this={dataModal}>` for the minimal-viewport slide-in, and `<ModeToolbar>` for the bottom
+bind:this={dataModal}>` for the minimal-viewport slide-in, and `<ToolToolbar>` for the bottom
 toolbar, with `openModal`/`closeModal` passed through as closures over `dataModal`.
 
 `DataPanel` is the shared rendering surface for "maps or json" — both `+page.svelte`'s
 sidebars and `DataModal` render through it, so the `fade-edges` mask and the
 `MappingsList`/`JsonExportPanel` choice live in one place.
 
-`ModeToolbar` renders two sibling button groups (`.subtools-aside` and `.subtools-modal`),
+`ToolToolbar` renders two sibling button groups (`.subtools-aside` and `.subtools-modal`),
 each built from `IconToggleButton`, switching visibility via CSS rather than conditional
 markup — `IconToggleButton` itself is a single `<button>` wrapping an SVG path from
 `icons.json`, taking `icon`/`label`/`active`/`onclick`/`testid`.
@@ -74,7 +74,7 @@ markup — `IconToggleButton` itself is a single `<button>` wrapping an SVG path
   the same maps/json content; factoring it once avoids the aside/modal copies drifting.
 - **`IconToggleButton` collapses near-duplicates rather than parameterizing in place.** Six
   near-identical buttons became one component with a small prop surface (`icon`, `label`,
-  `active`, `onclick`, `testid`), used by both `ModeToolbar` button groups.
+  `active`, `onclick`, `testid`), used by both `ToolToolbar` button groups.
 
 ## Future Considerations
 

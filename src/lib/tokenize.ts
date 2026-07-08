@@ -58,7 +58,7 @@ const isLeading = (t: SourceToken) => isPunct(t) && LEADING_PUNCT_RE.test(t.text
  * standalone punctuation run with no base to bind to.
  *
  * Grouping never crosses a `.line` boundary: a punct on a different line than its
- * would-be base splits off into its own group, so a line-mode split between a
+ * would-be base splits off into its own group, so a line-tool split between a
  * char and its punctuation separates them naturally (they fall onto different
  * lines → different groups).
  */
@@ -152,7 +152,7 @@ export function tokenizeTarget(text: string): TargetToken[] {
 					tokens.push({ text: t, line, type: 'punctuation' });
 				}
 			}
-			// Boundary whitespace: acts as merge affordance in line mode.
+			// Boundary whitespace: acts as merge affordance in line tool.
 			if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
 			return tokens;
 		})

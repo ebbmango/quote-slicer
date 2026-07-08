@@ -1,6 +1,6 @@
-# View Mode
+# View Tool
 
-View mode (`mode.current === 'view'`) is the read-only presentation layer: the tokens
+View tool (`tool.current === 'view'`) is the read-only presentation layer: the tokens
 are dimmed, the line-tool affordances are inert, and the authorship field is locked.
 Its one piece of interactivity is the **mapping highlight** — hovering (or tapping) a
 mapped token lights up every token in the same mapping across **both** panels, so the
@@ -68,7 +68,7 @@ doesn't inherit the shorter 300 ms delay.
 
 `HIGHLIGHT_COLOR = 'rgb(255, 0, 55)'` (`constants/colors.ts`) — intentionally **flat**:
 the same red for every mapping, ignoring each mapping's own palette entry, so the hover
-state reads distinctly from the link-mode selection colours. The CSS `color` transition
+state reads distinctly from the link-tool selection colours. The CSS `color` transition
 on the token spans fades the highlight out; light-up is instant once the timer fires.
 
 ## Wiring and cleanup
@@ -79,9 +79,9 @@ container to `alignment.highlight.hoverOut()`, and touch taps to `tapSource(i)` 
 `tapTarget(i)` — all through the `alignment.highlight` field directly.
 
 Cleanup is owned by a single `$effect` in `QuoteWorkbench`: it calls
-`alignment.highlight.clearHighlight()` when the mode is not `view` **and** returns a
+`alignment.highlight.clearHighlight()` when `tool.current !== 'view'` **and** returns a
 teardown that clears it on unmount, so pending light/grace timers can never fire on a
-detached instance, and the reset runs once per mode-exit rather than once per panel.
+detached instance, and the reset runs once per tool-exit rather than once per panel.
 
-> Keyboard navigation in view mode is deliberately not implemented — there is no
+> Keyboard navigation in view tool is deliberately not implemented — there is no
 > keyboard highlight.

@@ -1,16 +1,15 @@
-# Dark Mode
+# Themes
 
 The app supports light and dark themes. Three problems shaped the design, and each
 is solved by a distinct layer:
 
 1. **No flash on load.** The app is statically prerendered and ships `light` as the
-   default. Without intervention a dark-mode user sees a white flash before
+   default. Without intervention a dark-theme user sees a white flash before
    hydration applies the right class. → solved by a **prepaint script** in
    `src/app.html`.
-2. **Preference that follows the OS, but not forever.** "Prefer dark" should persist
-   while the user has the app open, yet reset to the OS default if they close
-   everything and come back. → solved by a **cross-tab theme controller** with an
-   OS-aware continuity check (`themeState.ts` + `systemTheme.ts`).
+2. **Last change wins.** A user pick should survive reloads, but a later OS theme
+   change while the app was away should supersede the stored pick. → solved by the
+   OS-drift-aware resolver in `themeState.ts`.
 3. **One coherent transition.** On a theme flip, every element should settle on the
    new colours at the same rate — no element finishing 220 ms ahead of the page
    background. → solved by the **`html.theme-anim` gating window** plus a per-scheme
@@ -19,18 +18,19 @@ is solved by a distinct layer:
 ## The no-flash prepaint script (`src/app.html`)
 
 An inline `<script>` runs synchronously before any CSS or JS loads. It reads
-`localStorage`, decides the correct mode, and stamps `html.dark` +
+`localStorage`, decides the correct theme, and stamps `html.dark` +
 `style="color-scheme: …"` in the same task as the HTML parse — so by the time the
 browser begins layout the correct class is already there and no flash is possible.
 
 The script is a self-contained IIFE with **no imports** (it runs before modules
 exist), so it **duplicates** the state-parsing logic from `themeState.ts`: the same
-storage keys (`quote-slicer:theme-state:v1`, `quote-slicer:theme-tabs:v1`), the same
-`version: 1` schema and validation, and the same `hasContinuity` decision (active
-tab within the 5-minute TTL, or a recent reload within the grace window).
+storage key (`quote-slicer:theme-state:v3`), the same `version: 3` schema, and the
+same `theme` / `osThemeAtPick` validation. It also accepts the legacy
+`quote-slicer:theme-state:v2` shape (`mode` / `osAtPick`) and maps it into the v3
+names so existing manual picks survive the terminology migration.
 
 > **Keep in sync.** The prepaint script and `themeState.ts` share the storage schema
-> and the continuity decision. Any schema change requires editing **both** and
+> and the OS-drift rule. Any schema change requires editing **both** and
 > bumping the version string. This duplication is deliberate — the script must stay
 > tiny and dependency-free.
 
@@ -39,51 +39,38 @@ tab within the 5-minute TTL, or a recent reload within the grace window).
 The logic is split so it can be unit-tested without a DOM:
 
 - **`src/lib/theme/themeState.ts`** — pure functions and types only. The storage shape
-  (`StoredThemeState`, `StoredTabRegistry`), the keys and timing constants
-  (`HEARTBEAT_MS = 30 s`, `STALE_TAB_MS` / `RELOAD_GRACE_MS = 5 min`), and all the
-  resolution logic (`resolveStoredTheme`, `resolveExternalThemeState`,
-  `pruneTabRegistry`, …). No browser API. Covered by `themeState.spec.ts`.
+  (`StoredThemeState`), the storage key, and the resolution logic
+  (`parseThemeState`, `resolveTheme`, `systemThemeState`, `userThemeState`). No browser
+  API. Covered by `themeState.spec.ts`.
 - **`src/lib/theme/systemTheme.ts`** — `adaptiveTheme()`, the browser-connected runtime. It
-  wires the pure functions to `localStorage`, a `BroadcastChannel('theme-sync')`, the
-  OS media query, and a heartbeat timer, and returns a Svelte-reactive object with a
-  `get/set current` backed by `createSubscriber`.
+  wires the pure functions to `localStorage`, the OS media query, `storage` events, and
+  return-to-tab reconciliation (`visibilitychange`, `pageshow`, `focus`), and returns a
+  Svelte-reactive object with a `get/set current` backed by `createSubscriber`.
 - **`src/lib/theme/index.ts`** — `export const theme = adaptiveTheme()`, the single shared
   controller instance. Consumers import it (most alias it `appTheme`) and read
   `theme.current` (`'light' | 'dark'`); setting `theme.current = …` is what
   `ThemeToggle` does on click.
 
-### State semantics — explicit choice vs OS default
+### State semantics — last change wins
 
-The stored state carries both `mode` (the active theme) and `systemMode` (what the OS
-was showing when the state was written). On load:
+The stored state carries both `theme` (the active theme) and `osThemeAtPick` (what the
+OS was showing when the state was written). On load:
 
-- If there is **continuity** (at least one live tab in the registry, or a recent
-  reload) and the stored `systemMode` still matches the current OS, the stored `mode`
-  is used — so an explicit "dark" choice survives reloads.
-- If the OS preference changed since the state was written (`storedState.systemMode !==
-currentSystemMode`), the preference is **stale** and discarded in favour of the new
-  OS default. (A user who chose dark on a light OS thus loses that choice if they
-  switch the OS to dark — an accepted edge case.)
-- Without continuity, stored preferences are cleared and the OS default applies.
-
-### The tab registry (continuity)
-
-Two `localStorage` keys: `…:theme-state:v1` (the mode) and `…:theme-tabs:v1` (a map of
-`tabId → { seenAt }`, heartbeated every 30 s). "Continuity" means at least one tab
-entry is within the 5-minute TTL, **or** the registry's `lastEmptyAt` is within the
-reload-grace window. This is what lets a preference persist across a reload (briefly
-zero tabs) but reset after every tab has been closed long enough.
+- If the stored `osThemeAtPick` still matches the current OS theme, the stored `theme`
+  is used — so an explicit choice survives reloads and full closes.
+- If the OS preference changed since the state was written (`storedState.osThemeAtPick !==
+currentOsTheme`), the preference is **stale** and discarded in favour of the new
+  OS default. That OS change is treated as the later user/environment change.
+- On a first visit or corrupt storage, the OS default applies and a fresh system state
+  is persisted.
 
 ### Cross-tab sync
 
-`BroadcastChannel('theme-sync')` carries `{ type: 'state', source, state }` messages.
-On receipt, `resolveExternalThemeState` decides `adopt`, `ignore`, or `publish-system`
-(the incoming state has a stale `systemMode`). A newly opened tab also sends
-`{ type: 'request' }`; existing tabs reply with their state, so the new tab inherits
-the live theme before its own storage read settles. A `localStorage` `storage` event
-is used as a fallback for environments without `BroadcastChannel`. `visibilitychange`
-/ `pageshow` / `focus` trigger a `reconcileStoredTheme()` so a backgrounded tab catches
-up on return.
+The browser runtime listens for `storage` changes on `quote-slicer:theme-state:v3`.
+When another tab writes a fresh user or system state, this tab re-runs `resolveTheme`
+against the current OS preference and adopts the stored state without echoing the write
+back. `visibilitychange`, `pageshow`, and `focus` also trigger reconciliation so a tab
+that missed events while hidden catches up on return.
 
 > The live cross-tab sync is intentional and valued — do not remove it.
 
@@ -121,7 +108,7 @@ backdrop, badge, and bottom-bar colours). See
   `colorVariant = isDark ? color.dark : color.light`; its `theme` object reads from
   the variant.
 - The token-state and divisor colour functions (`deriveSourceTokenState`,
-  `deriveTargetTokenState`, `divisorColor`) take a `mode` parameter and do the same
+  `deriveTargetTokenState`, `divisorColor`) take a `themeName` parameter and do the same
   selection — `Alignment` passes `appTheme.current` through.
 
 ### The delete-button colour flash
@@ -158,7 +145,7 @@ The single most important rule, and the least obvious. Chrome runs a
 **main thread** — and it _runs every `color` transition at roughly half speed when the
 **root element's** `color-scheme` changed in the same frame, mid-flight, **or within
 ~500 ms before the transition started**._ With the original code
-(`document.documentElement.style.colorScheme = mode` inline on every toggle, and
+(`document.documentElement.style.colorScheme = themeName` inline on every toggle, and
 `.dark` also carrying `color-scheme: dark`), the background settled in ~500 ms while
 all text dragged to ~900 ms. It was not paint jank and not DOM size: a bare test page
 synced fine, and toggling only the `.dark` class (leaving `color-scheme` alone) synced
@@ -207,7 +194,7 @@ settle with it, on every engine, for free.
 - **Tinted tokens.** A `.tok` only sets an explicit `color` when it carries a mapping
   tint (active / focused — see `tokenPresentation`); those spans get a `.tok-tinted`
   class (added in `Interactive{Source,Target}Text` when `p.style` contains `color:`).
-  `.tok-tinted` transitions colour (280 ms for the link-mode activate crossfade, widened
+  `.tok-tinted` transitions colour (280 ms for the link-tool activate crossfade, widened
   to 500 ms under `.theme-anim`). Untinted tokens get **no** colour transition and ride
   `<body>` by inheritance.
 - **Shiki JSON spans.** Each carries an explicit inline palette colour, so a theme flip
@@ -219,12 +206,12 @@ settle with it, on every engine, for free.
 
 ### The `html.theme-anim` window
 
-`systemTheme.ts` calls `flashThemeTransition()` on a real mode change, adding
+`systemTheme.ts` calls `flashThemeTransition()` on a real theme change, adding
 `theme-anim` to `<html>` for 500 ms (debounced). Its only job now is to _widen_ the
 handful of elements whose own colour transition is normally faster — the tinted tokens
 (280→500 ms) — and to arm the Shiki spans' colour transition, so their explicit-colour
 shift matches the page during a theme flip without slowing the arrow-launch
-mode-crossfade the rest of the time.
+tool-crossfade the rest of the time.
 
 ### Traps that reintroduce the bug (all fixed, keep them fixed)
 
@@ -298,7 +285,7 @@ mode-crossfade the rest of the time.
   `colorMap`) re-renders through Svelte's batched flush — which in Chromium landed one
   frame _after_ `applyThemeClass` toggled `.dark`, so those transitions started a frame
   behind the page's. `systemTheme.ts` calls `flushSync()` right after `notify()` on a
-  real mode change, putting every DOM write into the same style recalc: one shared start
+  real tool change, putting every DOM write into the same style recalc: one shared start
   frame for all transitions.
 
 Verified across Chromium / WebKit / Firefox by driving a theme toggle in Playwright and

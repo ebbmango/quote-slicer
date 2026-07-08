@@ -22,7 +22,7 @@ The file also absorbed `constants/lineDivisor.ts`, which held a subset of these 
 
 Two related cleanups landed alongside the new module.
 
-**Divisor refocus in the navigator** (`af17a04`): After a keyboard split/merge in line mode, the activated divisor is re-rendered away (the edit replaces it). The logic that re-acquired focus by divisor index was previously inlined in `QuoteWorkbench`. It was moved into `tokenGridNav` as `restoreFocusByIndex()`, gated by a `restoresFocusOnActivate` predicate the caller supplies. Focus management now lives entirely in the navigator, and the workbench only configures it.
+**Divisor refocus in the navigator** (`af17a04`): After a keyboard split/merge in line tool, the activated divisor is re-rendered away (the edit replaces it). The logic that re-acquired focus by divisor index was previously inlined in `QuoteWorkbench`. It was moved into `tokenGridNav` as `restoreFocusByIndex()`, gated by a `restoresFocusOnActivate` predicate the caller supplies. Focus management now lives entirely in the navigator, and the workbench only configures it.
 
 **Authorship ref via `EditScope`** (`3e2681d`): The token store's line-edit animation flips the authorship textarea alongside the token panels. Previously the store found the element by walking `sourceWrapperEl.parentElement.parentElement` and then querying `#authorship` — coupling the store to the `QuoteWorkbench` layout shape. The ref is now passed in via `EditScope` (the bundle of DOM elements a line edit operates on). The store reads only what it's given; the workbench owns layout knowledge.
 

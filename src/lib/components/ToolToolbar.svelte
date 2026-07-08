@@ -2,7 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import icons from '$lib/assets/icons.json';
 	import IconToggleButton from '$lib/components/IconToggleButton.svelte';
-	import { getModeContext } from '$lib/context/mode.svelte';
+	import { getToolContext } from '$lib/context/tool.svelte';
 	import { getBreakpointContext } from '$lib/context/breakpoints.svelte';
 
 	let {
@@ -17,7 +17,7 @@
 		closeModal: () => void;
 	} = $props();
 
-	const modeCtx = getModeContext();
+	const toolCtx = getToolContext();
 	const breakpoints = getBreakpointContext();
 	const isModalDataSurface = $derived(breakpoints.dataSurface === 'modal');
 	const showDataToggle = $derived(breakpoints.dataSurface !== 'wide');
@@ -76,22 +76,22 @@
 			icon={{ viewBox: icons.language.viewBox, path: icons.language.sharp.light }}
 			label="link"
 			tabindex={1}
-			active={modeCtx.current === 'link'}
-			onclick={() => (modeCtx.current = 'link')}
+			active={toolCtx.current === 'link'}
+			onclick={() => (toolCtx.current = 'link')}
 		/>
 		<IconToggleButton
 			icon={{ viewBox: icons.paragraph.viewBox, path: icons.paragraph.sharp.light }}
 			label="line"
 			tabindex={2}
-			active={modeCtx.current === 'line'}
-			onclick={() => (modeCtx.current = 'line')}
+			active={toolCtx.current === 'line'}
+			onclick={() => (toolCtx.current = 'line')}
 		/>
 		<IconToggleButton
 			icon={{ viewBox: icons.eye.viewBox, path: icons.eye.classic.light }}
 			label="view"
 			tabindex={3}
-			active={modeCtx.current === 'view'}
-			onclick={() => (modeCtx.current = 'view')}
+			active={toolCtx.current === 'view'}
+			onclick={() => (toolCtx.current = 'view')}
 		/>
 	</div>
 </div>

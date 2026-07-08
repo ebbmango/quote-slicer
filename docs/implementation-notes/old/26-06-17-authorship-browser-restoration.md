@@ -17,10 +17,10 @@ previous session while the source and target fields correctly showed their empty
 state.
 
 The asymmetry is structural: source and target textareas live inside `{#if editing}` in
-`QuoteWorkbench.svelte`, which means they are **unmounted** when the app is not in text mode
-(e.g., after advancing to link mode). On a fresh page load they mount from scratch with no
+`QuoteWorkbench.svelte`, which means they are **unmounted** when the app is not in text tool
+(e.g., after advancing to link tool). On a fresh page load they mount from scratch with no
 prior DOM state for the browser to restore. The authorship textarea is **always in the DOM**
-across all modes, so the browser does find a prior value for it and restores it — racing Svelte's
+across all tools, so the browser does find a prior value for it and restores it — racing Svelte's
 binding.
 
 ## Design Decision

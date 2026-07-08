@@ -1,11 +1,11 @@
-# Line-Mode Divisor Visual Affordances
+# Line-Tool Divisor Visual Affordances
 
 > Commits: `87d3622`, `ebf4cfa`, `e0bd4f2`, `58a0e4f`, `55425cc`  
 > Date: 2026-06-16
 
 ## Overview
 
-A cluster of commits gave line-mode divisors (split indicators and merge zones) their final visual treatment: running-palette coloring across both panels, slanted source split glyphs, wider hit zones, and a fade-out when leaving line mode. Together they make the editing affordances legible and polished without disrupting the GSAP Flip animation that runs on each edit.
+A cluster of commits gave line-tool divisors (split indicators and merge zones) their final visual treatment: running-palette coloring across both panels, slanted source split glyphs, wider hit zones, and a fade-out when leaving line tool. Together they make the editing affordances legible and polished without disrupting the GSAP Flip animation that runs on each edit.
 
 ## What Changed
 
@@ -29,9 +29,9 @@ The indicator itself moves with `--rd-x` during hover redistribution (the gap-sp
 
 Merge zones are handled differently: the dashed line is raised above the token line-boxes via `position` so click and hover land on it directly rather than on the tall inter-line gap.
 
-### Fade-out on mode exit (`55425cc`)
+### Fade-out on tool exit (`55425cc`)
 
-Each panel had its split and merge indicators appear instantly when entering line mode but snap off when leaving, which was jarring. A CSS transition (gated on `isLineMode`) now fades the indicators out when the user switches away from line mode.
+Each panel had its split and merge indicators appear instantly when entering line tool but snap off when leaving, which was jarring. A CSS transition (gated on `isLineTool`) now fades the indicators out when the user switches away from line tool.
 
 ## Design Decisions
 

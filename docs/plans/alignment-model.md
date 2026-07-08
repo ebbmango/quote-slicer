@@ -17,7 +17,7 @@ reachable via DOM click handlers. Same asymmetry in `getSourceTokenState` /
 `getTargetTokenState` (target adds whitespace bridging).
 
 "Alignment" names the concept this class is the model _of_ — useful since
-`view` mode (not yet built, per [overview.md](../overview.md)) will likely
+the `view` tool (not yet built at the time, per [overview.md](../overview.md)) would likely
 read from the same model. New domain term → added to `CONTEXT.md`.
 
 ## Where
@@ -30,7 +30,7 @@ read from the same model. New domain term → added to `CONTEXT.md`.
 - [src/lib/components/Mapping.svelte](../../src/lib/components/Mapping.svelte)
 - [src/routes/+page.svelte](../../src/routes/+page.svelte)
 - `src/lib/vitest-examples/` — new test file(s)
-- `docs/data-model.md`, `docs/link-mode.md`, `docs/file-map.md`, `docs/ui-architecture.md`
+- `docs/data-model.md`, `docs/link-tool.md`, `docs/file-map.md`, `docs/ui-architecture.md`
 - `CONTEXT.md` (new, repo root)
 
 ## How
@@ -182,7 +182,7 @@ Replace `LinkContext` references with `Alignment` (and `link.svelte.ts` with
 `alignment.svelte.ts`) in:
 
 - `docs/data-model.md`
-- `docs/link-mode.md`
+- `docs/link-tool.md`
 - `docs/file-map.md`
 - `docs/ui-architecture.md`
 
@@ -199,6 +199,6 @@ Replace `LinkContext` references with `Alignment` (and `link.svelte.ts` with
 
 - `npx tsc --noEmit`
 - `npx vitest` — new `Alignment`/`tokenState` tests pass
-- `npm run dev` — link mode: click-to-map, force-add (Alt+Shift+Space /
+- `npm run dev` — link tool: click-to-map, force-add (Alt+Shift+Space /
   long-press), pinyin auto-fill/clear, mapping switch/remove/prune,
   whitespace bridging in target panel all behave as before

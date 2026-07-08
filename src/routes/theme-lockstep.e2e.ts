@@ -33,7 +33,7 @@ test('theme flip: page and mapping cards transition in lockstep', async ({ page 
 		const cardTop = document.querySelector('li[data-mapping-id] > div') as HTMLElement;
 		const before = cardTop.getAttribute('style');
 		const toggle = document.querySelector(
-			'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+			'button[aria-label="Switch to dark theme"], button[aria-label="Switch to light theme"]'
 		) as HTMLElement;
 		toggle.click();
 		// read back in the same task — no awaits, no frames in between
@@ -89,7 +89,7 @@ test('theme flip: lockstep structural invariants', async ({ page }) => {
 		const htmlBefore = document.documentElement.style.colorScheme;
 		(
 			document.querySelector(
-				'button[aria-label="Switch to dark mode"], button[aria-label="Switch to light mode"]'
+				'button[aria-label="Switch to dark theme"], button[aria-label="Switch to light theme"]'
 			) as HTMLElement
 		).click();
 		return {
@@ -121,11 +121,11 @@ test('theme flip: placeholder ink tracks the theme under a dark OS scheme', asyn
 			() => getComputedStyle(document.querySelector('#target-text')!, '::placeholder').color
 		);
 
-	await page.click('button[aria-label="Switch to light mode"]');
+	await page.click('button[aria-label="Switch to light theme"]');
 	await page.waitForTimeout(700);
 	expect(await placeholderInk(), 'light theme uses the light ink').toBe('rgb(27, 27, 27)');
 
-	await page.click('button[aria-label="Switch to dark mode"]');
+	await page.click('button[aria-label="Switch to dark theme"]');
 	await page.waitForTimeout(700);
 	expect(await placeholderInk(), 'dark theme uses the dark ink').toBe('rgb(244, 244, 244)');
 });

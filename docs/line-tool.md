@@ -1,6 +1,6 @@
-# Line Mode
+# Line Tool
 
-Line mode (`mode.current === 'line'`) lets the user adjust where line breaks fall in
+Line tool (`tool.current === 'line'`) lets the user adjust where line breaks fall in
 the source and target texts **independently**. A line edit never changes the raw text
 strings — it only rewrites the tokens' `.line` fields, and those edits are preserved by
 the token store's [text-keyed cache](token-store.md#the-text-keyed-cache).
@@ -106,7 +106,7 @@ the same one activates.
 `QuoteWorkbench` owns a single `touchedDivisor: { panel, index } | null`, passed down so
 only **one** divisor across both panels is lit at a time — tapping a target divisor
 clears any source highlight automatically. `LineDivisor` runs the per-divisor first-tap/
-second-tap branch (gated on `interactionMode` being touch); mouse and keyboard skip the
+second-tap branch (gated on `interactionMedium` being touch); mouse and keyboard skip the
 staging step and activate immediately. An `$effect` collapses a leftover spread when the
 highlight clears, but only while `!animating`, so it never fights the edit's Flip.
 
@@ -125,17 +125,17 @@ scope. The panel components contribute three things to make that work:
 3. **An `animating`-gated height `$effect`.** The store passes `store.animating` down
    as a prop. While it's `true`, the panel leaves the scroll box's height alone (the
    store owns it). While it's `false`, the panel keeps the box at `height: auto` so it
-   follows content in flow — including the mode-change separator transitions described
-   in [Mode Transitions](mode-transitions.md).
+   follows content in flow — including the tool-change separator transitions described
+   in [Tool Transitions](tool-transitions.md).
 
 Because the workbench centres its three stacked panels, a height change in one panel
 shifts the others too — which is why the _other_ panel's wrapper and the authorship
 field are also flip targets, repositioned as whole units.
 
-## Keyboard scheme (line mode)
+## Keyboard scheme (line tool)
 
-Same `createTokenGridNav()` instance as link mode, reconfigured per mode (see
-[Keyboard & Navigation](keyboard-navigation.md)). Here the navigable elements are the
+Same `createTokenGridNav()` instance as link tool, reconfigured per tool (see
+[Keyboard & Navigation](mediums-and-keyboard-navigation.md)). Here the navigable elements are the
 split/merge controls — the selector is `LINE_ITEM_SELECTOR` (`.split-zone, .merge-zone,
 .ws-split`), all focusable.
 
@@ -147,8 +147,8 @@ split/merge controls — the selector is `LINE_ITEM_SELECTOR` (`.split-zone, .me
 | Alt+Space / Alt+Shift+Space | Activate the focused control (calls its `click` → `handleSplit`/`handleMerge`)                       |
 | Escape                      | Blur the focused control                                                                             |
 
-Cross-zone jumps (Alt+Enter and edge Alt+↑/↓) work in **every** mode — the old
-`crossZoneJump` config flag that restricted them to link mode was removed. Activating a
+Cross-zone jumps (Alt+Enter and edge Alt+↑/↓) work in **every** tool — the old
+`crossZoneJump` config flag that restricted them to link tool was removed. Activating a
 divisor re-renders it away (the edit replaces it), so the navigator re-acquires focus by
 index afterward — see
-[Keyboard & Navigation](keyboard-navigation.md#restoring-focus-after-a-line-edit).
+[Keyboard & Navigation](mediums-and-keyboard-navigation.md#restoring-focus-after-a-line-edit).

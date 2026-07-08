@@ -1,11 +1,11 @@
-# Line-mode divisor hover: gap redistribution instead of width-grow
+# Line-tool divisor hover: gap redistribution instead of width-grow
 
 > Commits: `df21f7a`, `8f0ef55`, `13184c3`, `dba9d7f`
 > Date: 2026-06-15
 
 ## Overview
 
-Reworks the hover feedback on line-mode split/merge divisors from a
+Reworks the hover feedback on line-tool split/merge divisors from a
 layout-affecting width animation to a pure-transform gap redistribution, then
 fixes the interaction between that redistribution and GSAP Flip during
 split/merge.
@@ -64,10 +64,10 @@ index comparison (not exact key match) to handle both cases uniformly.
 
 `13184c3` additionally switched the keyboard-gated hover-indicator selectors
 from `:focus-visible` to `:focus`, and made Alt+Arrow token navigation set
-`interactionMode` to `'keyboard'` — without this, focusing a divisor via
+`interactionMedium` to `'keyboard'` — without this, focusing a divisor via
 keyboard didn't light up its indicator because `:focus-visible` wasn't
 considered "keyboard interaction" by the existing CSS gating (see
-`interactionMode` in `docs/file-map.md`).
+`interactionMedium` in `docs/file-map.md`).
 
 ## Design Decisions
 

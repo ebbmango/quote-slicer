@@ -1,14 +1,15 @@
 import { browser } from '$app/environment';
 import { flushSync } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
-import type { ThemeMode as Mode } from '../types';
+import type { ThemeName } from '../types';
 import {
+	LEGACY_THEME_STATE_KEY,
 	THEME_STATE_KEY,
 	parseThemeState,
 	resolveTheme,
-	systemState,
-	toMode,
-	userState,
+	systemThemeState,
+	toTheme,
+	userThemeState,
 	type StorageLike,
 	type StoredThemeState
 } from './themeState';
@@ -21,8 +22,8 @@ function withStorage<T>(callback: (storage: StorageLike) => T, fallback: T): T {
 	}
 }
 
-function applyThemeClass(mode: Mode) {
-	document.documentElement.classList.toggle('dark', mode === 'dark');
+function applyThemeClass(themeName: ThemeName) {
+	document.documentElement.classList.toggle('dark', themeName === 'dark');
 }
 
 // `color-scheme` drives native form controls / scrollbars. Live changes go on
@@ -38,15 +39,15 @@ function applyThemeClass(mode: Mode) {
 // paint); it goes stale after live toggles, which only affects the root scrollbar
 // and canvas default — the layout is a non-scrolling h-dvh grid and every surface
 // paints its own background, so neither is ever visible.
-function applyColorScheme(mode: Mode) {
-	document.body.style.colorScheme = mode;
+function applyColorScheme(themeName: ThemeName) {
+	document.body.style.colorScheme = themeName;
 }
 
 // During an actual theme flip, mark <html> for the length of the page's 500ms
 // colour transition. Components whose elements normally transition colour faster
-// (e.g. the token spans' 280ms mode-crossfade) widen to 500ms under
+// (e.g. the token spans' 280ms tool-crossfade) widen to 500ms under
 // `html.theme-anim`, so every element settles on the new theme at the same rate.
-// Cleared after the window so mode transitions keep their own faster feel.
+// Cleared after the window so tool transitions keep their own faster feel.
 const THEME_ANIM_MS = 500;
 let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
 function flashThemeTransition() {
@@ -62,40 +63,53 @@ function flashThemeTransition() {
 export function adaptiveTheme() {
 	if (!browser) {
 		return {
-			get current(): Mode {
+			get current(): ThemeName {
 				return 'light';
 			},
-			set current(_mode: Mode) {}
+			set current(_themeName: ThemeName) {}
 		};
 	}
 
 	const media = window.matchMedia('(prefers-color-scheme: dark)');
-	const getSystemMode = () => toMode(media.matches);
+	const getSystemTheme = () => toTheme(media.matches);
 
 	const read = () =>
-		withStorage((storage) => parseThemeState(storage.getItem(THEME_STATE_KEY)), null);
+		withStorage((storage) => {
+			const current = parseThemeState(storage.getItem(THEME_STATE_KEY));
+			if (current) return current;
+
+			const legacy = parseThemeState(storage.getItem(LEGACY_THEME_STATE_KEY));
+			if (legacy) {
+				try {
+					storage.setItem(THEME_STATE_KEY, JSON.stringify(legacy));
+				} catch {
+					// Preserve the read even if migration write is blocked.
+				}
+			}
+			return legacy;
+		}, null);
 	const write = (state: StoredThemeState) =>
 		withStorage((storage) => storage.setItem(THEME_STATE_KEY, JSON.stringify(state)), undefined);
 
-	const initial = resolveTheme(read(), getSystemMode());
-	let currentMode: Mode = initial.mode;
+	const initial = resolveTheme(read(), getSystemTheme());
+	let currentTheme: ThemeName = initial.theme;
 	let notify = () => {};
 
 	// Initial paint: no transition is running, so set both class and color-scheme
 	// immediately (the prepaint stamped <html>'s color-scheme pre-paint; this seeds
 	// the live <body> copy to match).
-	applyThemeClass(currentMode);
-	applyColorScheme(currentMode);
+	applyThemeClass(currentTheme);
+	applyColorScheme(currentTheme);
 	if (initial.fresh) write(initial.state);
 
 	const set = (state: StoredThemeState, { persist = true } = {}) => {
-		const changed = state.mode !== currentMode;
-		currentMode = state.mode;
-		applyThemeClass(currentMode);
+		const changed = state.theme !== currentTheme;
+		currentTheme = state.theme;
+		applyThemeClass(currentTheme);
 		// Body-level color-scheme is safe to flip synchronously with the class (no
 		// Chromium transition throttle — see applyColorScheme), so native form
 		// controls re-theme in the same frame as everything else.
-		applyColorScheme(currentMode);
+		applyColorScheme(currentTheme);
 		if (changed) flashThemeTransition();
 		if (persist) write(state);
 		if (changed) {
@@ -114,14 +128,14 @@ export function adaptiveTheme() {
 	// hidden. Only persists when the resolved state is fresh (a first visit or an
 	// OS drift) so cross-tab writes are adopted without echoing back.
 	const reconcile = ({ persist = true } = {}) => {
-		const { state, fresh } = resolveTheme(read(), getSystemMode());
+		const { state, fresh } = resolveTheme(read(), getSystemTheme());
 		set(state, { persist: persist && fresh });
 	};
 
 	const subscribe = createSubscriber((update) => {
 		notify = update;
 
-		const onMedia = () => set(systemState(getSystemMode()));
+		const onMedia = () => set(systemThemeState(getSystemTheme()));
 		const onStorage = (event: StorageEvent) => {
 			if (event.key !== THEME_STATE_KEY) return;
 			reconcile({ persist: false });
@@ -144,13 +158,13 @@ export function adaptiveTheme() {
 	});
 
 	return {
-		get current(): Mode {
+		get current(): ThemeName {
 			subscribe();
-			return currentMode;
+			return currentTheme;
 		},
 
-		set current(mode: Mode) {
-			set(userState(mode, getSystemMode()));
+		set current(themeName: ThemeName) {
+			set(userThemeState(themeName, getSystemTheme()));
 		}
 	};
 }

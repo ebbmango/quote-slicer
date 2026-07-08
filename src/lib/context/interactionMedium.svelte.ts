@@ -1,30 +1,30 @@
 /**
- * Tracks current input mode ("mouse", "keyboard", or "touch") to improve UI feedback.
+ * Tracks current interaction medium ("mouse", "keyboard", or "touch") to improve UI feedback.
  * Prevents overlapping styles (e.g. mouse hover + tab focus) when both inputs are active.
  * Last input wins: any mousemove → "mouse"; a Tab keydown → "keyboard"; a touchstart → "touch".
  *
- * Global module singleton (app-wide, not tree-scoped). Call `initModeTracking()`
+ * Global module singleton (app-wide, not tree-scoped). Call `initInteractionMediumTracking()`
  * once at app startup and run the returned cleanup on teardown.
  */
 
-export type ActionMode = 'mouse' | 'keyboard' | 'touch';
+export type InteractionMedium = 'mouse' | 'keyboard' | 'touch';
 
-export const interactionMode = $state({
-	current: 'mouse' as ActionMode,
-	set: (newMode: ActionMode) => {
-		interactionMode.current = newMode;
-		document.documentElement.dataset.interaction = newMode;
+export const interactionMedium = $state({
+	current: 'mouse' as InteractionMedium,
+	set: (newMedium: InteractionMedium) => {
+		interactionMedium.current = newMedium;
+		document.documentElement.dataset.interactionMedium = newMedium;
 	}
 });
 
 // Avoids re-attaching if already initialized.
 let initialized = false;
 
-export function initModeTracking() {
+export function initInteractionMediumTracking() {
 	if (initialized) return;
 	initialized = true;
 
-	document.documentElement.dataset.interaction = interactionMode.current;
+	document.documentElement.dataset.interactionMedium = interactionMedium.current;
 
 	// Touch fires synthetic mousemove/mouseenter right after touchstart. Ignore
 	// those for a short window so a tap doesn't flip us back to 'mouse'.
@@ -33,19 +33,19 @@ export function initModeTracking() {
 
 	function handleMouseMove() {
 		if (Date.now() - lastTouchTime <= TOUCH_GUARD_MS) return;
-		interactionMode.set('mouse');
+		interactionMedium.set('mouse');
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
-		// Only Tab switches to keyboard mode; other keys are ignored.
+		// Only Tab switches to the keyboard medium; other keys are ignored.
 		if (e.key === 'Tab') {
-			interactionMode.set('keyboard');
+			interactionMedium.set('keyboard');
 		}
 	}
 
 	function handleTouchStart() {
 		lastTouchTime = Date.now();
-		interactionMode.set('touch');
+		interactionMedium.set('touch');
 	}
 
 	document.addEventListener('mousemove', handleMouseMove);

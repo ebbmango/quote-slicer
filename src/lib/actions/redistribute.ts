@@ -1,4 +1,4 @@
-// Line-mode divisor hover feedback: open the hovered gap by translating the
+// Line-tool divisor hover feedback: open the hovered gap by translating the
 // row's tokens apart, while *closing* every other gap on that row by an equal
 // share — so the row's visual width stays constant (anchored at both ends).
 //
@@ -8,7 +8,7 @@
 //
 // All movement is `transform: translateX` written to the `--rd-x` custom property
 // on each `.tok`, transitioned by the `.tok` rule. Transforms never participate in
-// layout, so this can never re-wrap the text, in any mode. The row is measured
+// layout, so this can never re-wrap the text, in any tool. The row is measured
 // lazily on each hover-enter (a handful of `offsetTop` reads) — always fresh, so
 // resize / font-load / edits need no invalidation. Cleared on leave/blur.
 

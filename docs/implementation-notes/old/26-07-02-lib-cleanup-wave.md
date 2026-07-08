@@ -12,7 +12,7 @@ directory reorg, and two small extractions.
 
 ## rowSpread folded into redistribute
 
-The line-mode hover-spread had been split into a DOM-free pure core
+The line-tool hover-spread had been split into a DOM-free pure core
 (`rowSpread.ts`, `computeRowOffsets`) and a DOM shell (`redistribute.ts`) —
 originally so the math was unit-testable. The split turned out to be
 ceremony: the pure function is unit-testable regardless of which file it lives
@@ -52,7 +52,7 @@ Three moves, each correcting a location that lied about responsibility:
   folder.
 
 The living docs (file-map, token-store, ui-architecture, tokenization,
-build-and-deploy, dark-mode, CONTEXT.md) were updated in the same commit, so
+build-and-deploy, dark-theme, CONTEXT.md) were updated in the same commit, so
 doc paths and code paths never diverged.
 
 ## Small extractions (`8d4e99c`)

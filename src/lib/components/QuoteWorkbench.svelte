@@ -1,6 +1,6 @@
 <script lang="ts">
 	// version B
-	import { getModeContext } from '$lib/context/mode.svelte';
+	import { getToolContext } from '$lib/context/tool.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
 	import { SOURCE_INPUT_RE } from '$lib/tokenize';
 	import { getTokenStoreContext, type EditScope } from '$lib/context/tokenStore.svelte';
@@ -41,8 +41,8 @@
 		}
 	}
 
-	let mode = getModeContext();
-	let editing = $derived(mode.current === 'text');
+	let tool = getToolContext();
+	let editing = $derived(tool.current === 'text');
 	const alignment = getAlignmentContext();
 
 	// The token store is the single owner of tokenization, the text-keyed split/merge
@@ -89,7 +89,7 @@
 		store.merge('target', targetText, targetTokens, lineN, editScope());
 	}
 
-	// Touch line mode: which divisor is "highlighted" (first tap). Shared across
+	// Touch line tool: which divisor is "highlighted" (first tap). Shared across
 	// panels so only one is lit at a time; second tap on the same one activates.
 	type TouchedDivisor = { panel: 'source' | 'target'; index: number } | null;
 	let touchedDivisor: TouchedDivisor = $state(null);
@@ -101,29 +101,29 @@
 		touchedDivisor = null;
 	}
 
-	// Drop any highlight when leaving line mode.
+	// Drop any highlight when leaving line tool.
 	$effect(() => {
-		if (mode.current !== 'line') touchedDivisor = null;
+		if (tool.current !== 'line') touchedDivisor = null;
 	});
 
-	// Drop any lit view-mode hover highlight when leaving view mode, and on unmount
+	// Drop any lit view-tool hover highlight when leaving view tool, and on unmount
 	// (cancels pending light/grace timers so they don't fire on a detached instance).
 	$effect(() => {
-		if (mode.current !== 'view') alignment.highlight.clearHighlight();
+		if (tool.current !== 'view') alignment.highlight.clearHighlight();
 		return () => alignment.highlight.clearHighlight();
 	});
 
 	let tokenContainer: HTMLDivElement = $state(null!);
 
 	const tokenGridNav = createTokenGridNav(() => tokenContainer, {
-		itemSelector: () => (mode.current === 'line' ? LINE_ITEM_SELECTOR : TOKEN_ITEM_SELECTOR),
+		itemSelector: () => (tool.current === 'line' ? LINE_ITEM_SELECTOR : TOKEN_ITEM_SELECTOR),
 		getDefaultIndex: (zone: Zone) =>
-			mode.current === 'line' ? -1 : alignment.findDefaultTokenIndex(zone),
+			tool.current === 'line' ? -1 : alignment.findDefaultTokenIndex(zone),
 		onActivate: (el, e) => {
-			// Line mode: the divisor's own click handler runs the split/merge. The nav
+			// Line tool: the divisor's own click handler runs the split/merge. The nav
 			// re-acquires focus after (restoresFocusOnActivate below) — the divisor is
 			// re-rendered away by the edit.
-			if (mode.current === 'line') {
+			if (tool.current === 'line') {
 				el.click();
 				return;
 			}
@@ -132,9 +132,9 @@
 			if (zone === 'source') alignment.toggleSource(idx, { force: e.shiftKey });
 			else if (zone === 'target') alignment.toggleTarget(idx);
 		},
-		restoresFocusOnActivate: () => mode.current === 'line',
+		restoresFocusOnActivate: () => tool.current === 'line',
 		onEscape: () => {
-			if (mode.current !== 'line') alignment.deselect();
+			if (tool.current !== 'line') alignment.deselect();
 		}
 	});
 </script>
@@ -145,8 +145,8 @@
      over scrolling only once the panels bottom out. -->
 <div class="flex max-h-full min-h-0 w-full flex-col items-center">
 	{#if editing}
-		<!-- Text mode mirrors the view-mode grid + panel box metrics (same px-1 grid,
-	     px-2 py-3 padding, fade, text styling) so switching modes keeps every line
+		<!-- Text tool mirrors the view-tool grid + panel box metrics (same px-1 grid,
+	     px-2 py-3 padding, fade, text styling) so switching tools keeps every line
 	     in place — the input boxes seamlessly become the quote workbench. The
 	     textareas are direct flex-col children here (not wrapped like the view
 	     panels): autosize puts an inline height on them, so they must sit on the
@@ -158,7 +158,7 @@
 	     row's effective per-pair gap (gap-px counts twice — a zero-width divisor
 	     button sits between each token pair), plus translate-x-px to cancel the
 	     trailing letter-spacing that otherwise centres the glyph block 1px left of
-	     the trailing-free token row; the text colours morph toward their token-mode
+	     the trailing-free token row; the text colours morph toward their tokenized
 	     values during the 450ms arrow launch (.morph-* rules in <style>), so by the
 	     time the DOM swaps nothing is left to snap. -->
 		<div class="flex min-h-0 w-full flex-col px-1">
@@ -200,7 +200,7 @@
 			role="grid"
 			aria-label="Token workspace"
 			class="flex min-h-0 w-full flex-col rounded-xl px-1 outline-0 transition-[background-color] duration-200 focus:bg-blue-50 dark:focus:bg-gray-700/30"
-			tabindex={mode.current === 'view' ? undefined : 0}
+			tabindex={tool.current === 'view' ? undefined : 0}
 			onkeydown={tokenGridNav.handleKeydown}
 			onfocusin={tokenGridNav.handleFocusIn}
 		>
@@ -252,7 +252,7 @@
 		bind:value={authorship}
 		rows="1"
 		use:autosize
-		disabled={mode.current === 'view'}
+		disabled={tool.current === 'view'}
 		class="morph-author fade-y no-scrollbar max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default {arrowExiting
 			? 'exiting'
 			: ''}"
@@ -262,7 +262,7 @@
 
 <style>
 	/* Seamless text→token handoff (no crossfade). Instead of dissolving two DOM
-	   trees, each textarea PRE-MATCHES its token-mode appearance during the 450ms
+	   trees, each textarea PRE-MATCHES its tokenized appearance during the 450ms
 	   arrow launch (.exiting === arrowExiting), so the DOM swap at 450ms has nothing
 	   left to snap. Each field's TEXT (real or placeholder) is morphed to the exact
 	   colour its token shows: currentColor × the field's resting element opacity.
@@ -290,7 +290,7 @@
 	   chase in computed style; Chromium hides it there but paints it anyway (painted
 	   pixels sat at ~50% when the page was done). Same rule as .tok in layout.css:
 	   inherited colour must ride inheritance untransitioned. .exiting is one-way
-	   (advanceToLinkMode seeds every field and swaps mode), so there is no
+	   (advanceToLinkTool seeds every field and swaps tool), so there is no
 	   remove-the-class path that would need the reverse transition. */
 
 	/* Placeholder colour is PLAIN currentColor with the 50% dimming carried by the
@@ -332,7 +332,7 @@
 	}
 	/* target placeholder under .exiting: rises to the element's full (animating)
 	   colour — currentColor at opacity 1 — so its effective opacity lands at 30%
-	   with the element, matching the token-mode look at the swap. */
+	   with the element, matching the tokenized look at the swap. */
 	.morph-target.exiting::placeholder {
 		transition: opacity 400ms ease-out;
 		opacity: 1;

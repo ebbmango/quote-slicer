@@ -5,14 +5,14 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import DataPanel from '$lib/components/DataPanel.svelte';
 	import DataModal from '$lib/components/DataModal.svelte';
-	import ModeToolbar from '$lib/components/ModeToolbar.svelte';
-	import { setModeContext } from '$lib/context/mode.svelte';
+	import ToolToolbar from '$lib/components/ToolToolbar.svelte';
+	import { setToolContext } from '$lib/context/tool.svelte';
 	import { setBreakpointContext } from '$lib/context/breakpoints.svelte';
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 	import { setTokenStoreContext } from '$lib/context/tokenStore.svelte';
 	import { initAlignmentShortcuts } from '$lib/actions/globalShortcuts';
 
-	const modeCtx = setModeContext();
+	const toolCtx = setToolContext();
 	const breakpoints = setBreakpointContext();
 	const tokenStore = setTokenStoreContext();
 	const alignment = setAlignmentContext(tokenStore);
@@ -30,11 +30,11 @@
 	const iconArrow = icons['arrow-down'];
 
 	// Drives the arrow launch keyframes AND the workbench's text→token pre-match: the
-	// textareas morph toward their token-mode opacity/placeholder colour over this
+	// textareas morph toward their token-tool opacity/placeholder colour over this
 	// 450ms window so the DOM swap below lands seamlessly (see QuoteWorkbench .morph-*).
 	let arrowExiting = $state(false);
 
-	function advanceToLinkMode() {
+	function advanceToLinkTool() {
 		if (arrowExiting) return;
 		arrowExiting = true;
 		setTimeout(() => {
@@ -49,13 +49,13 @@
 				if (!targetText) targetText = 'Use this box to enter your translated text.';
 				if (!authorship) authorship = 'Source';
 			}
-			modeCtx.current = 'link';
+			toolCtx.current = 'link';
 		}, 450);
 	}
 </script>
 
-<div class="layout h-dvh w-dvw" class:panels-open={modeCtx.current !== 'text'}>
-	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={modeCtx.current === 'text'}>
+<div class="layout h-dvh w-dvw" class:panels-open={toolCtx.current !== 'text'}>
+	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={toolCtx.current === 'text'}>
 		<!-- When the modal owns the maps/json content, the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
 		{#if !breakpoints.usesDataModal}
@@ -83,24 +83,24 @@
 				enabled={breakpoints.usesDataModal}
 			/>
 		</div>
-		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every mode so the
-		     text-mode arrow and the view-mode ModeToolbar occupy the same footprint.
+		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every tool so the
+		     text-tool arrow and the view-tool ToolToolbar occupy the same footprint.
 		     Keeps the flex-1 band height constant, so the quote block sits in the
-		     exact same place when text mode swaps to the workbench. -->
+		     exact same place when text tool swaps to the workbench. -->
 		<div class="flex min-h-14 w-full flex-col items-center justify-center">
-			{#if modeCtx.current === 'text'}
+			{#if toolCtx.current === 'text'}
 				<button
 					aria-label="next"
 					class="arrow-btn group size-5 opacity-20 outline-0 hocus:opacity-40"
 					class:arrow-exit={arrowExiting}
-					onclick={advanceToLinkMode}
+					onclick={advanceToLinkTool}
 				>
 					<svg viewBox={iconArrow.viewBox} class="arrow-svg" fill="currentColor">
 						<path d={iconArrow.sharp.light} />
 					</svg>
 				</button>
 			{:else}
-				<ModeToolbar
+				<ToolToolbar
 					bind:asideView
 					{modalOpen}
 					openModal={(view) => dataModal?.openModal(view)}
@@ -111,7 +111,7 @@
 	</main>
 	<aside
 		class="sidebar sidebar-right bg-(--panel-bg)"
-		aria-hidden={modeCtx.current === 'text'}
+		aria-hidden={toolCtx.current === 'text'}
 	>
 		<DataPanel view="json" />
 	</aside>

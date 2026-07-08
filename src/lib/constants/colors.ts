@@ -22,7 +22,7 @@ export type MappingColor = {
 };
 
 /**
- * View-mode hover-highlight color. Flat for now — the same red lights up a
+ * View-tool hover-highlight color. Flat for now — the same red lights up a
  * hovered mapping in both panels, ignoring each mapping's own palette entry.
  */
 export const HIGHLIGHT_COLOR = 'rgb(255, 0, 55)';
@@ -346,7 +346,7 @@ export const colors: Record<MappingColorName, MappingColor> = Object.fromEntries
 ) as Record<MappingColorName, MappingColor>;
 
 /**
- * Color for a line-mode divisor by its running ordinal. Source-panel divisors
+ * Color for a line-tool divisor by its running ordinal. Source-panel divisors
  * take ordinals 0..N-1; target-panel divisors continue from N (see
  * `divisorOffset` in InteractiveTargetText) so the palette sweeps unbroken
  * across both panels — last source divisor `seabreeze` → first target `azure`.
@@ -356,8 +356,8 @@ export const colors: Record<MappingColorName, MappingColor> = Object.fromEntries
 export function divisorColor(
 	ordinal: number,
 	field: keyof MappingColorVariant = 'base',
-	mode: 'light' | 'dark' = 'light'
+	themeName: 'light' | 'dark' = 'light'
 ): string {
 	const n = MAPPING_COLORS.length;
-	return MAPPING_COLORS[((ordinal % n) + n) % n][mode][field];
+	return MAPPING_COLORS[((ordinal % n) + n) % n][themeName][field];
 }

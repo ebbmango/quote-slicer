@@ -1,5 +1,5 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
-import type { ThemeMode as Mode } from '$lib/types';
+import type { ThemeName } from '$lib/types';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
 
 export type MappingId = string;
@@ -57,11 +57,11 @@ export function deriveSourceTokenState(
 	i: number,
 	index: Map<number, Mapping>,
 	activeMappingId: MappingId | null,
-	mode: Mode = 'light'
+	themeName: ThemeName = 'light'
 ): TokenState {
 	const m = index.get(i);
 	if (m === undefined) return { kind: 'unmapped' };
-	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].source;
+	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][themeName].source;
 	return { kind: m.id === activeMappingId ? 'active' : 'idle', color };
 }
 
@@ -119,13 +119,13 @@ export function deriveTargetTokenState(
 	targetTokens: TargetToken[],
 	index: Map<number, Mapping>,
 	activeMappingId: MappingId | null,
-	mode: Mode = 'light'
+	themeName: ThemeName = 'light'
 ): TokenState {
 	let m = index.get(i);
 	if (m === undefined && targetTokens[i]?.type === 'whitespace') {
 		m = findBridgeMapping(i, targetTokens, index);
 	}
 	if (m === undefined) return { kind: 'unmapped' };
-	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][mode].target;
+	const color = MAPPING_COLORS[m.colorIndex % MAPPING_COLORS.length][themeName].target;
 	return { kind: m.id === activeMappingId ? 'active' : 'idle', color };
 }

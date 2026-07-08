@@ -86,7 +86,7 @@ pinyin when a token leaves a mapping).
 The value stored here is **canonical numbered pinyin** (`"zhi1"`), not the diacritic
 display form — `Alignment` canonicalizes before calling `setPinyin`, and the diacritic
 is derived for display only. See
-[Link Mode → Pinyin](link-mode.md#pinyin-auto-fill-and-canonical-storage).
+[Link Tool → Pinyin](link-tool.md#pinyin-auto-fill-and-canonical-storage).
 
 > Trade-off: `applyPinyin` allocates a new array on every read (`.map()`). That is the
 > price of `$derived` recomputing when pinyin changes — don't memoize it without
@@ -194,5 +194,5 @@ edit still happens, it just doesn't tween.
 
 For the panel-side details (the `data-scrollbox` contract, the `animating`-gated
 height `$effect`, the index-keyed `{#each}` that keeps spans alive for Flip), see
-[Line Mode](line-mode.md#the-splitmerge-animation) and
-[Mode Transitions](mode-transitions.md).
+[Line Tool](line-tool.md#the-splitmerge-animation) and
+[Tool Transitions](tool-transitions.md).

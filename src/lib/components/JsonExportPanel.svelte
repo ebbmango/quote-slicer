@@ -10,7 +10,7 @@
 	const exportJson = $derived(formatExport(alignment.exportData));
 
 	// Highlight palette tracks the theme so the JSON panel doesn't stay in
-	// light-mode colours under dark mode. Strings/numbers/undefined draw from the
+	// light-theme colours under dark theme. Strings/numbers/undefined draw from the
 	// matching light|dark mapping shade; the neutral grey (props, colons, braces)
 	// is dimmed for the dark panel background.
 	const isDark = $derived(appTheme.current === 'dark');

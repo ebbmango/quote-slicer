@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
 import { pickVisualNeighbor } from './visualNeighbor';
-import { interactionMode } from '$lib/context/interactionMode.svelte';
+import { interactionMedium } from '$lib/context/interactionMedium.svelte';
 import {
 	getZone,
 	zoneSelector,
@@ -11,7 +11,7 @@ import {
 } from './gridDom';
 
 export type TokenGridNavConfig = {
-	/** CSS selector for the currently navigable elements (varies by mode). */
+	/** CSS selector for the currently navigable elements (varies by tool). */
 	itemSelector: () => string;
 	/** Index of the default token to focus when jumping into `zone` with no remembered focus. */
 	getDefaultIndex: (zone: Zone) => number;
@@ -20,18 +20,18 @@ export type TokenGridNavConfig = {
 	/** Escape, after the focused element has been blurred. */
 	onEscape: () => void;
 	/** Whether an Alt+Space activation may re-render the focused item away, so focus
-	 *  must be re-acquired by index (line mode: a split/merge replaces the divisor). */
+	 *  must be re-acquired by index (line tool: a split/merge replaces the divisor). */
 	restoresFocusOnActivate?: () => boolean;
 };
 
 // ─── Token grid keyboard scheme ──────────────────────────────────────────────
 // Alt+↑ / Alt+↓        Navigate focus to the element on the visual row above/below.
-//                       At a zone's far edge (link mode only) → jumps to the other zone.
+//                       At a zone's far edge (link tool only) → jumps to the other zone.
 // Alt+← / Alt+→        Move focus to prev/next navigable element in DOM order.
 // Alt+Enter            Toggle focus between source and target.
 // Alt+Space            Activate the focused element.
-// Alt+Shift+Space      Activate with `force` (meaning is mode-specific).
-// Escape               Blur the focused element; mode-specific extra action.
+// Alt+Shift+Space      Activate with `force` (meaning is tool-specific).
+// Escape               Blur the focused element; tool-specific extra action.
 // ──────────────────────────────────────────────────────────────────────────────
 
 export function createTokenGridNav(
@@ -61,14 +61,14 @@ export function createTokenGridNav(
 			if (el) return el;
 		}
 		// Scope to the zone's container first, then run itemSelector() inside it.
-		// itemSelector() can be a comma-list (line mode); string-prefixing a list
+		// itemSelector() can be a comma-list (line tool); string-prefixing a list
 		// only scopes its first branch, so the rest would match other zones.
 		const zoneEl = container.querySelector<HTMLElement>(zoneSelector(zone));
 		return zoneEl?.querySelector<HTMLElement>(config.itemSelector()) ?? null;
 	}
 
 	// After an activation that re-renders the focused item, re-acquire focus by the
-	// divisor index it sat at. Only line-mode activations are destructive (gated by
+	// divisor index it sat at. Only line-tool activations are destructive (gated by
 	// config.restoresFocusOnActivate), so items here are divisors.
 	function restoreFocusByIndex(zone: Zone, divisorIndex: number): void {
 		const container = getContainer();
@@ -124,9 +124,9 @@ export function createTokenGridNav(
 
 		// From here on it's an Alt-gated keyboard nav action. The global tracker only
 		// flips to keyboard on Tab, so without this Alt+Arrow nav would leave
-		// `data-interaction='mouse'` and the keyboard-gated divisor :focus indicators
+		// `data-interaction-medium='mouse'` and the keyboard-gated divisor :focus indicators
 		// (split/merge/ws) would never light while navigating.
-		interactionMode.set('keyboard');
+		interactionMedium.set('keyboard');
 
 		if (e.key === ' ') {
 			if (!target.matches(config.itemSelector())) return;

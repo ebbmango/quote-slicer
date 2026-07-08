@@ -5,7 +5,7 @@
 
 ## Overview
 
-When the user toggles dark/light mode, different elements had different
+When the user toggles dark/light theme, different elements had different
 transition durations — some finishing 220ms before others, producing a
 visible stagger. This commit hunts down every mismatched duration,
 repairs two browser quirks around `::placeholder` colour inheritance and
@@ -17,19 +17,19 @@ slower page background.
 
 The page background transitions over 500ms. Token `<span>` elements were
 already using a 280ms colour transition (intentionally faster, for
-mode-crossfade feel during arrow launch). On a theme toggle those tokens
+tool-crossfade feel during arrow launch). On a theme toggle those tokens
 settled 220ms ahead of everything else, making the panel look "done" while
 the background was still animating. Several other elements had similar
 mismatches: `PinyinInput` at 200ms, `Mapping` badge spans with no
 `transition-colors` at all, and the JSON export panel hardcoded to
-light-mode colours entirely.
+light-theme colours entirely.
 
 ## Implementation Details
 
 ### `html.theme-anim` gating window
 
 `systemTheme.ts` now calls `flashThemeTransition()` whenever the theme
-mode actually changes. This adds `theme-anim` to `<html>` for exactly
+theme actually changes. This adds `theme-anim` to `<html>` for exactly
 500ms, then removes it. Components whose elements normally transition
 faster can opt in with a scoped rule:
 
@@ -41,7 +41,7 @@ faster can opt in with a scoped rule:
 
 The token spans in `InteractiveSourceText` / `InteractiveTargetText` and
 the `morph-target` textarea in `QuoteWorkbench` use this. The 280ms
-mode-crossfade behaviour is untouched for normal arrow-launch transitions;
+tool-crossfade behaviour is untouched for normal arrow-launch transitions;
 the wider window only fires during the theme-switch event.
 
 ### `::placeholder` and `currentColor`
@@ -56,7 +56,7 @@ cascade and updates correctly on theme flip.
 
 ### JSON export panel dark palette
 
-`JsonExportPanel.svelte` previously passed a hardcoded light-mode
+`JsonExportPanel.svelte` previously passed a hardcoded light-theme
 `colorReplacements` object to `HighlightedCode`. It now derives the
 palette from `appTheme.current`, mapping Dracula theme tokens to the
 correct light/dark `MappingColor` shades for strings, numbers, and the

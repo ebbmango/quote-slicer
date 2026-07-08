@@ -1,6 +1,6 @@
-# Link Mode
+# Link Tool
 
-Link mode (`mode.current === 'link'`) is where the user draws the alignment — clicking
+Link tool (`tool.current === 'link'`) is where the user draws the alignment — clicking
 source characters and target words to bind them into colored mappings. All of the
 state and logic lives in **`Alignment`** (`src/lib/context/alignment.svelte.ts`).
 
@@ -41,8 +41,8 @@ And what it derives:
   sorted by each mapping's first source-token position.
 - `exportData` — the [export shape](export.md).
 
-`Alignment` also hosts the **view-mode** mapping highlight, delegated to an internal
-`ViewHighlight` instance — see [View Mode](view-mode.md).
+`Alignment` also hosts the **view-tool** mapping highlight, delegated to an internal
+`ViewHighlight` instance — see [View Tool](view-tool.md).
 
 ## The click state machine
 
@@ -157,10 +157,10 @@ then renders `idle` or `active` depending on whether that mapping is the active 
 [Tokenization](tokenization.md#whitespace-strategy) for the companion text-output
 bridging in `buildTargetText()`.
 
-## Keyboard scheme (link mode)
+## Keyboard scheme (link tool)
 
 Token navigation is provided by the shared `createTokenGridNav()` instance (see
-[Keyboard & Navigation](keyboard-navigation.md) for the mechanism). Tokens are removed
+[Keyboard & Navigation](mediums-and-keyboard-navigation.md) for the mechanism). Tokens are removed
 from the Tab order; you move between them with Alt+Arrow inside the token workspace.
 
 | Shortcut           | Action                                                                                         |
@@ -174,4 +174,4 @@ from the Tab order; you move between them with Alt+Arrow inside the token worksp
 | Backspace / Delete | Delete the focused mapping card, or the active mapping if none is focused                      |
 
 Backspace/Delete is a document-level handler (`initAlignmentShortcuts`), not part of
-the grid nav — see [Keyboard & Navigation](keyboard-navigation.md#document-level-shortcuts).
+the grid nav — see [Keyboard & Navigation](mediums-and-keyboard-navigation.md#document-level-shortcuts).

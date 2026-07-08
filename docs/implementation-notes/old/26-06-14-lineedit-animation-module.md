@@ -5,7 +5,7 @@
 
 ## Overview
 
-Replaces two separate, competing animation mechanisms for line-mode split/merge — a
+Replaces two separate, competing animation mechanisms for line-tool split/merge — a
 per-component Flip (`flipTransition`) and `QuoteWorkbench`'s cross-panel `withShiftAnimation` —
 with a single module, `createLineEdit()` in `src/lib/animation/lineEdit.svelte.ts`, that owns
 both the text-keyed token cache and one unified GSAP Flip per edit.
@@ -71,5 +71,5 @@ authorship reposition as units" — there is no second animation to coordinate w
 ## Future Considerations
 
 `ebe1e26` (docs-only, immediately following) documents this module and the **edit-scope** term in
-CLAUDE.md / `docs/line-mode.md` — see those for the canonical reference if this module evolves
+CLAUDE.md / `docs/line-tool.md` — see those for the canonical reference if this module evolves
 further.

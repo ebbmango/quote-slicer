@@ -78,7 +78,7 @@
 	--font-jetmono: 'JetBrains Mono', ui-monospace, monospace;
 	--mapping-gap: calc(var(--spacing) * 3);
 
-	/* Line-mode split/merge indicators */
+	/* Line-tool split/merge indicators */
 	--line-tool-color: #ae7e5d;
 	--line-tool-width: 1.5px;
 	--line-tool-dash: 8px;
@@ -124,9 +124,9 @@ body {
 }
 
 /* Persistent token spans (.tok) in both interactive panels crossfade
-   opacity/weight/transform on a mode change instead of snapping — only possible
-   because the span is never swapped between modes. --rd-x is the per-token
-   line-mode hover-spread offset (actions/redistribute.ts); resting value 0.
+   opacity/weight/transform on a tool change instead of snapping — only possible
+   because the span is never swapped between tools. --rd-x is the per-token
+   line-tool hover-spread offset (actions/redistribute.ts); resting value 0.
 
    Deliberately NO `color` transition here. `color` is inherited, and every engine
    (Firefox, WebKit, Chromium) repaints a descendant in lockstep with an ancestor's
@@ -148,7 +148,7 @@ body {
 /* Colour is transitioned ONLY on tokens that set it explicitly — a mapping tint
    (active / focused, see tokenPresentation → `.tok-tinted`). Those own a concrete
    palette colour, so transitioning it neither compounds nor rides inheritance. 280ms
-   for the link-mode activate crossfade; widened to 500ms during a theme flip so the
+   for the link-tool activate crossfade; widened to 500ms during a theme flip so the
    tint's light→dark palette shift settles with the rest of the page. */
 .tok-tinted {
 	transition:

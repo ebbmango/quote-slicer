@@ -81,7 +81,7 @@ cancelling each other (all killed on `onDestroy`).
 ## The re-entrancy freeze bug (and the rule it established)
 
 Rapidly toggling one token — create on odd clicks, delete on even — used to **freeze
-the whole app** after ~10 clicks: mode switches stopped rendering, the JSON export went
+the whole app** after ~10 clicks: tool switches stopped rendering, the JSON export went
 stale, yet no exception was thrown and the main thread wasn't pegged. Derived values
 had simply stopped updating, app-wide.
 

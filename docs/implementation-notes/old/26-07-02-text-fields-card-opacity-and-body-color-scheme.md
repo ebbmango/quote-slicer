@@ -6,7 +6,7 @@ desyncs remained after that fix; all were confirmed and re-verified with per-fra
 (Chromium / WebKit / Firefox), because one of the three is invisible to computed
 style in Chromium.
 
-## 1. Text mode: target textarea chases the flip (Safari always, Chrome paint-only)
+## 1. Text tool: target textarea chases the flip (Safari always, Chrome paint-only)
 
 **Symptom.** Safari: the Latin (target) text and placeholder lag the theme flip
 badly, filled or empty. Chrome: the target _placeholder_ lags; with real text the
@@ -15,7 +15,7 @@ fields desync too.
 **Root cause.** `.morph-target` (and `.morph-target::placeholder`) carried a
 permanent `transition: color 400ms ease-out` for the arrow-launch morph. Their
 colour is _inherited_, so on a theme flip they ease toward `<body>`'s
-already-easing value — the compounding chase documented in dark-mode.md. Measured:
+already-easing value — the compounding chase documented in themes.md. Measured:
 target settles ~890–900 ms while everything else settles ~460 ms.
 
 **The trap inside the trap.** Chromium _reports lockstep_ in `getComputedStyle`
@@ -47,8 +47,8 @@ code never hit this because its permanent `transition: color` forced continuous
 recomputation — removing the chase unmasked the staleness.
 
 **Fix.** All morph transitions and colours moved under `.morph-*.exiting` — the
-destination state of the one-way arrow launch (`advanceToLinkMode` seeds every
-field and swaps mode; `.exiting` never comes off while text mode is visible).
+destination state of the one-way arrow launch (`advanceToLinkTool` seeds every
+field and swaps tool; `.exiting` never comes off while text tool is visible).
 Resting placeholders declare plain `color: currentColor` with the 50 % dimming on
 the pseudo-element's `opacity` (identical visual math to the UA default; dodges
 the dark-OS staleness; theme-invariant, so no transition needed on a flip). The
@@ -75,7 +75,7 @@ while every colour eased 500 ms. Confirmed: opacity was already at its final
 value at the first post-click frame.
 
 **Fix.** `transition-[color,opacity] duration-500` on both bottom-bar spans.
-Rule of thumb recorded in dark-mode.md: any inline style derived from
+Rule of thumb recorded in themes.md: any inline style derived from
 `theme.current` must either be transitioned or be theme-invariant.
 
 ## 3. Chrome "one switch speed glitches everything": root color-scheme poison window
@@ -128,7 +128,7 @@ own background). Form controls now re-theme in the same frame as the flip.
 ## Fragility / future rot
 
 - The `.exiting` scoping relies on the arrow launch being **one-way**. If a
-  "back to text mode" path ever un-sets `arrowExiting` while fields are visible,
+  "back to text tool" path ever un-sets `arrowExiting` while fields are visible,
   the reverse morph will snap (no resting transition) — reintroduce a scoped
   transition for that path only, never a resting one.
 - The placeholder rules are a three-constraint knife-edge: no `light-dark()`

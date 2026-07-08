@@ -13,7 +13,7 @@ End-to-end coverage is Playwright (`npx playwright test`, specs in
 ## Why two projects
 
 Everything interesting in the app's state layer — the mapping lifecycle, the click
-state machine, the view-mode highlight — lives in `*.svelte.ts` classes built on
+state machine, the view-tool highlight — lives in `*.svelte.ts` classes built on
 `$state`/`$derived`. Under the **server-compiled** Svelte runtime, `$derived` is
 compute-once: a test that mutates state and re-reads a derived value sees a stale
 snapshot. Those modules need the **client** runtime, which needs a browser-ish
@@ -67,7 +67,7 @@ specific engineering episodes: `line-split-overflow.e2e.ts` (the
 `rapid-click.e2e.ts` (the [mappings-list re-entrancy
 freeze](mappings-list.md#the-re-entrancy-freeze-bug-and-the-rule-it-established)),
 and `theme-lockstep.e2e.ts` (the [theme-flip synchronization
-invariants](dark-mode.md#synchronized-transitions): no resting colour transition on
+invariants](themes.md#synchronized-transitions): no resting colour transition on
 the text fields, opacity included in the card bottom-bar transition, live
 `color-scheme` landing on `<body>` and never on the root).
 
@@ -75,4 +75,4 @@ the text fields, opacity included in the card bottom-bar transition, live
 > **not** reproduce the dark-OS `::placeholder` staleness bug — only the real Chrome
 > binary (`launch({ channel: 'chrome' })` with `colorScheme: 'dark'` emulation) does.
 > Any future placeholder-colour work must be verified on `channel: 'chrome'`. See
-> [Dark Mode → traps](dark-mode.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
+> [Themes → traps](themes.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).

@@ -46,7 +46,7 @@ export class Alignment {
 	// The token store is the single owner of the token arrays (with pinyin and the
 	// split/merge cache). Alignment reads them as live derivations of the store
 	// keyed by the current text — it no longer holds its own copy to keep in sync.
-	// The view-mode hover/tap highlight machine. Exposed directly (callers use
+	// The view-tool hover/tap highlight machine. Exposed directly (callers use
 	// `alignment.highlight.hoverSource(i)` etc.) — it's a CONTEXT.md term in its own
 	// right, so re-wrapping its whole surface in pass-through forwarders earned nothing.
 	readonly highlight: ViewHighlight;

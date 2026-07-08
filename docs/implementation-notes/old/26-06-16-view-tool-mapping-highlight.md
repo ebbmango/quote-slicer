@@ -1,15 +1,15 @@
-# View-Mode Hover/Tap Mapping Highlight
+# View-Tool Hover/Tap Mapping Highlight
 
 > Commits: `793e0d6`  
 > Date: 2026-06-16
 
 ## Overview
 
-In view mode, hovering any mapped token lights up all tokens belonging to the same mapping across both panels in a flat highlight color (`rgb(255, 0, 55)`). Touch devices use a tap-to-toggle model instead. The feature sits entirely inside `Alignment` — the class that already owns the token→mapping index — so neither panel needs to duplicate lookup logic.
+In view tool, hovering any mapped token lights up all tokens belonging to the same mapping across both panels in a flat highlight color (`rgb(255, 0, 55)`). Touch devices use a tap-to-toggle model instead. The feature sits entirely inside `Alignment` — the class that already owns the token→mapping index — so neither panel needs to duplicate lookup logic.
 
 ## Motivation
 
-View mode is the read-only presentation layer: the user wants to see connections between source and target tokens at a glance. Without the highlight, mappings are only visible through per-token color chips; hovering a single token gives no indication of what it corresponds to in the other panel.
+View tool is the read-only presentation layer: the user wants to see connections between source and target tokens at a glance. Without the highlight, mappings are only visible through per-token color chips; hovering a single token gives no indication of what it corresponds to in the other panel.
 
 ## Architecture
 
@@ -38,16 +38,16 @@ Touch gets no delay — tap is intentional. `tapMapping()` toggles: same mapping
 
 ### Cleanup ownership
 
-`clearHighlight()` (clears both timers + all state) is called from a single `$effect` in `QuoteWorkbench`, which also returns a cleanup function. This ensures pending timers are cancelled if the component unmounts while a timeout is running, and means the reset runs exactly once per mode-exit rather than twice (one per panel).
+`clearHighlight()` (clears both timers + all state) is called from a single `$effect` in `QuoteWorkbench`, which also returns a cleanup function. This ensures pending timers are cancelled if the component unmounts while a timeout is running, and means the reset runs exactly once per tool-exit rather than twice (one per panel).
 
 ## Design Decisions
 
-- **No per-mapping palette color for highlights**: The user explicitly chose flat `rgb(255, 0, 55)` for now, to distinguish the hover state clearly from the selection colors used in link mode.
-- **No keyboard highlight**: Keyboard navigation in view mode was deferred.
+- **No per-mapping palette color for highlights**: The user explicitly chose flat `rgb(255, 0, 55)` for now, to distinguish the hover state clearly from the selection colors used in link tool.
+- **No keyboard highlight**: Keyboard navigation in view tool was deferred.
 - **`pointerMapping` not `$state`**: Making it reactive would trigger unnecessary re-renders on every mouse move, since its role is internal to `movePointer`'s early-return logic, not presentation.
 - **Container-level `mouseleave` for clearing, not per-token**: Per-token leave fires before the next span's enter, creating a one-frame null flash. Container leave only fires when the pointer truly exits the text block.
 
 ## Areas to Be Careful
 
-- The flex gap between token spans is not covered by any element (split-zone buttons have `pointer-events: none` in view mode). A pointer parked in a gap keeps the highlight lit until it enters another token or leaves the container. This is a known quirk, intentional under the no-per-token-leave design.
+- The flex gap between token spans is not covered by any element (split-zone buttons have `pointer-events: none` in view tool). A pointer parked in a gap keeps the highlight lit until it enters another token or leaves the container. This is a known quirk, intentional under the no-per-token-leave design.
 - `tapMapping()` must reset `warm`/`clearGrace()` before computing the next state. If a grace timer from a prior hover-away is running when a tap fires, skipping this would leave `warm=true` and give the next mouse hover the shorter 300 ms delay instead of 500 ms.

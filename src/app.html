@@ -7,31 +7,54 @@
 
 		<script>
 			(() => {
-				const STATE_KEY = 'quote-slicer:theme-state:v2';
+				const STATE_KEY = 'quote-slicer:theme-state:v3';
+				const LEGACY_STATE_KEY = 'quote-slicer:theme-state:v2';
 
 				const root = document.documentElement;
 
-				const osMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+				const osTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
-				const applyTheme = (mode) => {
-					root.classList.toggle('dark', mode === 'dark');
-					root.style.colorScheme = mode;
+				const applyTheme = (themeName) => {
+					root.classList.toggle('dark', themeName === 'dark');
+					root.style.colorScheme = themeName;
 				};
 
 				// ponytail: mirrors resolveTheme() in themeState.ts. The prepaint script
 				// runs before hydration and can't import, so the "last change wins,
 				// OS-drift-aware" rule is duplicated here. Keep the two in sync.
-				try {
-					const stored = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-					const valid =
-						stored &&
-						stored.version === 2 &&
-						(stored.mode === 'dark' || stored.mode === 'light') &&
-						(stored.osAtPick === 'dark' || stored.osAtPick === 'light');
+				const parseState = (value) => {
+					try {
+						const stored = JSON.parse(value || 'null');
+						if (
+							stored &&
+							stored.version === 2 &&
+							(stored.mode === 'dark' || stored.mode === 'light') &&
+							(stored.osAtPick === 'dark' || stored.osAtPick === 'light')
+						) {
+							return { theme: stored.mode, osThemeAtPick: stored.osAtPick };
+						}
+						if (
+							stored &&
+							stored.version === 3 &&
+							(stored.theme === 'dark' || stored.theme === 'light') &&
+							(stored.osThemeAtPick === 'dark' || stored.osThemeAtPick === 'light')
+						) {
+							return stored;
+						}
+					} catch {
+						return null;
+					}
+					return null;
+				};
 
-					applyTheme(valid && stored.osAtPick === osMode ? stored.mode : osMode);
+				try {
+					const stored =
+						parseState(localStorage.getItem(STATE_KEY)) ||
+						parseState(localStorage.getItem(LEGACY_STATE_KEY));
+
+					applyTheme(stored && stored.osThemeAtPick === osTheme ? stored.theme : osTheme);
 				} catch {
-					applyTheme(osMode);
+					applyTheme(osTheme);
 				}
 			})();
 		</script>

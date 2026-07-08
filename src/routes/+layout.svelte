@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { initModeTracking } from '$lib/context/interactionMode.svelte';
+	import { initInteractionMediumTracking } from '$lib/context/interactionMedium.svelte';
 	import { theme } from '$lib/theme';
 
 	// Read theme.current in a reactive context so the controller's subscriber stays
@@ -15,7 +15,7 @@
 
 	// Sync onMount so the returned cleanup runs on teardown (an async onMount
 	// returns a Promise, which Svelte ignores for cleanup).
-	onMount(() => initModeTracking());
+	onMount(() => initInteractionMediumTracking());
 
 	onMount(async () => {
 		const { gsap } = await import('gsap');

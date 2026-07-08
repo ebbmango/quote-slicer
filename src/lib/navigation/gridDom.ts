@@ -6,7 +6,7 @@
 // Components WRITE these attributes in their own markup. The writers are:
 //   data-zone           QuoteWorkbench panel wrappers
 //   data-token-index    InteractiveSourceText / InteractiveTargetText tokens
-//   role="option"       ditto (link/view mode)
+//   role="option"       ditto (link/view tool)
 //   .tok                ditto
 //   data-flip-id        the panels, their wrappers, and LineDivisor
 //   data-divisor-index  LineDivisor
@@ -23,7 +23,7 @@
 
 export type Zone = 'source' | 'target';
 
-/** Focusable token in link/view mode (keyboard-nav item selector). */
+/** Focusable token in link/view tool (keyboard-nav item selector). */
 export const TOKEN_ITEM_SELECTOR = '[role="option"]';
 /** All focusable line-tool controls (split + merge + ws). Keyboard-nav item selector. */
 export const LINE_ITEM_SELECTOR = '.split-zone, .merge-zone, .ws-split';

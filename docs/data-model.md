@@ -1,7 +1,7 @@
 # Data Model
 
 This page defines the types that flow through the whole app. Everything else —
-tokenization, link mode, the export — is built on these.
+tokenization, link tool, the export — is built on these.
 
 ## Token types
 
@@ -100,9 +100,9 @@ type TokenState =
 ```
 
 Both derive functions take the per-token-index→`Mapping` map, the active mapping ID,
-and a `mode: 'light' | 'dark'` (which selects the light/dark colour variant — see
-[Dark Mode](dark-mode.md)). `deriveTargetTokenState` also takes the target token array
-so it can apply [whitespace bridging](link-mode.md#whitespace-bridging).
+and a `themeName: 'light' | 'dark'` (which selects the light/dark colour variant — see
+[Themes](themes.md)). `deriveTargetTokenState` also takes the target token array
+so it can apply [whitespace bridging](link-tool.md#whitespace-bridging).
 
 ### `buildMappingIndex`
 
@@ -139,7 +139,7 @@ type MappingView = {
   the card needs to address the live token.
 - `sourceEntries[].pinyin` is the **diacritic display form** (`"zhī"`), converted from
   the token's stored canonical pinyin (`"zhi1"`) — see
-  [Link Mode → Pinyin](link-mode.md#pinyin-auto-fill-and-canonical-storage). Pinyin
+  [Link Tool → Pinyin](link-tool.md#pinyin-auto-fill-and-canonical-storage). Pinyin
   lives on the token, not on the mapping.
 - `targetText` is built by `buildTargetText()`, which stitches contiguous runs of the
   mapping's target tokens into phrases and joins non-contiguous runs with `, `. Two
@@ -181,12 +181,12 @@ wrapper around two `MappingColorVariant`s. The **variant** is what holds the rol
 `source`/`target` (token text colours used by the interactive panels) plus a dozen
 card colours (backdrop, badge, bottom bar, etc.) used by `Mapping.svelte`. The light/
 dark split lives in the data because card colours are applied as inline `style`
-attributes that a CSS `.dark` class can't reach (see [Dark Mode](dark-mode.md)).
+attributes that a CSS `.dark` class can't reach (see [Themes](themes.md)).
 
 A mapping's `colorIndex` indexes this array modulo its length, so the palette cycles
 if more than 9 mappings exist. A parallel `colors` lookup (keyed by name) is exported
 for code that wants a _specific_ palette entry rather than the Nth — e.g.
 `colors.azure.light.base`, used by the [export panel recolor](export.md). `colors.ts`
-also exports `HIGHLIGHT_COLOR` (the flat [view-mode highlight](view-mode.md) red) and
-`divisorColor(ordinal, field, mode)` (the [line-mode divisor](line-mode.md) palette
+also exports `HIGHLIGHT_COLOR` (the flat [view-tool highlight](view-tool.md) red) and
+`divisorColor(ordinal, field, themeName)` (the [line-tool divisor](line-tool.md) palette
 sweep).

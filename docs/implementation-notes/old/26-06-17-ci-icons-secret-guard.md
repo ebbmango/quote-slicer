@@ -9,9 +9,9 @@
 
 ## Motivation
 
-On 2026-06-17, `ModeToolbar.svelte` was updated to use five icon keys that were not yet in the production secret. The build succeeded, the deploy succeeded, but on prod the toolbar was missing and token taps were broken — because the icon import resolved to an object with no matching keys, and the components rendering icon SVGs silently produced nothing.
+On 2026-06-17, `ToolToolbar.svelte` was updated to use five icon keys that were not yet in the production secret. The build succeeded, the deploy succeeded, but on prod the toolbar was missing and token taps were broken — because the icon import resolved to an object with no matching keys, and the components rendering icon SVGs silently produced nothing.
 
-The failure mode was hard to catch in review: the secret is not visible in the repo, the build output does not include `icons.json` contents, and the only signal was a broken prod deploy.
+The failure case was hard to catch in review: the secret is not visible in the repo, the build output does not include `icons.json` contents, and the only signal was a broken prod deploy.
 
 ## Implementation
 

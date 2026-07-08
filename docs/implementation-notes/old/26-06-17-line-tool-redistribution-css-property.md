@@ -1,11 +1,11 @@
-# Line-Mode Redistribution Cross-Row Animation Fix
+# Line-Tool Redistribution Cross-Row Animation Fix
 
 > Commits: `a83a715`, `34b50d8`
 > Date: 2026-06-17
 
 ## Overview
 
-Split/merge divisors in line mode spread apart on hover to create a visual affordance. This spread is driven by a CSS custom property `--rd-x` set by the `redistribute` Svelte action. When a hovered divisor crossed a visual row boundary (i.e., the previously-spread divisors were on a different row than the newly-spread ones), the old row snapped back and the new row jumped open instead of both easing. Two commits fixed this by registering `--rd-x` as a typed CSS property and clearing stale values before applying new ones.
+Split/merge divisors in line tool spread apart on hover to create a visual affordance. This spread is driven by a CSS custom property `--rd-x` set by the `redistribute` Svelte action. When a hovered divisor crossed a visual row boundary (i.e., the previously-spread divisors were on a different row than the newly-spread ones), the old row snapped back and the new row jumped open instead of both easing. Two commits fixed this by registering `--rd-x` as a typed CSS property and clearing stale values before applying new ones.
 
 ## Motivation
 

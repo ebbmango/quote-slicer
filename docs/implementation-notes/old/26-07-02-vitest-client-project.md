@@ -15,7 +15,7 @@ math, the source tokenizer's grouping state machine, and the token store.
 
 Until now the unit suite was a single node-environment project holding two
 template-era specs in `vitest-examples/`. Everything interesting in the app —
-the mapping lifecycle, the click state machine, the view-mode highlight —
+the mapping lifecycle, the click state machine, the view-tool highlight —
 lives in `*.svelte.ts` classes built on `$state`/`$derived`, and none of it was
 testable: under the **server-compiled** Svelte runtime, `$derived` is
 compute-once, so a test that mutates state and re-reads a derived value sees a

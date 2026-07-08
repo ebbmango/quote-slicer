@@ -5,7 +5,7 @@
 
 ## Overview
 
-Modal toolbar buttons on iOS stayed visually "lit" after a tap closed the modal — iOS applies a sticky `:hover` state on the first tap and a sticky `:focus-visible` on any focused element. Two small fixes in `ModeToolbar.svelte` and `IconToggleButton.svelte` prevent both.
+Modal toolbar buttons on iOS stayed visually "lit" after a tap closed the modal — iOS applies a sticky `:hover` state on the first tap and a sticky `:focus-visible` on any focused element. Two small fixes in `ToolToolbar.svelte` and `IconToggleButton.svelte` prevent both.
 
 ## Fix
 

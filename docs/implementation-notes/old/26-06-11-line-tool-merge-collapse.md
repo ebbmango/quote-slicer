@@ -1,11 +1,11 @@
-# Line Mode: Animating Container Height Through Merge
+# Line Tool: Animating Container Height Through Merge
 
 > Commits: `c67b8f0`
 > Date: 2026-06-11
 
 ## Overview
 
-Fixes a visual glitch in line mode where merging two lines caused the source/target
+Fixes a visual glitch in line tool where merging two lines caused the source/target
 panel to instantly snap to its new (shorter) height, clipping the still-animating
 tokens until GSAP's Flip transition caught up.
 

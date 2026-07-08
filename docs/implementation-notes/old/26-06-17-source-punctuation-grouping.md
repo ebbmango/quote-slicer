@@ -44,7 +44,7 @@ outer row, so the hover/redistribution logic (`align-self: stretch`, net-zero ma
 unchanged.
 
 **Line boundaries stop grouping.** `groupSourceTokens` never crosses a `.line` boundary. If a
-line-mode split lands between a character and its punctuation, they end up on different lines and
+line-tool split lands between a character and its punctuation, they end up on different lines and
 therefore in different groups — no re-grouping needed after a split, and no visual weirdness from a
 group that spans a line boundary.
 

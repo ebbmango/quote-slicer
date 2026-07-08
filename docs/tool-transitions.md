@@ -1,22 +1,22 @@
-# Mode Transitions
+# Tool Transitions
 
 This page is about _motion_ — how the workbench animates as it moves between the four
-modes. There are three separate transitions: the **arrow launch** (text → link), the
+tools. There are three separate transitions: the **arrow launch** (text → link), the
 **persistent-DOM crossfade** (link ↔ line ↔ view), and the **sidebar slide** (panels
-opening when you leave text mode).
+opening when you leave text tool).
 
 ## The arrow launch (text → link)
 
 The first transition is a deliberate animation beat, owned by `+page.svelte`.
 
-In text mode the only control is a downward arrow. Clicking it doesn't switch modes
-immediately — `advanceToLinkMode()` instead:
+In text tool the only control is a downward arrow. Clicking it doesn't switch tools
+immediately — `advanceToLinkTool()` instead:
 
 1. sets `arrowExiting = true`, which triggers the `arrow-launch` CSS keyframes — the
    arrow _anticipates_ upward with a slight `scaleY` stretch, holds a beat, then
    accelerates hard downward and fades, like a loosed arrow;
 2. after `450ms` (`setTimeout`), seeds demo/placeholder text if the fields are empty,
-   then flips `modeCtx.current = 'link'` — so the shot finishes _before_ the tools
+   then flips `toolCtx.current = 'link'` — so the shot finishes _before_ the tools
    panel fades in (`in:fade` with a `250ms` delay).
 
 A re-entrancy guard (`if (arrowExiting) return`) prevents a double-fire. The hover
@@ -27,7 +27,7 @@ outright, so a half-finished hover slide can never bleed into the shot.
 ### Seamless text→token handoff
 
 At 450 ms Svelte swaps the textarea block for the token grid. To keep that swap from
-being a visible cut, each textarea **pre-matches** its token-mode appearance _during_ the
+being a visible cut, each textarea **pre-matches** its tokenized appearance _during_ the
 launch, so the DOM change lands on a screen that already looks like the destination. A
 crossfade overlay was rejected — it needs two live DOM trees, timing coordination, and
 risks flicker; pre-matching costs nothing at mount.
@@ -53,14 +53,14 @@ risks flicker; pre-matching costs nothing at mount.
   `transition: color` on an inherited colour would chase `<body>`'s easing value on a
   theme flip (the "target text lags" bug), and resting placeholders are plain
   `color: currentColor` dimmed by pseudo `opacity` for the same family of reasons — see
-  [Dark Mode → traps](dark-mode.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
+  [Themes → traps](themes.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
 
 `prefers-reduced-motion` keeps the pre-match (the swap stays seamless) but applies the
 `.exiting` state instantly instead of animating it.
 
-> **The launch is one-way, and the CSS relies on it.** `advanceToLinkMode` seeds every
-> field and swaps mode; `.exiting` never comes off while text mode is visible, so no
-> reverse transition exists. If a "back to text mode" path is ever added that un-sets
+> **The launch is one-way, and the CSS relies on it.** `advanceToLinkTool` seeds every
+> field and swaps tool; `.exiting` never comes off while text tool is visible, so no
+> reverse transition exists. If a "back to text tool" path is ever added that un-sets
 > `arrowExiting` while the fields are visible, the reverse morph will snap — add a
 > transition scoped to that path only, never a resting one.
 
@@ -74,16 +74,16 @@ risks flicker; pre-matching costs nothing at mount.
 
 A brand-new DOM element can't transition _from_ a previous element's state — the
 browser just paints the final value. As long as the panels swapped their whole subtree
-between a "line-mode branch" and a "link/view branch", **no** CSS transition could make
-token color or line-break height animate across a mode change; everything snapped.
+between a "line-tool branch" and a "link/view branch", **no** CSS transition could make
+token color or line-break height animate across a tool change; everything snapped.
 
 The fix is structural: `InteractiveSourceText` and `InteractiveTargetText` render **one
-DOM tree for every mode**. A single `{#each tokens}` loop, wrapped in one container.
-What changes between modes is _attributes_, not _which elements are mounted_:
+DOM tree for every tool**. A single `{#each tokens}` loop, wrapped in one container.
+What changes between tools is _attributes_, not _which elements are mounted_:
 
-- the container's ARIA role (`listbox` in link/view, none in line mode);
+- the container's ARIA role (`listbox` in link/view, none in line tool);
 - whether token spans are interactive (`role="option"`, click handlers);
-- whether the line-tool buttons take clicks (a `.line-active` class; outside line mode
+- whether the line-tool buttons take clicks (a `.line-tool-active` class; outside line tool
   they keep their layout slot but get `pointer-events: none`).
 
 ### The two transitions that carry the motion
@@ -92,15 +92,15 @@ What changes between modes is _attributes_, not _which elements are mounted_:
 280ms`. Both panels compute a token's target colour, opacity class, and weight with
   one shared pure function, `tokenPresentation(o)` (`src/lib/tokenPresentation.ts`,
   returning `{ style, opacityClass }`); the timing lives in the CSS rule. Leaving link
-  mode unsets colour/weight, so the span crossfades back to the default text colour on
-  its own. Source opacity also encodes the mode (`opacity-70` in line, `opacity-30` in
-  view), so the three modes read distinctly without ever remounting. During a _theme_
+  tool unsets colour/weight, so the span crossfades back to the default text colour on
+  its own. Source opacity also encodes the tool (`opacity-70` in line, `opacity-30` in
+  view), so the three tools read distinctly without ever remounting. During a _theme_
   toggle this 280 ms widens to 500 ms under `html.theme-anim` so tokens settle in step
-  with the page background — see [Dark Mode](dark-mode.md#the-htmltheme-anim-window).
+  with the page background — see [Themes](themes.md#the-htmltheme-anim-window).
 - **`.merge-zone`** — the full-width line break. It is a real element at `height: 0` in
   link/view (still forcing a flex wrap, so it doubles as the plain line break) and
-  transitions to `height: 1.5rem` when `.line-active`. That height transition is what
-  makes lines visibly "come apart" entering line mode.
+  transitions to `height: 1.5rem` when `.line-tool-active`. That height transition is what
+  makes lines visibly "come apart" entering line tool.
 
 ### How this coexists with the split/merge tween
 
@@ -117,22 +117,22 @@ store's tween, on completion, _also_ releases to `''` rather than pinning a meas
 pixel value — so the box is free to follow later separator transitions.
 
 > Both panel components must stay in lockstep: the `.tok`, `.merge-zone`,
-> `.line-active` rules and the height hand-off are duplicated across
+> `.line-tool-active` rules and the height hand-off are duplicated across
 > `InteractiveSourceText.svelte` and `InteractiveTargetText.svelte`. Divergence
 > desyncs the source/target animations. `prefers-reduced-motion: reduce` disables the
 > `.tok`/`.merge-zone` transitions in both.
 
 > **Known gotcha:** in one headless/automated probe, forcing `height` on the
-> `.merge-zone.line-active` flex item computed to `0px` while `min-height` worked,
+> `.merge-zone.line-tool-active` flex item computed to `0px` while `min-height` worked,
 > though it rendered fine in a real browser. If the line gap ever fails to open in a
 > real browser, swap `height` → `min-height` in _both_ components and re-verify the
 > close transition. The note lives in the code at both sites.
 
-## The sidebar slide (leaving text mode)
+## The sidebar slide (leaving text tool)
 
-The outer grid in `+page.svelte` animates the side panels in. In `text` mode the
+The outer grid in `+page.svelte` animates the side panels in. In the Text tool the
 sidebars are translated fully off-screen and the grid columns are collapsed to `0fr`;
-adding the `.panels-open` class (whenever `mode !== 'text'`) animates
+adding the `.panels-open` class (whenever `toolCtx.current !== 'text'`) animates
 `grid-template-columns`, the gaps, opacity, and the panels' `translate` back to rest
 over `--slide` (500ms). Which columns exist at all is a function of the breakpoint —
 see [UI Architecture](ui-architecture.md#responsive-layout). This too is disabled under

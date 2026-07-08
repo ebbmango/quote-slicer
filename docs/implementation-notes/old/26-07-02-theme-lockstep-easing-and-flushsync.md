@@ -96,7 +96,7 @@ Per-frame luminance sampling in Playwright across Chromium, WebKit, and Firefox:
 3. **Someone adds `ease-*` utility to a card or surface.** Tailwind utilities
    have high specificity; a `class="ease-in-out"` would override the theme
    variable. Guard: linting rule or code review. The docs note is now in
-   [dark-mode.md](../../dark-mode.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
+   [themes.md](../../themes.md#traps-that-reintroduce-the-bug-all-fixed-keep-them-fixed).
 
 ## Commits
 
@@ -108,10 +108,10 @@ Also touches:
   in `@theme`
 - `src/lib/systemTheme.ts` — added `flushSync()` call
 - `src/routes/theme-lockstep.e2e.ts` — new regression test (2 assertions)
-- `docs/dark-mode.md` — documented both traps in the "Synchronized transitions"
+- `docs/themes.md` — documented both traps in the "Synchronized transitions"
   section
 
 ## Related
 
-- **[Dark Mode → Synchronized transitions](../../dark-mode.md#synchronized-transitions)** — full explanation of the theme flip architecture, all prior fixes, and the trap that reintroduced this bug
-- **[Dark Mode → Two more supporting fixes](../../dark-mode.md#two-more-supporting-fixes)** — JSON export recolor and `::placeholder` currentColor (also guarded against async surprises)
+- **[Themes → Synchronized transitions](../../themes.md#synchronized-transitions)** — full explanation of the theme flip architecture, all prior fixes, and the trap that reintroduced this bug
+- **[Themes → Two more supporting fixes](../../themes.md#two-more-supporting-fixes)** — JSON export recolor and `::placeholder` currentColor (also guarded against async surprises)

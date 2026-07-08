@@ -45,7 +45,7 @@ second `deploy` job via `actions/deploy-pages@v4`.
 ## Areas to Be Careful
 
 - If `ICONS_JSON_B64` is missing/stale in repo secrets, the build will fail
-  on the missing `icons.json` import — same failure mode as a local checkout
+  on the missing `icons.json` import — same failure case as a local checkout
   without the file.
 - Anyone changing `src/lib/assets/icons.json` locally must re-encode and update
   the `ICONS_JSON_B64` secret, or CI builds will use the old icon set.

@@ -14,9 +14,9 @@ re-deriving them. Nothing here is in the codebase today.
 
 **Status:** designed in full, then dropped as too much work for the size of the
 affordance. Superseded for now by the simpler "punctuation is atomic with its
-base" rule (see [Line Mode](line-mode.md)).
+base" rule (see [Line Tool](line-tool.md)).
 
-The original idea: in line mode, a punctuation mark would be **clickable to toggle
+The original idea: in line tool, a punctuation mark would be **clickable to toggle
 its own inclusion** in the final output, independent of line-breaking.
 
 - Clicking the punctuation does **not** split a line. It marks the punctuation as
@@ -75,8 +75,8 @@ This is a self-contained feature, not a tweak to the current grouping.
 
 ## Per-breakpoint line breaks (and exclusion)
 
-**Status:** planned; blocks the shelved line-mode scroll fix. See the project
-memory notes on responsive line-breaks and the line-mode scroll design.
+**Status:** planned; blocks the shelved line-tool scroll fix. See the project
+memory notes on responsive line-breaks and the line-tool scroll design.
 
 Line breaks (and, if the exclusion toggle above ships, exclusion status) are
 currently **global** — one set of breaks for all viewport widths. The future
@@ -88,6 +88,6 @@ become **per-breakpoint records** rather than single values — the token carrie
 line-pertaining and exclusion-status for each breakpoint.
 
 This also suggests **splitting the per-breakpoint workflow into its own line/view
-sub-modes**: a "line" sub-mode for authoring the breaks at each breakpoint and a
-"view" sub-mode for previewing the result without the editing affordances getting
+sub-tools**: a "line" sub-tool for authoring the breaks at each breakpoint and a
+"view" sub-tool for previewing the result without the editing affordances getting
 in the way of reading.
