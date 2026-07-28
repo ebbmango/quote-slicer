@@ -58,8 +58,10 @@
 	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={toolCtx.current === 'text'}>
 		<!-- When the modal owns the maps/json content, the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
-		{#if !breakpoints.usesDataModal}
-			<DataPanel view={breakpoints.wide || asideView === 'maps' ? 'maps' : 'json'} />
+		{#if breakpoints.layoutMode !== 'mini'}
+			<DataPanel
+				view={breakpoints.layoutMode === 'dual' || asideView === 'maps' ? 'maps' : 'json'}
+			/>
 		{/if}
 	</aside>
 	<main class="content flex flex-col justify-between gap-6">
@@ -71,16 +73,14 @@
 			     only thing that scrolls if even floored panels overflow (<~400px tall).
 			     The DataModal is a SIBLING absolute layer, positioned by the band — so
 			     it stays put and never rides this scroll. -->
-			<div
-				class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto"
-			>
+			<div class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto">
 				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} />
 			</div>
 			<DataModal
 				bind:this={dataModal}
 				bind:asideView
 				bind:modalOpen
-				enabled={breakpoints.usesDataModal}
+				enabled={breakpoints.layoutMode === 'mini'}
 			/>
 		</div>
 		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every tool so the
@@ -109,10 +109,7 @@
 			{/if}
 		</div>
 	</main>
-	<aside
-		class="sidebar sidebar-right bg-(--panel-bg)"
-		aria-hidden={toolCtx.current === 'text'}
-	>
+	<aside class="sidebar sidebar-right bg-(--panel-bg)" aria-hidden={toolCtx.current === 'text'}>
 		<DataPanel view="json" />
 	</aside>
 </div>
@@ -184,7 +181,7 @@
 			grid-column-gap var(--slide) ease,
 			grid-row-gap var(--slide) ease;
 
-		/* default (cellphone): main only */
+		/* mini: main only */
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr;
 		grid-template-areas: 'content';
@@ -231,7 +228,7 @@
 		transform: translate(0);
 	}
 
-	/* tall portrait (tablet): main + one sidebar stacked */
+	/* stacked: main + one sidebar */
 	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
 		.layout {
 			grid-template-columns: 1fr;
@@ -251,7 +248,7 @@
 		}
 	}
 
-	/* medium: one sidebar + main */
+	/* single: one sidebar + main */
 	@media (min-width: 900px) {
 		.layout {
 			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
@@ -268,7 +265,7 @@
 		}
 	}
 
-	/* desktop: sidebar + main + sidebar */
+	/* dual: sidebar + main + sidebar */
 	@media (min-width: 1200px) {
 		.layout {
 			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 0fr);

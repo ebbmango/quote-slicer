@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Regression guard for the minimal-viewport data modal's slide transitions.
+// Regression guard for the mini layout's data modal slide transitions.
 //
 // The modal previously used separate `in:fly` / `out:fly` directives. Those are
 // not bidirectional: reopening (or switching sides) while the outro was still
@@ -28,7 +28,7 @@ async function startTransformRecorder(page: Page) {
 	});
 }
 
-test.describe('data modal slide transitions (minimal viewport)', () => {
+test.describe('data modal slide transitions (mini layout)', () => {
 	test.use({ viewport: { width: 390, height: 740 } });
 
 	test('rapid open/close/swap taps never compose transforms or strand the panel', async ({
@@ -76,14 +76,14 @@ test.describe('data modal slide transitions (minimal viewport)', () => {
 	});
 });
 
-test.describe('data surface toolbar routing', () => {
-	const asideViewports = [
-		{ name: 'medium', size: { width: 1000, height: 740 } },
-		{ name: 'tall portrait', size: { width: 820, height: 1100 } }
+test.describe('layout mode toolbar routing', () => {
+	const asideLayouts = [
+		{ name: 'single', size: { width: 1000, height: 740 } },
+		{ name: 'stacked', size: { width: 820, height: 1100 } }
 	];
 
-	for (const { name, size } of asideViewports) {
-		test(`${name} viewport uses the aside toggle, not modal controls`, async ({ page }) => {
+	for (const { name, size } of asideLayouts) {
+		test(`${name} layout uses the aside toggle, not modal controls`, async ({ page }) => {
 			await page.setViewportSize(size);
 			await page.goto('/');
 			await page.waitForLoadState('networkidle');

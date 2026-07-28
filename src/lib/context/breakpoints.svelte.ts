@@ -2,23 +2,28 @@ import { getContext, onMount, setContext } from 'svelte';
 
 const BREAKPOINT_KEY = Symbol('breakpoints');
 
-// Keep these queries in sync with the @media blocks in <style>.
+// Keep these queries in sync with the layout @media blocks in src/routes/+page.svelte.
 const WIDE_QUERY = '(min-width: 1200px)';
-const BELOW_MEDIUM_QUERY = '(max-width: 899px)';
-const TABLET_PORTRAIT_QUERY =
+const NARROW_QUERY = '(max-width: 899px)';
+const TALL_NARROW_PORTRAIT_QUERY =
 	'(orientation: portrait) and (min-height: 1000px) and (max-width: 899px)';
 
-export type DataSurface = 'modal' | 'aside' | 'wide';
+export type LayoutMode = 'dual' | 'single' | 'stacked' | 'mini';
 
 class BreakpointContext {
-	wide = $state(false);
-	belowMedium = $state(false);
-	tabletPortrait = $state(false);
-	// Minimal viewport = below medium AND not the tall-portrait tablet layout.
-	minimal = $derived(this.belowMedium && !this.tabletPortrait);
-	// One app-level answer for where maps/json controls live.
-	dataSurface: DataSurface = $derived(this.wide ? 'wide' : this.minimal ? 'modal' : 'aside');
-	usesDataModal = $derived(this.dataSurface === 'modal');
+	isWide = $state(false);
+	isNarrow = $state(false);
+	isTallNarrowPortrait = $state(false);
+
+	layoutMode: LayoutMode = $derived(
+		this.isWide
+			? 'dual'
+			: this.isNarrow
+				? this.isTallNarrowPortrait
+					? 'stacked'
+					: 'mini'
+				: 'single'
+	);
 }
 
 export function setBreakpointContext(): BreakpointContext {
@@ -26,25 +31,26 @@ export function setBreakpointContext(): BreakpointContext {
 
 	onMount(() => {
 		const mqWide = window.matchMedia(WIDE_QUERY);
-		const mqBelowMedium = window.matchMedia(BELOW_MEDIUM_QUERY);
-		const mqTablet = window.matchMedia(TABLET_PORTRAIT_QUERY);
+		const mqNarrow = window.matchMedia(NARROW_QUERY);
+		const mqTallNarrowPortrait = window.matchMedia(TALL_NARROW_PORTRAIT_QUERY);
 
-		ctx.wide = mqWide.matches;
-		ctx.belowMedium = mqBelowMedium.matches;
-		ctx.tabletPortrait = mqTablet.matches;
+		ctx.isWide = mqWide.matches;
+		ctx.isNarrow = mqNarrow.matches;
+		ctx.isTallNarrowPortrait = mqTallNarrowPortrait.matches;
 
-		const handleWide = (e: MediaQueryListEvent) => (ctx.wide = e.matches);
-		const handleBelowMedium = (e: MediaQueryListEvent) => (ctx.belowMedium = e.matches);
-		const handleTablet = (e: MediaQueryListEvent) => (ctx.tabletPortrait = e.matches);
+		const handleWide = (e: MediaQueryListEvent) => (ctx.isWide = e.matches);
+		const handleNarrow = (e: MediaQueryListEvent) => (ctx.isNarrow = e.matches);
+		const handleTallNarrowPortrait = (e: MediaQueryListEvent) =>
+			(ctx.isTallNarrowPortrait = e.matches);
 
 		mqWide.addEventListener('change', handleWide);
-		mqBelowMedium.addEventListener('change', handleBelowMedium);
-		mqTablet.addEventListener('change', handleTablet);
+		mqNarrow.addEventListener('change', handleNarrow);
+		mqTallNarrowPortrait.addEventListener('change', handleTallNarrowPortrait);
 
 		return () => {
 			mqWide.removeEventListener('change', handleWide);
-			mqBelowMedium.removeEventListener('change', handleBelowMedium);
-			mqTablet.removeEventListener('change', handleTablet);
+			mqNarrow.removeEventListener('change', handleNarrow);
+			mqTallNarrowPortrait.removeEventListener('change', handleTallNarrowPortrait);
 		};
 	});
 
