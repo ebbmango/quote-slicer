@@ -1,4 +1,5 @@
 import { getContext, onMount, setContext } from 'svelte';
+import { MediaQuery } from 'svelte/reactivity';
 
 const BREAKPOINT_KEY = Symbol('breakpoints');
 
@@ -11,50 +12,28 @@ const TALL_NARROW_PORTRAIT_QUERY =
 export type LayoutMode = 'dual' | 'single' | 'stacked' | 'mini';
 
 class BreakpointContext {
-	isWide = $state(false);
-	isNarrow = $state(false);
-	isTallNarrowPortrait = $state(false);
+	// Keep SSR and hydration on the same fallback until the real viewport is available.
+	#mounted = $state(false);
+	#isWide = new MediaQuery(WIDE_QUERY);
+	#isNarrow = new MediaQuery(NARROW_QUERY);
+	#isTallNarrowPortrait = new MediaQuery(TALL_NARROW_PORTRAIT_QUERY);
 
-	layoutMode: LayoutMode = $derived(
-		this.isWide
-			? 'dual'
-			: this.isNarrow
-				? this.isTallNarrowPortrait
-					? 'stacked'
-					: 'mini'
-				: 'single'
-	);
+	layoutMode: LayoutMode = $derived.by(() => {
+		if (!this.#mounted) return 'single';
+		if (this.#isWide.current) return 'dual';
+		if (!this.#isNarrow.current) return 'single';
+		return this.#isTallNarrowPortrait.current ? 'stacked' : 'mini';
+	});
+
+	constructor() {
+		onMount(() => {
+			this.#mounted = true;
+		});
+	}
 }
 
 export function setBreakpointContext(): BreakpointContext {
-	const ctx = new BreakpointContext();
-
-	onMount(() => {
-		const mqWide = window.matchMedia(WIDE_QUERY);
-		const mqNarrow = window.matchMedia(NARROW_QUERY);
-		const mqTallNarrowPortrait = window.matchMedia(TALL_NARROW_PORTRAIT_QUERY);
-
-		ctx.isWide = mqWide.matches;
-		ctx.isNarrow = mqNarrow.matches;
-		ctx.isTallNarrowPortrait = mqTallNarrowPortrait.matches;
-
-		const handleWide = (e: MediaQueryListEvent) => (ctx.isWide = e.matches);
-		const handleNarrow = (e: MediaQueryListEvent) => (ctx.isNarrow = e.matches);
-		const handleTallNarrowPortrait = (e: MediaQueryListEvent) =>
-			(ctx.isTallNarrowPortrait = e.matches);
-
-		mqWide.addEventListener('change', handleWide);
-		mqNarrow.addEventListener('change', handleNarrow);
-		mqTallNarrowPortrait.addEventListener('change', handleTallNarrowPortrait);
-
-		return () => {
-			mqWide.removeEventListener('change', handleWide);
-			mqNarrow.removeEventListener('change', handleNarrow);
-			mqTallNarrowPortrait.removeEventListener('change', handleTallNarrowPortrait);
-		};
-	});
-
-	return setContext(BREAKPOINT_KEY, ctx);
+	return setContext(BREAKPOINT_KEY, new BreakpointContext());
 }
 
 export function getBreakpointContext(): BreakpointContext {

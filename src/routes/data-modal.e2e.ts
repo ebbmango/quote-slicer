@@ -106,4 +106,22 @@ test.describe('layout mode toolbar routing', () => {
 			await expect(json).toHaveCSS('opacity', '1');
 		});
 	}
+
+	test('reroutes the toolbar when the viewport changes after mount', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 740 });
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.waitForTimeout(500);
+		await page.getByRole('button', { name: 'next' }).click();
+		await expect(page.getByTestId('maps-modal')).toBeVisible();
+
+		await page.setViewportSize({ width: 820, height: 1100 });
+		await expect(page.getByTestId('maps-aside')).toBeVisible();
+
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await expect(page.getByTestId('maps-aside')).toHaveCount(0);
+
+		await page.setViewportSize({ width: 390, height: 740 });
+		await expect(page.getByTestId('maps-modal')).toBeVisible();
+	});
 });
