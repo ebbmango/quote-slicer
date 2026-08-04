@@ -30,3 +30,6 @@ test-results
 
 # Scripts
 scripts/
+
+# Local agent worktrees are separate checkouts, not part of this project's source tree.
+/.claude/worktrees/
