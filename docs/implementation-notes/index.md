@@ -19,7 +19,9 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-_None — everything below has been folded into the docs._
+| Date       | Note                                                                                                    | Commits              |
+| ---------- | ------------------------------------------------------------------------------------------------------- | -------------------- |
+| 2026-08-04 | [Responsive viewport model and nested-worktree test isolation](./26-08-04-responsive-viewport-model.md) | `fad9d79`, `61c151b` |
 
 ## Archived notes (already parsed into the docs)
 
