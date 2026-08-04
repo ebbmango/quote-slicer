@@ -19,8 +19,8 @@
 
 	const toolCtx = getToolContext();
 	const breakpoints = getBreakpointContext();
-	const isMiniLayout = $derived(breakpoints.layoutMode === 'mini');
-	const showDataToggle = $derived(breakpoints.layoutMode !== 'dual');
+	const isDrawerLayout = $derived(breakpoints.layoutMode === 'drawer');
+	const showDataToggle = $derived(breakpoints.layoutMode !== 'double');
 
 	const mapsIcon = {
 		viewBox: icons['objects-column'].viewBox,
@@ -32,11 +32,11 @@
 	};
 
 	function dataActive(view: 'maps' | 'json') {
-		return isMiniLayout ? modalOpen && asideView === view : asideView === view;
+		return isDrawerLayout ? modalOpen && asideView === view : asideView === view;
 	}
 
 	function toggleData(view: 'maps' | 'json') {
-		if (!isMiniLayout) {
+		if (!isDrawerLayout) {
 			asideView = view;
 			return;
 		}
@@ -58,14 +58,14 @@
 			<IconToggleButton
 				icon={mapsIcon}
 				label="maps"
-				testid={isMiniLayout ? 'maps-modal' : 'maps-aside'}
+				testid={isDrawerLayout ? 'maps-modal' : 'maps-aside'}
 				active={dataActive('maps')}
 				onclick={() => toggleData('maps')}
 			/>
 			<IconToggleButton
 				icon={jsonIcon}
 				label="json"
-				testid={isMiniLayout ? 'json-modal' : 'json-aside'}
+				testid={isDrawerLayout ? 'json-modal' : 'json-aside'}
 				active={dataActive('json')}
 				onclick={() => toggleData('json')}
 			/>

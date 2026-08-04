@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Regression guard for the mini layout's data modal slide transitions.
+// Regression guard for the drawer layout's data modal slide transitions.
 //
 // The modal previously used separate `in:fly` / `out:fly` directives. Those are
 // not bidirectional: reopening (or switching sides) while the outro was still
@@ -28,7 +28,7 @@ async function startTransformRecorder(page: Page) {
 	});
 }
 
-test.describe('data modal slide transitions (mini layout)', () => {
+test.describe('data modal slide transitions (drawer layout)', () => {
 	test.use({ viewport: { width: 390, height: 740 } });
 
 	test('rapid open/close/swap taps never compose transforms or strand the panel', async ({
@@ -79,7 +79,7 @@ test.describe('data modal slide transitions (mini layout)', () => {
 test.describe('layout mode toolbar routing', () => {
 	const asideLayouts = [
 		{ name: 'single', size: { width: 1000, height: 740 } },
-		{ name: 'stacked', size: { width: 820, height: 1100 } }
+		{ name: 'bottom', size: { width: 820, height: 1100 } }
 	];
 
 	for (const { name, size } of asideLayouts) {
@@ -123,5 +123,34 @@ test.describe('layout mode toolbar routing', () => {
 
 		await page.setViewportSize({ width: 390, height: 740 });
 		await expect(page.getByTestId('maps-modal')).toBeVisible();
+	});
+
+	test('reroutes and force-closes at the tall boundary without a width change', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 820, height: 999 });
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.waitForTimeout(500);
+		await page.getByRole('button', { name: 'next' }).click();
+
+		const mapsModal = page.getByTestId('maps-modal');
+		await expect(mapsModal).toBeVisible();
+		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
+
+		await mapsModal.click();
+		await expect(page.locator('.data-modal')).toBeVisible();
+
+		// At a fixed narrow width, 1000px is the inclusive tall threshold. This must
+		// switch both JS routing and the CSS grid, then force-close the modal copy as
+		// the aside takes ownership.
+		await page.setViewportSize({ width: 820, height: 1000 });
+		await expect(page.getByTestId('maps-aside')).toBeVisible();
+		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'block');
+		await expect(page.locator('.data-modal')).toHaveCount(0);
+
+		await page.setViewportSize({ width: 820, height: 999 });
+		await expect(page.getByTestId('maps-modal')).toBeVisible();
+		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
 	});
 });

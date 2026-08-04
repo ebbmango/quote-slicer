@@ -58,9 +58,9 @@
 	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={toolCtx.current === 'text'}>
 		<!-- When the modal owns the maps/json content, the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
-		{#if breakpoints.layoutMode !== 'mini'}
+		{#if breakpoints.layoutMode !== 'drawer'}
 			<DataPanel
-				view={breakpoints.layoutMode === 'dual' || asideView === 'maps' ? 'maps' : 'json'}
+				view={breakpoints.layoutMode === 'double' || asideView === 'maps' ? 'maps' : 'json'}
 			/>
 		{/if}
 	</aside>
@@ -80,7 +80,7 @@
 				bind:this={dataModal}
 				bind:asideView
 				bind:modalOpen
-				enabled={breakpoints.layoutMode === 'mini'}
+				enabled={breakpoints.layoutMode === 'drawer'}
 			/>
 		</div>
 		<!-- Tools Area — reserve the toolbar's height (min-h-14) in every tool so the
@@ -181,7 +181,7 @@
 			grid-column-gap var(--slide) ease,
 			grid-row-gap var(--slide) ease;
 
-		/* mini: main only */
+		/* drawer: main only */
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr;
 		grid-template-areas: 'content';
@@ -228,8 +228,9 @@
 		transform: translate(0);
 	}
 
-	/* stacked: main + one sidebar */
-	@media (orientation: portrait) and (min-height: 1000px) and (max-width: 899px) {
+	/* bottom: main + one sidebar. At these limits tall + narrow is necessarily portrait;
+	   keep both limits in sync with BreakpointContext. */
+	@media (min-height: 1000px) and (max-width: 899px) {
 		.layout {
 			grid-template-columns: 1fr;
 			grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
@@ -265,7 +266,7 @@
 		}
 	}
 
-	/* dual: sidebar + main + sidebar */
+	/* double: sidebar + main + sidebar */
 	@media (min-width: 1200px) {
 		.layout {
 			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 0fr);

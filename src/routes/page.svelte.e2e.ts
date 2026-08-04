@@ -26,7 +26,7 @@ async function layoutSnapshot(page: Page) {
 test.describe('workbench side panels', () => {
 	test.use({ viewport: { width: 1440, height: 900 } });
 
-	test('slides side panels in without reserving dual-layout space in text tool', async ({
+	test('slides side panels in without reserving double-layout space in text tool', async ({
 		page
 	}) => {
 		await page.goto('/');
