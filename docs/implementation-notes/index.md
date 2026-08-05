@@ -19,7 +19,9 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-_None — everything below has been folded into the docs._
+| Date       | Note                                                                                   | Commits   |
+| ---------- | -------------------------------------------------------------------------------------- | --------- |
+| 2026-08-05 | [Single-predicate narrow breakpoint](./26-08-05-single-predicate-narrow-breakpoint.md) | `ee64a72` |
 
 ## Archived notes (already parsed into the docs)
 
