@@ -19,11 +19,20 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-| Date       | Note                                                                                                    | Commits              |
-| ---------- | ------------------------------------------------------------------------------------------------------- | -------------------- |
-| 2026-08-04 | [Responsive viewport model and nested-worktree test isolation](./26-08-04-responsive-viewport-model.md) | `fad9d79`, `61c151b` |
+_None — everything below has been folded into the docs._
 
 ## Archived notes (already parsed into the docs)
+
+### Folded in on 2026-08-04
+
+This pass revised the UI architecture and file map around the spatial `LayoutMode`
+names and independent wide/narrow/tall viewport facts, documented the implied-portrait
+and single-predicate width-boundary invariants, and recorded Playwright's load-bearing
+`testDir: 'src'` boundary in the testing guide.
+
+| Date       | Note                                                                                                        | Commits              |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
+| 2026-08-04 | [Responsive viewport model and nested-worktree test isolation](./old/26-08-04-responsive-viewport-model.md) | `fad9d79`, `61c151b` |
 
 ### Folded in on 2026-07-02
 

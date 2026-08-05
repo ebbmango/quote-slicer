@@ -25,7 +25,7 @@ or a modal. Feature-specific behaviour is covered elsewhere and linked from here
 │   │   │   └── InteractiveTargetText.svelte   ┘ them (line tool)
 │   │   │       └── LineDivisor.svelte (×N)
 │   │   └── <textarea> authorship  always present (disabled in view tool)
-│   ├── DataModal.svelte           minimal viewport: slide-in over the workbench
+│   ├── DataModal.svelte           drawer layout: slide-in over the workbench
 │   │   └── DataPanel.svelte
 │   └── tools: arrow (text) | ToolToolbar.svelte (otherwise)
 │       └── IconToggleButton.svelte (×N)
@@ -163,8 +163,9 @@ hidden (`no-scrollbar`). `JsonExportPanel` / `HighlightedCode` are covered in
 `ToolToolbar` is the bottom toolbar shown in every non-text tool. It renders:
 
 - the **link / line / view** tool switcher;
-- one **maps / json** toggle pair when `BreakpointContext.dataSurface` is `aside` or
-  `modal`; desktop (`wide`) renders no maps/json pair because both asides are visible.
+- one **maps / json** toggle pair in every layout except `double`. In `drawer` it
+  controls the modal; in `bottom` and `single` it swaps the shared aside. `double`
+  renders no pair because both asides are visible.
 
 `IconToggleButton` collapses what were six near-duplicate buttons into one component: a
 single `<button>` wrapping an SVG path from `icons.json`, with props
@@ -215,38 +216,54 @@ can never be handed a pinyin-less array. See [Token Store](token-store.md).
 
 ## Responsive layout
 
-The layout is a CSS grid in `+page.svelte`, with breakpoints mirrored in JS by
-`BreakpointContext` (so component logic — not just CSS — can branch on viewport).
+The choice is structural, not just visual: it determines whether maps/JSON is mounted
+in an aside or `DataModal`, whether the second sidebar is available, and how
+`ToolToolbar` routes its buttons. The CSS grid in `+page.svelte` and the JavaScript
+classification in `BreakpointContext` therefore have to agree.
 
-| Viewport                                              | Columns shown             | maps/json lives in              |
-| ----------------------------------------------------- | ------------------------- | ------------------------------- |
-| **Cellphone** (default)                               | main only                 | a slide-in **modal**            |
-| **Tablet** (tall portrait, `≤899px` & `≥1000px` tall) | main + one bottom sidebar | that **aside** (toggled)        |
-| **Medium** (`≥900px`)                                 | one sidebar + main        | that **aside** (toggled)        |
-| **Desktop** (`≥1200px`)                               | sidebar + main + sidebar  | both asides at once (no toggle) |
+| `layoutMode` | Viewport facts                                 | Columns shown             | maps/json lives in              |
+| ------------ | ---------------------------------------------- | ------------------------- | ------------------------------- |
+| `drawer`     | narrow and not tall (`<900px`, `<1000px` tall) | main only                 | a slide-in **modal**            |
+| `bottom`     | narrow and tall (`<900px`, `≥1000px` tall)     | main + one bottom sidebar | that **aside** (toggled)        |
+| `single`     | neither narrow nor wide                        | one sidebar + main        | that **aside** (toggled)        |
+| `double`     | wide (`≥1200px`)                               | sidebar + main + sidebar  | both asides at once (no toggle) |
 
-`BreakpointContext` exposes `wide` (`≥1200px`), `belowMedium` (`≤899px`),
-`tabletPortrait`, and the derived **`minimal = belowMedium && !tabletPortrait`**. It also
-exposes `dataSurface`: `modal` for minimal, `aside` for tablet/medium, and `wide` for
-desktop. Callers branch on that value instead of repeating the breakpoint math.
+`BreakpointContext` internally observes three independent reactive `MediaQuery` facts:
+wide (`min-width: 1200px`), narrow (`width < 900px`), and tall
+(`min-height: 1000px`). It exposes one `LayoutMode` rather than one boolean per layout:
+wide becomes `double`; a viewport that is not narrow becomes `single`; the remaining
+narrow branch becomes `bottom` when tall and `drawer` otherwise. The spatial names
+describe the resulting geometry rather than a device category or implementation
+history.
+
+Tall plus narrow necessarily implies portrait at the current limits because height is
+at least `1000px` while width is strictly below `900px`, so neither the JavaScript fact
+nor its CSS combination needs an explicit orientation condition. Recheck that proof if
+either threshold changes. During SSR and hydration, `layoutMode` remains `single` until
+mount; Svelte's reactive media queries classify the real viewport after that.
 
 ### How the toggle routes content
 
-- The **left aside** renders `maps` when `wide || asideView === 'maps'`, else `json`.
-- The **right aside** always renders `json` (only visible when `wide`).
-- At `dataSurface === 'modal'`, the left aside renders **nothing** so its `MappingsList`
-  copy can't coexist with the modal's copy; the modal owns the content.
-- `ToolToolbar` renders one maps/json pair for `aside` or `modal`, using the data-surface
-  value to decide whether clicks swap the aside view or open/close the modal. Desktop
-  (`wide`) shows neither.
+- The **left aside** renders `maps` when `layoutMode === 'double'` or
+  `asideView === 'maps'`, else `json`.
+- The **right aside** always renders `json` (CSS only makes it visible in `double`).
+- In `drawer`, the left aside renders **nothing** so its `MappingsList` copy cannot
+  coexist with the modal's copy; `DataModal` owns the content.
+- `ToolToolbar` renders one maps/json pair unless the layout is `double`. In `drawer`,
+  clicks open, close, or swap the modal; in `bottom` and `single`, they swap the aside.
 
 > These thresholds are encoded in **three** places that must stay in sync:
-> `breakpoints.svelte.ts`'s `matchMedia` queries, `+page.svelte`'s grid `@media` blocks,
-> and the `tablet:` / `modal-wide:` custom variants in `layout.css`.
+> `breakpoints.svelte.ts`'s reactive `MediaQuery` facts, `+page.svelte`'s grid `@media`
+> blocks, and the `tablet:` / `modal-wide:` custom variants in `layout.css`. Narrow is
+> the single canonical predicate: `(width < 900px)`. CSS uses it to override its
+> `single` base instead of independently restating the opposite endpoint, because
+> scaled-browser rounding can make equivalent-looking endpoint queries overlap.
+> `modal-wide` only changes the grid inside the drawer and is not an input to
+> `layoutMode`.
 
 ### The data modal
 
-`DataModal.svelte` is the minimal-viewport home for the same two views. It is
+`DataModal.svelte` is the `drawer`-layout home for the same two views. It is
 `position: absolute` over the workbench, filling the band between the theme toggle and
 the tools row.
 

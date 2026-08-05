@@ -5,11 +5,12 @@ const BREAKPOINT_KEY = Symbol('breakpoints');
 
 // Keep these thresholds and their combinations in sync with the layout @media blocks.
 const WIDE_QUERY = '(min-width: 1200px)';
-// NOTE: the existing max-899/min-900 split can diverge at fractional widths.
-// Fix it only by moving this and every CSS mirror to complementary ranges together.
-const NARROW_QUERY = '(max-width: 899px)';
+// CSS must reuse this exact predicate to override its single-layout base;
+// independently restating the opposite endpoint can disagree at fractional
+// widths because of browser rounding.
+const NARROW_QUERY = '(width < 900px)';
 // Tall is intentionally independent from width. Combined with narrow below, it
-// also guarantees portrait because 1000px > 899px; revisit if either limit changes.
+// guarantees portrait because height >= 1000px and width < 900px.
 const TALL_QUERY = '(min-height: 1000px)';
 
 export type LayoutMode = 'double' | 'single' | 'bottom' | 'drawer';

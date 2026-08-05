@@ -241,8 +241,8 @@ html.theme-anim .tok-tinted {
 }
 
 @custom-variant tablet {
-	/* Mirrors the bottom layout; 1000px tall + <=899px wide guarantees portrait. */
-	@media (min-height: 1000px) and (max-width: 899px) {
+	/* Mirrors the bottom layout; height >= 1000px + width < 900px guarantees portrait. */
+	@media (min-height: 1000px) and (width < 900px) {
 		@slot;
 	}
 }
@@ -250,7 +250,7 @@ html.theme-anim .tok-tinted {
 /* Drawer-layout modal: same two-column threshold as the tablet aside, but
    width-only since the modal has no height constraint. */
 @custom-variant modal-wide {
-	@media (max-width: 899px) and (min-width: 600px) {
+	@media (width < 900px) and (min-width: 600px) {
 		@slot;
 	}
 }

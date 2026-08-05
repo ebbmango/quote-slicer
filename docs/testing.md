@@ -61,15 +61,23 @@ Specs are **colocated** beside their sources (`tokenize.spec.ts` next to
 
 ## E2E notes
 
-Playwright specs live in `src/routes/*.e2e.ts`. Three are regression guards for
-specific engineering episodes: `line-split-overflow.e2e.ts` (the
+Playwright specs live in `src/routes/*.e2e.ts`. `playwright.config.ts` pins
+`testDir: 'src'`, matching that convention and preventing specs in local nested
+worktrees from being collected against this checkout's preview server. This is a
+load-bearing boundary: E2E specs placed outside `src` will not be collected.
+
+Four specs contain regression guards for specific engineering episodes:
+`line-split-overflow.e2e.ts` (the
 [constrained/overflow line-edit regime](adr/0001-line-edit-dual-scroll-regime.md)),
 `rapid-click.e2e.ts` (the [mappings-list re-entrancy
 freeze](mappings-list.md#the-re-entrancy-freeze-bug-and-the-rule-it-established)),
 and `theme-lockstep.e2e.ts` (the [theme-flip synchronization
 invariants](themes.md#synchronized-transitions): no resting colour transition on
 the text fields, opacity included in the card bottom-bar transition, live
-`color-scheme` landing on `<body>` and never on the root).
+`color-scheme` landing on `<body>` and never on the root). `data-modal.e2e.ts` guards
+the modal transition and toolbar/content ownership while crossing width and height
+layout boundaries, including `820x999 → 820x1000 → 820x999`, a fractional effective
+width below `900px`, and Chromium's rounded-boundary agreement case.
 
 > One measured caveat from the placeholder work: Playwright's bundled Chromium does
 > **not** reproduce the dark-OS `::placeholder` staleness bug — only the real Chrome

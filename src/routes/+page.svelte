@@ -181,10 +181,10 @@
 			grid-column-gap var(--slide) ease,
 			grid-row-gap var(--slide) ease;
 
-		/* drawer: main only */
-		grid-template-columns: 1fr;
+		/* single: one sidebar + main. Narrow layouts override this base below. */
+		grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
 		grid-template-rows: 1fr;
-		grid-template-areas: 'content';
+		grid-template-areas: 'left content';
 	}
 
 	.sidebar {
@@ -202,6 +202,7 @@
 	}
 
 	.sidebar-left {
+		display: block;
 		grid-area: left;
 		transform: translateX(calc(-100% - var(--layout-spacing)));
 	}
@@ -220,6 +221,7 @@
 	.layout.panels-open {
 		grid-column-gap: var(--layout-spacing);
 		grid-row-gap: var(--layout-spacing);
+		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 	}
 
 	.layout.panels-open .sidebar {
@@ -228,9 +230,27 @@
 		transform: translate(0);
 	}
 
+	/* drawer: main only. This is the canonical narrow query shared with
+	   BreakpointContext; do not add a separately stated opposite endpoint. */
+	@media (width < 900px) {
+		.layout {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr;
+			grid-template-areas: 'content';
+		}
+
+		.layout.panels-open {
+			grid-template-columns: 1fr;
+		}
+
+		.sidebar-left {
+			display: none;
+		}
+	}
+
 	/* bottom: main + one sidebar. At these limits tall + narrow is necessarily portrait;
 	   keep both limits in sync with BreakpointContext. */
-	@media (min-height: 1000px) and (max-width: 899px) {
+	@media (min-height: 1000px) and (width < 900px) {
 		.layout {
 			grid-template-columns: 1fr;
 			grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
@@ -246,23 +266,6 @@
 		.sidebar-left {
 			display: block;
 			transform: translateY(calc(100% + var(--layout-spacing)));
-		}
-	}
-
-	/* single: one sidebar + main */
-	@media (min-width: 900px) {
-		.layout {
-			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
-			grid-template-rows: 1fr;
-			grid-template-areas: 'left content';
-		}
-
-		.layout.panels-open {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-		}
-
-		.sidebar-left {
-			display: block;
 		}
 	}
 

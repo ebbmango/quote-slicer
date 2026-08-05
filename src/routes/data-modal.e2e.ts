@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { chromium, expect, test, type Page } from '@playwright/test';
 
 // Regression guard for the drawer layout's data modal slide transitions.
 //
@@ -26,6 +26,32 @@ async function startTransformRecorder(page: Page) {
 		};
 		requestAnimationFrame(tick);
 	});
+}
+
+async function withScaledWindow(
+	baseURL: string | undefined,
+	window: { width: number; height: number; deviceScaleFactor: number },
+	run: (page: Page) => Promise<void>
+) {
+	if (!baseURL) throw new Error('Playwright baseURL is required for scaled-window tests');
+
+	const browser = await chromium.launch({
+		headless: true,
+		args: [
+			`--window-size=${window.width},${window.height}`,
+			`--force-device-scale-factor=${window.deviceScaleFactor}`
+		]
+	});
+
+	try {
+		const page = await browser.newPage({ viewport: null });
+		await page.goto(baseURL);
+		await page.waitForLoadState('networkidle');
+		await page.waitForTimeout(500);
+		await run(page);
+	} finally {
+		await browser.close();
+	}
 }
 
 test.describe('data modal slide transitions (drawer layout)', () => {
@@ -78,7 +104,7 @@ test.describe('data modal slide transitions (drawer layout)', () => {
 
 test.describe('layout mode toolbar routing', () => {
 	const asideLayouts = [
-		{ name: 'single', size: { width: 1000, height: 740 } },
+		{ name: 'single', size: { width: 900, height: 740 } },
 		{ name: 'bottom', size: { width: 820, height: 1100 } }
 	];
 
@@ -96,6 +122,14 @@ test.describe('layout mode toolbar routing', () => {
 			await expect(json).toBeVisible();
 			await expect(page.getByTestId('maps-modal')).toHaveCount(0);
 			await expect(page.getByTestId('json-modal')).toHaveCount(0);
+			await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'block');
+			await expect
+				.poll(() =>
+					page
+						.getByRole('listbox', { name: 'Mappings' })
+						.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)
+				)
+				.toBe(name === 'bottom' ? 2 : 1);
 
 			await expect(maps).toHaveCSS('opacity', '1');
 			await expect(json).toHaveCSS('opacity', '0.2');
@@ -153,4 +187,76 @@ test.describe('layout mode toolbar routing', () => {
 		await expect(page.getByTestId('maps-modal')).toBeVisible();
 		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
 	});
+});
+
+test('routes data controls through the drawer at fractional widths below 900px', async ({
+	baseURL
+}) => {
+	// Playwright's viewport option is integer CSS pixels, so it cannot enter the old
+	// 899px/900px gap. A scaled native window produces a real fractional CSS viewport.
+	await withScaledWindow(
+		baseURL,
+		{ width: 899, height: 740, deviceScaleFactor: 1.5 },
+		async (page) => {
+			const effectiveWidth = await page.evaluate(
+				() => window.visualViewport?.width ?? window.innerWidth
+			);
+			expect(effectiveWidth).toBeGreaterThan(899);
+			expect(effectiveWidth).toBeLessThan(900);
+			expect(
+				await page.evaluate(() => ({
+					max899: window.matchMedia('(max-width: 899px)').matches,
+					min900: window.matchMedia('(min-width: 900px)').matches
+				}))
+			).toEqual({ max899: false, min900: false });
+
+			await page.getByRole('button', { name: 'next' }).click();
+
+			await expect(page.getByTestId('maps-modal')).toBeVisible();
+			await expect(page.getByTestId('maps-aside')).toHaveCount(0);
+			await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
+
+			await page.getByTestId('maps-modal').click();
+			await expect(page.locator('.data-modal')).toBeVisible();
+			await expect
+				.poll(() =>
+					page
+						.getByRole('listbox', { name: 'Mappings' })
+						.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)
+				)
+				.toBe(2);
+		}
+	);
+});
+
+test('keeps CSS geometry aligned with the canonical query at a rounded 900px boundary', async ({
+	baseURL
+}) => {
+	// Chromium can round equivalent-looking endpoint queries differently at this scale.
+	// Whichever side the canonical narrow query selects, CSS must select the same layout.
+	await withScaledWindow(
+		baseURL,
+		{ width: 900, height: 740, deviceScaleFactor: 1.1 },
+		async (page) => {
+			const narrow = await page.evaluate(() => window.matchMedia('(width < 900px)').matches);
+
+			await page.getByRole('button', { name: 'next' }).click();
+
+			if (narrow) {
+				await expect(page.getByTestId('maps-modal')).toBeVisible();
+				await expect(page.getByTestId('maps-aside')).toHaveCount(0);
+				await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
+
+				await page.getByTestId('maps-modal').click();
+				await expect(page.locator('.data-modal')).toBeVisible();
+			} else {
+				await expect(page.getByTestId('maps-aside')).toBeVisible();
+				await expect(page.getByTestId('maps-modal')).toHaveCount(0);
+				await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'block');
+
+				await page.getByTestId('json-aside').click();
+				await expect(page.locator('.data-modal')).toHaveCount(0);
+			}
+		}
+	);
 });
