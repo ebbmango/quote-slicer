@@ -19,17 +19,27 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-| Date       | Note                                                                                   | Commits   |
-| ---------- | -------------------------------------------------------------------------------------- | --------- |
-| 2026-08-05 | [Single-predicate narrow breakpoint](./26-08-05-single-predicate-narrow-breakpoint.md) | `ee64a72` |
+| Date       | Note                                                                                | Commits   |
+| ---------- | ----------------------------------------------------------------------------------- | --------- |
+| 2026-08-05 | [Layout mode as a shared runtime contract](./26-08-05-layout-mode-single-source.md) | `5390525` |
 
 ## Archived notes (already parsed into the docs)
+
+### Folded in on 2026-08-05
+
+This pass documented the canonical `(width < 900px)` predicate, the unqueried `single`
+CSS base that it overrides, and the scaled-window regression tests that keep JavaScript
+content ownership aligned with rendered geometry at fractional widths.
+
+| Date       | Note                                                                                       | Commits   |
+| ---------- | ------------------------------------------------------------------------------------------ | --------- |
+| 2026-08-05 | [Single-predicate narrow breakpoint](./old/26-08-05-single-predicate-narrow-breakpoint.md) | `ee64a72` |
 
 ### Folded in on 2026-08-04
 
 This pass revised the UI architecture and file map around the spatial `LayoutMode`
 names and independent wide/narrow/tall viewport facts, documented the implied-portrait
-and single-predicate width-boundary invariants, and recorded Playwright's load-bearing
+and then-known fractional-width gap, and recorded Playwright's load-bearing
 `testDir: 'src'` boundary in the testing guide.
 
 | Date       | Note                                                                                                        | Commits              |
@@ -49,13 +59,13 @@ The theme-lockstep and text-field notes were largely pre-folded into
 [Themes](../themes.md) by the commits themselves; stale cross-page anchors to it
 were repaired.
 
-| Date       | Note                                                                                                                                  | Commits                                    |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./old/26-07-02-theme-lockstep-easing-and-flushsync.md)                            | `fb0265f`                                  |
-| 2026-07-02 | [Text-field chase, card-opacity snap, and body-level color-scheme](./old/26-07-02-text-fields-card-opacity-and-body-color-scheme.md)    | `628fc63`                                  |
-| 2026-07-02 | [Vitest client project: unit-testing runes modules](./old/26-07-02-vitest-client-project.md)                                            | `4832b58`, `84b20c6`                       |
-| 2026-07-02 | [Alignment: setPinyin keyed by tokenId, freed color slots reused](./old/26-07-02-alignment-pinyin-tokenid-and-color-reuse.md)           | `f096bbc`, `2aafb71`                       |
-| 2026-07-02 | [Lib cleanup wave: reorg for discoverability, dedupe, named constants](./old/26-07-02-lib-cleanup-wave.md)                              | `d6884e9`, `3a43d10`, `25cde28`, `8d4e99c` |
+| Date       | Note                                                                                                                                 | Commits                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| 2026-07-02 | [Theme lockstep: easing mismatch and Svelte batching](./old/26-07-02-theme-lockstep-easing-and-flushsync.md)                         | `fb0265f`                                  |
+| 2026-07-02 | [Text-field chase, card-opacity snap, and body-level color-scheme](./old/26-07-02-text-fields-card-opacity-and-body-color-scheme.md) | `628fc63`                                  |
+| 2026-07-02 | [Vitest client project: unit-testing runes modules](./old/26-07-02-vitest-client-project.md)                                         | `4832b58`, `84b20c6`                       |
+| 2026-07-02 | [Alignment: setPinyin keyed by tokenId, freed color slots reused](./old/26-07-02-alignment-pinyin-tokenid-and-color-reuse.md)        | `f096bbc`, `2aafb71`                       |
+| 2026-07-02 | [Lib cleanup wave: reorg for discoverability, dedupe, named constants](./old/26-07-02-lib-cleanup-wave.md)                           | `d6884e9`, `3a43d10`, `25cde28`, `8d4e99c` |
 
 ### Folded in on 2026-06-27
 
@@ -86,7 +96,7 @@ contract, `buildMappingIndex`, the line-edit animation's dual regime, the remova
 | 2026-06-20 | [MappingsList animation polish](./old/26-06-20-mappings-list-animation-polish.md)                                             | `a59c47d`, `c70f089`            |
 | 2026-06-20 | [Swipe-to-delete on touch](./old/26-06-20-swipe-to-delete.md)                                                                 | `31e080c`                       |
 | 2026-06-20 | [Punctuation atomic for line splitting](./old/26-06-20-punctuation-atomic-line-splitting.md)                                  | `1898c48`                       |
-| 2026-06-21 | [Dark theme infrastructure](./old/26-06-21-theme-infrastructure.md)                                                        | `0a90f89`, `247b60c`            |
+| 2026-06-21 | [Dark theme infrastructure](./old/26-06-21-theme-infrastructure.md)                                                           | `0a90f89`, `247b60c`            |
 | 2026-06-21 | [Mapping palette dark variants](./old/26-06-21-mapping-palette-dark-variants.md)                                              | `57ec2e9` … `ccebbb8`           |
 | 2026-06-23 | [Delete button color flash fix](./old/26-06-23-delete-button-flash-fix.md)                                                    | `296de30`                       |
 | 2026-06-25 | [Theme transition synchronization](./old/26-06-25-theme-transition-synchronization.md)                                        | `eb941ed`                       |
@@ -108,8 +118,8 @@ interaction-medium sensor, and the GitHub Pages deploy.
 | 2026-06-14 | [Token store consolidation](./old/26-06-14-token-store-consolidation.md)                   | `59cf15c`                       |
 | 2026-06-14 | [Export formatter extraction](./old/26-06-14-export-format-extraction.md)                  | `1cec1e0`                       |
 | 2026-06-14 | [lineEdit animation module](./old/26-06-14-lineedit-animation-module.md)                   | `ca27ef4`                       |
-| 2026-06-14 | [Misc link/line-tool fixes](./old/26-06-14-misc-link-and-line-tool-fixes.md)                | `90d6f2e` … `98c0356`           |
-| 2026-06-14 | [Interaction medium sensor](./old/26-06-14-interaction-medium-sensor.md)                       | `02ecee4`, `539973f`            |
+| 2026-06-14 | [Misc link/line-tool fixes](./old/26-06-14-misc-link-and-line-tool-fixes.md)               | `90d6f2e` … `98c0356`           |
+| 2026-06-14 | [Interaction medium sensor](./old/26-06-14-interaction-medium-sensor.md)                   | `02ecee4`, `539973f`            |
 | 2026-06-14 | [Target tokenizer consolidation](./old/26-06-14-target-tokenizer-consolidation.md)         | `34b7992`                       |
 | 2026-06-13 | [Workbench tool transitions](./old/26-06-13-workbench-tool-transition-overhaul.md)         | `5db309e`, `2c95c87`            |
 | 2026-06-13 | [Export & aside panel polish](./old/26-06-13-export-panel-polish.md)                       | `fd43e3d`, `3773995`            |
