@@ -4,6 +4,15 @@ quote-slicer aligns a Chinese source passage with its English translation, chara
 
 ## Language
 
+**layout mode**:
+The one-hot macro-layout decision (`'drawer' | 'bottom' | 'single' | 'double'`).
+`BreakpointContext` is the sole viewport classifier; the page publishes its result as
+`data-layout-mode`, and both conditional Svelte rendering and CSS geometry consume that
+same value. Macro-layout pixel thresholds belong only in
+`src/lib/context/breakpoints.svelte.ts`.
+_Avoid_: device-mode names (`mobile`, `tablet`, `desktop`); restating the macro
+breakpoints in CSS; treating a component-local size query as a layout mode
+
 **Alignment**:
 The model owning the mapping list, the source/target token arrays, the click-to-toggle state machine, and per-token display state (`stateOfSource`/`stateOfTarget`). Implemented as the `Alignment` Svelte context (`src/lib/context/alignment.svelte.ts`).
 _Avoid_: LinkContext, link state

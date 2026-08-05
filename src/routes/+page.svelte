@@ -54,7 +54,11 @@
 	}
 </script>
 
-<div class="layout h-dvh w-dvw" class:panels-open={toolCtx.current !== 'text'}>
+<div
+	class="layout h-dvh w-dvw"
+	class:panels-open={toolCtx.current !== 'text'}
+	data-layout-mode={breakpoints.layoutMode}
+>
 	<aside class="sidebar sidebar-left bg-(--panel-bg)" aria-hidden={toolCtx.current === 'text'}>
 		<!-- When the modal owns the maps/json content, the hidden
 		     aside renders nothing to avoid duplicate scroll-list bindings. -->
@@ -180,11 +184,34 @@
 			grid-template-rows var(--slide) ease,
 			grid-column-gap var(--slide) ease,
 			grid-row-gap var(--slide) ease;
+	}
 
-		/* single: one sidebar + main. Narrow layouts override this base below. */
+	/* BreakpointContext is the sole macro-layout classifier. These selectors only
+	   define the geometry belonging to its published, one-hot layoutMode. */
+	.layout:where([data-layout-mode='drawer']) {
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr;
+		grid-template-areas: 'content';
+	}
+
+	.layout:where([data-layout-mode='bottom']) {
+		grid-template-columns: 1fr;
+		grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
+		grid-template-areas:
+			'content'
+			'left';
+	}
+
+	.layout:where([data-layout-mode='single']) {
 		grid-template-columns: minmax(0, 0fr) minmax(0, 1fr);
 		grid-template-rows: 1fr;
 		grid-template-areas: 'left content';
+	}
+
+	.layout:where([data-layout-mode='double']) {
+		grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 0fr);
+		grid-template-rows: 1fr;
+		grid-template-areas: 'left content right';
 	}
 
 	.sidebar {
@@ -202,7 +229,6 @@
 	}
 
 	.sidebar-left {
-		display: block;
 		grid-area: left;
 		transform: translateX(calc(-100% - var(--layout-spacing)));
 	}
@@ -218,71 +244,52 @@
 		transform: translateX(calc(100% + var(--layout-spacing)));
 	}
 
+	:where(
+			.layout[data-layout-mode='single'],
+			.layout[data-layout-mode='bottom'],
+			.layout[data-layout-mode='double']
+		)
+		.sidebar-left {
+		display: block;
+	}
+
+	:where(.layout[data-layout-mode='bottom']) .sidebar-left {
+		transform: translateY(calc(100% + var(--layout-spacing)));
+	}
+
+	:where(.layout[data-layout-mode='double']) .sidebar-right {
+		display: block;
+	}
+
 	.layout.panels-open {
 		grid-column-gap: var(--layout-spacing);
 		grid-row-gap: var(--layout-spacing);
+	}
+
+	.layout:where([data-layout-mode='drawer']).panels-open {
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr;
+	}
+
+	.layout:where([data-layout-mode='bottom']).panels-open {
+		grid-template-columns: 1fr;
+		grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+	}
+
+	.layout:where([data-layout-mode='single']).panels-open {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+		grid-template-rows: 1fr;
+	}
+
+	.layout:where([data-layout-mode='double']).panels-open {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+		grid-template-rows: 1fr;
 	}
 
 	.layout.panels-open .sidebar {
 		opacity: 1;
 		pointer-events: auto;
 		transform: translate(0);
-	}
-
-	/* drawer: main only. This is the canonical narrow query shared with
-	   BreakpointContext; do not add a separately stated opposite endpoint. */
-	@media (width < 900px) {
-		.layout {
-			grid-template-columns: 1fr;
-			grid-template-rows: 1fr;
-			grid-template-areas: 'content';
-		}
-
-		.layout.panels-open {
-			grid-template-columns: 1fr;
-		}
-
-		.sidebar-left {
-			display: none;
-		}
-	}
-
-	/* bottom: main + one sidebar. At these limits tall + narrow is necessarily portrait;
-	   keep both limits in sync with BreakpointContext. */
-	@media (min-height: 1000px) and (width < 900px) {
-		.layout {
-			grid-template-columns: 1fr;
-			grid-template-rows: minmax(0, 1fr) minmax(0, 0fr);
-			grid-template-areas:
-				'content'
-				'left';
-		}
-
-		.layout.panels-open {
-			grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
-		}
-
-		.sidebar-left {
-			display: block;
-			transform: translateY(calc(100% + var(--layout-spacing)));
-		}
-	}
-
-	/* double: sidebar + main + sidebar */
-	@media (min-width: 1200px) {
-		.layout {
-			grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 0fr);
-			grid-template-areas: 'left content right';
-		}
-
-		.layout.panels-open {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
-		}
-
-		.sidebar-right {
-			display: block;
-		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {

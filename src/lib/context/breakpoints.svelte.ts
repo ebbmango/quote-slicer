@@ -3,11 +3,9 @@ import { MediaQuery } from 'svelte/reactivity';
 
 const BREAKPOINT_KEY = Symbol('breakpoints');
 
-// Keep these thresholds and their combinations in sync with the layout @media blocks.
+// BreakpointContext owns every viewport predicate used to classify macro layout.
+// CSS and UI consumers receive only the resulting one-hot layoutMode.
 const WIDE_QUERY = '(min-width: 1200px)';
-// CSS must reuse this exact predicate to override its single-layout base;
-// independently restating the opposite endpoint can disagree at fractional
-// widths because of browser rounding.
 const NARROW_QUERY = '(width < 900px)';
 // Tall is intentionally independent from width. Combined with narrow below, it
 // guarantees portrait because height >= 1000px and width < 900px.

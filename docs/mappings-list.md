@@ -14,8 +14,8 @@ Without animation, adding or deleting a card makes the list jump — cards telep
 new grid positions with no continuity. Svelte's built-in `animate:flip` can't express
 what this list needs:
 
-- **Column-direction awareness** — at wider viewports the grid is two columns; a
-  left-column card should slide left, a right-column card right.
+- **Column-direction awareness** — in `bottom` and roomier `drawer` surfaces the grid
+  is two columns; a left-column card should slide left, a right-column card right.
 - **Out→close sequencing** — the leaving card slides out _first_, then the survivors
   flow closed to fill the gap.
 - **A ripple** — the gap-close staggers outward from the deleted card's position.
@@ -30,7 +30,8 @@ A `canAnimate()` guard checks that both are loaded, the list is visible, and
 `prefers-reduced-motion` is not set. Timing constants live in a single labelled
 **tunables block** near the top of the script (`SLIDE`, `MAKEWAY_S`, `ENTER_S`,
 `GAP_DELAY`, `EXIT_MS`, `CLOSE_S`, `STAGGER`); two-column layouts read their longer
-durations live from `getComputedStyle` so they stay in sync with the CSS breakpoints.
+durations live from `getComputedStyle` so they follow the resolved grid rather than
+repeating its layout rules in animation code.
 
 ## Add path (make-way, then slide-in)
 

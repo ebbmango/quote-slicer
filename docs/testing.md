@@ -2,10 +2,10 @@
 
 Unit tests run under vitest in **two projects**, configured in `vite.config.ts`:
 
-| Project    | Environment | Runs                                            | For                                        |
-| ---------- | ----------- | ----------------------------------------------- | ------------------------------------------ |
-| **client** | jsdom       | `src/**/*.svelte.{test,spec}.ts`                | rune-based classes (`*.svelte.ts` modules) |
-| **server** | node        | every other `src/**/*.{test,spec}.ts`           | framework-free logic                       |
+| Project    | Environment | Runs                                  | For                                        |
+| ---------- | ----------- | ------------------------------------- | ------------------------------------------ |
+| **client** | jsdom       | `src/**/*.svelte.{test,spec}.ts`      | rune-based classes (`*.svelte.ts` modules) |
+| **server** | node        | every other `src/**/*.{test,spec}.ts` | framework-free logic                       |
 
 End-to-end coverage is Playwright (`npx playwright test`, specs in
 `src/routes/*.e2e.ts`).
@@ -77,7 +77,11 @@ the text fields, opacity included in the card bottom-bar transition, live
 `color-scheme` landing on `<body>` and never on the root). `data-modal.e2e.ts` guards
 the modal transition and toolbar/content ownership while crossing width and height
 layout boundaries, including `820x999 → 820x1000 → 820x999`, a fractional effective
-width below `900px`, and Chromium's rounded-boundary agreement case.
+width below `900px`, Chromium's rounded-boundary agreement case, and the drawer
+mapping grid's local `600px` threshold. `page.svelte.e2e.ts` guards the shared
+layout-mode contract itself: exact mode boundaries, attribute-driven CSS geometry,
+open-panel ratios through live resizes, and the full-size server-rendered `single`
+fallback with JavaScript disabled.
 
 > One measured caveat from the placeholder work: Playwright's bundled Chromium does
 > **not** reproduce the dark-OS `::placeholder` staleness bug — only the real Chrome

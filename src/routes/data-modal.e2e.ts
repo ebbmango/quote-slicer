@@ -112,6 +112,7 @@ test.describe('layout mode toolbar routing', () => {
 		test(`${name} layout uses the aside toggle, not modal controls`, async ({ page }) => {
 			await page.setViewportSize(size);
 			await page.goto('/');
+			await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', name);
 			await page.waitForLoadState('networkidle');
 			await page.waitForTimeout(500);
 			await page.getByRole('button', { name: 'next' }).click();
@@ -144,19 +145,60 @@ test.describe('layout mode toolbar routing', () => {
 	test('reroutes the toolbar when the viewport changes after mount', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 740 });
 		await page.goto('/');
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'drawer');
 		await page.waitForLoadState('networkidle');
 		await page.waitForTimeout(500);
 		await page.getByRole('button', { name: 'next' }).click();
 		await expect(page.getByTestId('maps-modal')).toBeVisible();
 
 		await page.setViewportSize({ width: 820, height: 1100 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'bottom');
+		await expect(page.getByTestId('maps-aside')).toBeVisible();
+
+		await page.setViewportSize({ width: 900, height: 740 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'single');
 		await expect(page.getByTestId('maps-aside')).toBeVisible();
 
 		await page.setViewportSize({ width: 1440, height: 900 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'double');
 		await expect(page.getByTestId('maps-aside')).toHaveCount(0);
 
 		await page.setViewportSize({ width: 390, height: 740 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'drawer');
 		await expect(page.getByTestId('maps-modal')).toBeVisible();
+	});
+
+	test('drawer mapping columns combine the published mode with their local width threshold', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 820, height: 740 });
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.waitForTimeout(500);
+		await page.getByRole('button', { name: 'next' }).click();
+		await page.getByTestId('maps-modal').click();
+
+		const mappings = page.getByRole('listbox', { name: 'Mappings' });
+		const columnCount = () =>
+			mappings.evaluate(
+				(element) => getComputedStyle(element).gridTemplateColumns.split(' ').length
+			);
+
+		await expect.poll(columnCount).toBe(2);
+
+		await page
+			.locator('.layout')
+			.evaluate((layout) => layout.setAttribute('data-layout-mode', 'single'));
+		await expect.poll(columnCount).toBe(1);
+
+		await page
+			.locator('.layout')
+			.evaluate((layout) => layout.setAttribute('data-layout-mode', 'drawer'));
+		await page.setViewportSize({ width: 599, height: 740 });
+		await expect.poll(columnCount).toBe(1);
+
+		await page.setViewportSize({ width: 600, height: 740 });
+		await expect.poll(columnCount).toBe(2);
 	});
 
 	test('reroutes and force-closes at the tall boundary without a width change', async ({
@@ -179,11 +221,13 @@ test.describe('layout mode toolbar routing', () => {
 		// switch both JS routing and the CSS grid, then force-close the modal copy as
 		// the aside takes ownership.
 		await page.setViewportSize({ width: 820, height: 1000 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'bottom');
 		await expect(page.getByTestId('maps-aside')).toBeVisible();
 		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'block');
 		await expect(page.locator('.data-modal')).toHaveCount(0);
 
 		await page.setViewportSize({ width: 820, height: 999 });
+		await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'drawer');
 		await expect(page.getByTestId('maps-modal')).toBeVisible();
 		await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
 	});
@@ -212,6 +256,7 @@ test('routes data controls through the drawer at fractional widths below 900px',
 
 			await page.getByRole('button', { name: 'next' }).click();
 
+			await expect(page.locator('.layout')).toHaveAttribute('data-layout-mode', 'drawer');
 			await expect(page.getByTestId('maps-modal')).toBeVisible();
 			await expect(page.getByTestId('maps-aside')).toHaveCount(0);
 			await expect(page.locator('.sidebar-left')).toHaveCSS('display', 'none');
@@ -241,6 +286,10 @@ test('keeps CSS geometry aligned with the canonical query at a rounded 900px bou
 			const narrow = await page.evaluate(() => window.matchMedia('(width < 900px)').matches);
 
 			await page.getByRole('button', { name: 'next' }).click();
+			await expect(page.locator('.layout')).toHaveAttribute(
+				'data-layout-mode',
+				narrow ? 'drawer' : 'single'
+			);
 
 			if (narrow) {
 				await expect(page.getByTestId('maps-modal')).toBeVisible();

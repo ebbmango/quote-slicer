@@ -240,17 +240,16 @@ html.theme-anim .tok-tinted {
 	}
 }
 
-@custom-variant tablet {
-	/* Mirrors the bottom layout; height >= 1000px + width < 900px guarantees portrait. */
-	@media (min-height: 1000px) and (width < 900px) {
-		@slot;
-	}
-}
+/* Responsive component variants consume the root's published layout mode instead
+   of independently reclassifying the viewport. */
+@custom-variant bottom-layout (&:where([data-layout-mode='bottom'] *));
 
-/* Drawer-layout modal: same two-column threshold as the tablet aside, but
-   width-only since the modal has no height constraint. */
+/* The drawer modal has one genuinely local decision: whether the drawer viewport is
+   wide enough for two mapping columns. Macro mode still comes from layoutMode. */
 @custom-variant modal-wide {
-	@media (width < 900px) and (min-width: 600px) {
-		@slot;
+	@media (min-width: 600px) {
+		&:where([data-layout-mode='drawer'] *) {
+			@slot;
+		}
 	}
 }

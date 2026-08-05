@@ -47,7 +47,8 @@ self-contained piece into its own component/context. It:
   `alignment` — `alignment` takes the store);
 - owns `sourceText` / `targetText` / `authorship`, and the `asideView` / `modalOpen`
   state threaded into `DataModal` and `ToolToolbar`;
-- owns the responsive grid layout and the sidebar open/close animation
+- publishes `BreakpointContext.layoutMode` as `data-layout-mode`, then owns the CSS
+  geometry for each published mode and the sidebar open/close animation
   (see [Responsive layout](#responsive-layout) and
   [Tool Transitions](tool-transitions.md#the-sidebar-slide-leaving-text-tool));
 - owns the text→link **arrow launch**
@@ -136,8 +137,8 @@ One card per mapping. Reads **only** a [`MappingView`](data-model.md#mappingview
 ### `MappingsList.svelte`
 
 The `<ol>` of cards, plus the list-level behaviour: a responsive grid (single column,
-two columns at the `tablet:` and `modal-wide:` breakpoints), an `$effect` that scrolls
-the active card into view, Tab handling within the list (`handleListTab`), and a
+two columns in `bottom-layout:` or a locally wide `modal-wide:` drawer), an `$effect`
+that scrolls the active card into view, Tab handling within the list (`handleListTab`), and a
 **"No mappings." empty state**. It also owns the **GSAP Flip card-animation system**
 (add/delete sequencing, the `swipeToDelete` touch gesture, the `listAnimating` throttle,
 and the re-entrancy rule that drives all of it) — covered in its own page,
@@ -218,8 +219,8 @@ can never be handed a pinyin-less array. See [Token Store](token-store.md).
 
 The choice is structural, not just visual: it determines whether maps/JSON is mounted
 in an aside or `DataModal`, whether the second sidebar is available, and how
-`ToolToolbar` routes its buttons. The CSS grid in `+page.svelte` and the JavaScript
-classification in `BreakpointContext` therefore have to agree.
+`ToolToolbar` routes its buttons. `BreakpointContext` therefore classifies the viewport
+once, while both Svelte and CSS consume its resulting `layoutMode`.
 
 | `layoutMode` | Viewport facts                                 | Columns shown             | maps/json lives in              |
 | ------------ | ---------------------------------------------- | ------------------------- | ------------------------------- |
@@ -237,10 +238,13 @@ describe the resulting geometry rather than a device category or implementation
 history.
 
 Tall plus narrow necessarily implies portrait at the current limits because height is
-at least `1000px` while width is strictly below `900px`, so neither the JavaScript fact
-nor its CSS combination needs an explicit orientation condition. Recheck that proof if
-either threshold changes. During SSR and hydration, `layoutMode` remains `single` until
-mount; Svelte's reactive media queries classify the real viewport after that.
+at least `1000px` while width is strictly below `900px`, so the classifier needs no
+explicit orientation condition. Recheck that proof if either threshold changes. During
+SSR and hydration, `layoutMode` remains `single` until mount; Svelte's reactive media
+queries classify the real viewport after that. This fallback is visually safe because
+Text is the startup tool and every closed-panel mode leaves the workbench at full size.
+If a future feature persists or deep-links into a non-Text startup tool, this invariant
+must be revisited before shipping; that state could require a prepaint classifier.
 
 ### How the toggle routes content
 
@@ -252,14 +256,22 @@ mount; Svelte's reactive media queries classify the real viewport after that.
 - `ToolToolbar` renders one maps/json pair unless the layout is `double`. In `drawer`,
   clicks open, close, or swap the modal; in `bottom` and `single`, they swap the aside.
 
-> These thresholds are encoded in **three** places that must stay in sync:
-> `breakpoints.svelte.ts`'s reactive `MediaQuery` facts, `+page.svelte`'s grid `@media`
-> blocks, and the `tablet:` / `modal-wide:` custom variants in `layout.css`. Narrow is
-> the single canonical predicate: `(width < 900px)`. CSS uses it to override its
-> `single` base instead of independently restating the opposite endpoint, because
-> scaled-browser rounding can make equivalent-looking endpoint queries overlap.
-> `modal-wide` only changes the grid inside the drawer and is not an input to
-> `layoutMode`.
+### One classifier, multiple consumers
+
+The macro thresholds exist only in `breakpoints.svelte.ts`. `+page.svelte` binds the
+one-hot result to `.layout[data-layout-mode]`; its grid selectors describe the geometry
+for each value instead of running their own media queries. Conditional rendering,
+toolbar routing, modal ownership, sidebar display, and grid tracks therefore follow the
+same decision in one direction:
+
+`MediaQuery` facts → `BreakpointContext.layoutMode` → Svelte branches + root data
+attribute → CSS geometry.
+
+The mapping grid follows the same contract. `bottom-layout:` selects descendants of
+`[data-layout-mode='bottom']`. `modal-wide:` first requires the published `drawer` mode,
+then applies an independent `min-width: 600px` query for a genuinely local question:
+whether the already-selected modal has room for two cards. Local queries may adapt the
+contents of a surface, but must not reclassify the app's macro layout.
 
 ### The data modal
 
