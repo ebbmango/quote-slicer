@@ -1,0 +1,31 @@
+{
+	"name": "quote-slicer",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+	"forwardPorts": [5173, 4173],
+	"portsAttributes": {
+		"5173": {
+			"label": "SvelteKit dev",
+			"onAutoForward": "notify"
+		},
+		"4173": {
+			"label": "SvelteKit preview",
+			"onAutoForward": "notify"
+		}
+	},
+	"secrets": {
+		"ICONS_JSON_B64": {
+			"description": "Base64-encoded contents of src/lib/assets/icons.json, required by Quote Slicer."
+		}
+	},
+	"postCreateCommand": "bash .devcontainer/setup.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint",
+				"bradlc.vscode-tailwindcss"
+			]
+		}
+	}
+}
