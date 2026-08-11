@@ -25,7 +25,7 @@ _does_ own:
 | ----------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mappings`        | private `$state` | the full list of mappings                                                                                                                      |
 | `activeMappingId` | public `$state`  | the currently selected mapping (or `null`)                                                                                                     |
-| `meta`            | private `$state` | `{ sourceText, targetText, authorship }`, pushed in by `QuoteWorkbench.setMeta()`                                                              |
+| `meta`            | private `$state` | `{ sourceText, targetText, provenance }`, pushed in by `QuoteWorkbench.setMeta()`                                                              |
 | `listAnimating`   | public `$state`  | true while the mappings list is mid-animation; throttles mutations (see [Mappings List](mappings-list.md#the-listanimating-mutation-throttle)) |
 
 (There is deliberately no state for colour assignment — the next colour is derived

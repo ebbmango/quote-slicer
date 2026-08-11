@@ -1,4 +1,4 @@
-# Misc fixes: export whitespace, punctuation mappings, copyable spaces, indicator style, view-tool authorship
+# Misc fixes: export whitespace, punctuation mappings, copyable spaces, indicator style, view-tool provenance
 
 > Commits: `90d6f2e`, `45b1ba8`, `f3f14f8`, `a190a26`, `98c0356`
 > Date: 2026-06-14
@@ -10,11 +10,11 @@ note since each is too small for its own.
 
 ## Export meta whitespace sanitization (`90d6f2e`)
 
-`Alignment.exportData.meta` previously passed `sourceText` / `targetText` / `authorship` through
+`Alignment.exportData.meta` previously passed `sourceText` / `targetText` / `provenance` through
 unchanged, so newlines from the textareas leaked into the exported JSON's `meta` block. Now:
-`sourceText.replace(/\n+/g, '')`, and `targetText` / `authorship` get
+`sourceText.replace(/\n+/g, '')`, and `targetText` / `provenance` get
 `.replace(/\n+/g, ' ').trim()` — source text drops newlines entirely (Han text has no
-inter-word spaces), target/authorship collapse them to a single space and trim.
+inter-word spaces), target/provenance collapse them to a single space and trim.
 
 ## Block mapping creation from punctuation/whitespace tokens (`45b1ba8`)
 
@@ -43,8 +43,8 @@ indicator additionally getting `skewX(-10deg)`. The merge-zone hover transition 
 200ms to 340ms and its hover-expanded width shrank from 100% to 30% (background-size multiplier
 2x → 1.5x), so the merge indicator grows more gently on hover/focus.
 
-## Disable authorship textarea in view tool (`98c0356`)
+## Disable provenance textarea in view tool (`98c0356`)
 
-View tool (`'view'`) is meant to be read-only, but the authorship `<textarea>` in
+View tool (`'view'`) is meant to be read-only, but the provenance `<textarea>` in
 `QuoteWorkbench.svelte` stayed editable. Added `disabled={tool.current === 'view'}` plus a
 `disabled:cursor-default` class.

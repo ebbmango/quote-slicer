@@ -11,7 +11,7 @@ _formatter_, and the _panel_.
 
 ```ts
 {
-  meta:        { sourceText, targetText, authorship },  // sanitised
+  meta:        { sourceText, targetText, provenance },  // sanitised
   sourceTokens, targetTokens,                            // the live token arrays
   mappings,                                              // colorIndex stripped (ExportMapping)
 }
@@ -21,7 +21,7 @@ Two deliberate transforms:
 
 - **`meta` whitespace is sanitised.** The textareas can contain newlines, which would
   leak into the export. `sourceText` has newlines removed entirely (Han text has no
-  inter-word spaces); `targetText` and `authorship` collapse newline runs to a single
+  inter-word spaces); `targetText` and `provenance` collapse newline runs to a single
   space and `.trim()`. Without this, raw newlines would dump into the `meta` block.
 - **`colorIndex` is dropped** from each mapping — color is a UI concern, not alignment
   data.
@@ -71,12 +71,12 @@ target), and `JsonExportPanel` passes a map that swaps dracula's hexes for the a
 mapping palette. The map is **theme-aware** — `themeName = appTheme.current` selects the
 light or dark variant — so the export tracks the app's [dark theme](themes.md):
 
-| Role                           | dracula hex(es)                            | replaced with                   |
-| ------------------------------ | ------------------------------------------ | ------------------------------- |
-| strings                        | `#f1fa8c`, `#e9f284`                       | `colors..base` |
-| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey           |
-| numbers                        | `#bd93f9`                                  | `colors..base`       |
-| `undefined` literal            | `#ff5555`                                  | `colors..base`       |
+| Role                           | dracula hex(es)                            | replaced with         |
+| ------------------------------ | ------------------------------------------ | --------------------- |
+| strings                        | `#f1fa8c`, `#e9f284`                       | `colors..base`        |
+| properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey |
+| numbers                        | `#bd93f9`                                  | `colors..base`        |
+| `undefined` literal            | `#ff5555`                                  | `colors..base`        |
 
 This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
 alongside the index-keyed array — the recolor wants _specific_ palette entries.

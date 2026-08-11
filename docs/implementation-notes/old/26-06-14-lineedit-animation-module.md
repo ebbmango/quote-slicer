@@ -14,7 +14,7 @@ both the text-keyed token cache and one unified GSAP Flip per edit.
 
 Before this change, a split or merge in one panel triggered two independent animations: a Flip
 on the edited panel's own tokens, and a separate `withShiftAnimation` Y-shift on the _other_
-panel plus the authorship field to absorb the height change. Each had its own height-lock,
+panel plus the provenance field to absorb the height change. Each had its own height-lock,
 and the two could race — `withShiftAnimation`'s `lockEl.style.height` lock and the Flip's
 `absolute: true` could fight over the same element's box during a single edit.
 
@@ -37,15 +37,15 @@ editScope())` / `lineEdit.merge(...)` instead of doing the cache-write and anima
 ## Implementation Details
 
 `EditScope` is the set of DOM refs a single edit animates over: the source/target panel
-wrappers (now tagged `data-flip-id="source-panel"` / `"target-panel"`), the authorship element
-(`data-flip-id="authorship"`), and each panel's scroll box (`[data-scrollbox]`, queried from the
+wrappers (now tagged `data-flip-id="source-panel"` / `"target-panel"`), the provenance element
+(`data-flip-id="provenance"`), and each panel's scroll box (`[data-scrollbox]`, queried from the
 wrapper).
 
 `animate(zone, scope, mutate)` does the actual work:
 
 1. Captures `Flip.getState()` over `flipTargets(zone, scope)` — the _edited_ panel's individual
    tokens (`[data-flip-id]` elements inside its scroll box, which reflow) plus the _other_
-   panel's wrapper and authorship as whole units (which only reposition).
+   panel's wrapper and provenance as whole units (which only reposition).
 2. Locks the edited scroll box to its current pixel height and sets `animating = true` (so the
    panel's own instant-fit `$effect` doesn't snap the height mid-flight).
 3. Runs `mutate()` (the split/merge + cache write) and awaits `tick()`.
@@ -57,7 +57,7 @@ false` so the boxes keep their layout space while transforms resolve, with the h
    supplying the room.
 
 A single Flip call now covers both "this panel's tokens reflow" and "the other panel +
-authorship reposition as units" — there is no second animation to coordinate with.
+provenance reposition as units" — there is no second animation to coordinate with.
 
 ## Design Decisions
 

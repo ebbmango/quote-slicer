@@ -12,7 +12,7 @@ const scope: EditScope = {
 	targetWrapperEl: null,
 	sourceScrollEl: null,
 	targetScrollEl: null,
-	authEl: null
+	provenanceEl: null
 };
 
 const linesOf = (tokens: { line: number }[]) => tokens.map((t) => t.line);

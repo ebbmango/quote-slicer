@@ -11,7 +11,7 @@ was extracted from both `Interactive*Text.svelte` panels into a new shared
 line-edit animation in `tokenStore.svelte.ts` was overhauled from a manual
 height-tween approach to a single nested GSAP Flip over the whole vertical layout,
 then extended with a `clearProps` fix for a double-counting bug that caused the
-authorship field and the opposite panel to jump on the first frame in unconstrained
+provenance field and the opposite panel to jump on the first frame in unconstrained
 viewports.
 
 ## LineDivisor extraction
@@ -54,7 +54,7 @@ only, then tweened the scroll box height to the settled value. Problems:
 `animate()` is now a single nested GSAP Flip over the entire vertical layout:
 
 ```typescript
-const state = Flip.getState([sourceWrapper, targetWrapper, auth, ...editedTokens]);
+const state = Flip.getState([sourceWrapper, targetWrapper, provenanceEl, ...editedTokens]);
 animating = true;
 mutate();
 await tick();
@@ -86,9 +86,9 @@ frame, which drives layout recomputation. The sequence is:
 
 1. `Flip.getState()` records true before-positions for all targets.
 2. `Flip.from()` immediately reverts the layout to "before" by setting the edited
-   wrapper's height back to its before value. Auth and the other wrapper are now
+   wrapper's height back to its before value. Provenance and the other wrapper are now
    already at their before-flow positions — the layout is back to before.
-3. Flip's computed transforms for auth and the other wrapper are based on the full
+3. Flip's computed transforms for provenance and the other wrapper are based on the full
    before→after delta. Applied on top of elements already at before-position, they
    double-count: the element ends up displaced twice the expected amount.
 
@@ -98,7 +98,7 @@ grows. In the constrained/overflow regime the outer stack is capped, the other
 wrapper shrinks via flex redistribution, and the Flip transform on the other
 wrapper is genuinely load-bearing.
 
-Fix: immediately after `Flip.from()`, unconditionally clear auth's transform (it
+Fix: immediately after `Flip.from()`, unconditionally clear provenance's transform (it
 was 0 in the constrained regime anyway), and clear the other wrapper's transform
 only if its height didn't change — a changed height signals constrained flex
 redistribution, where the transform must be preserved:
@@ -106,7 +106,7 @@ redistribution, where the transform must be preserved:
 ```typescript
 const otherHeightChanged =
 	otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
-if (auth) gsap.set(auth, { clearProps: 'transform' });
+if (provenanceEl) gsap.set(provenanceEl, { clearProps: 'transform' });
 if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 ```
 

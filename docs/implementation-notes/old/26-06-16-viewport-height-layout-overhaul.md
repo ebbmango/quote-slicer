@@ -9,7 +9,7 @@ Three successive commits replaced the app's brittle `max-h-[40vh]` / `max-h-[25v
 
 ## Motivation
 
-The old layout used fixed viewport-percentage caps (`max-h-[40vh]` on the source panel, `max-h-[25vh]` on target, `max-h-[10vh]` on authorship). At large viewports these caps kicked in before the content needed them, forcing scrollbars on panels that had room to spare. At small viewports the caps were too generous relative to the actual band height, so content could spill outside the layout. Neither case was predictable without measuring the viewport explicitly.
+The old layout used fixed viewport-percentage caps (`max-h-[40vh]` on the source panel, `max-h-[25vh]` on target, `max-h-[10vh]` on provenance). At large viewports these caps kicked in before the content needed them, forcing scrollbars on panels that had room to spare. At small viewports the caps were too generous relative to the actual band height, so content could spill outside the layout. Neither case was predictable without measuring the viewport explicitly.
 
 ## Architecture
 
@@ -36,7 +36,7 @@ The band container itself got `overflow-hidden rounded-[20px]` so that when the 
 
 ### CSS fade-y instead of hard overflow cutoff
 
-Source panel, target panel, and authorship textarea each gain a `fade-y` class that applies a `mask-image` linear gradient — transparent at the top and bottom edges, opaque in the middle. The fade depth (0.75 rem on panels, 0.5 rem on authorship) matches the element's `py-3` / `py-2` padding, so at the scroll extremes the first and last lines sit past the fade at full opacity. Only content that is mid-scroll dims at the edge. Because `mask-image` is transparency-based it works over any background (the page's white and the modal's `#f9f9f9`).
+Source panel, target panel, and provenance textarea each gain a `fade-y` class that applies a `mask-image` linear gradient — transparent at the top and bottom edges, opaque in the middle. The fade depth (0.75 rem on panels, 0.5 rem on provenance) matches the element's `py-3` / `py-2` padding, so at the scroll extremes the first and last lines sit past the fade at full opacity. Only content that is mid-scroll dims at the edge. Because `mask-image` is transparency-based it works over any background (the page's white and the modal's `#f9f9f9`).
 
 ### Text-tool textarea alignment
 

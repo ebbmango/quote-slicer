@@ -33,7 +33,7 @@ The split/merge affordance shown between tokens in the line tool — the source 
 _Avoid_: split zone (only the source surface), separator, gap button
 
 **edit scope**:
-The bundle of DOM refs a single line edit animates over — each panel's wrapper, its inner scroll box, and the authorship field. Passed into `split`/`merge`: `Flip.getState` captures the edited panel's tokens for reflow, and the edited wrapper is the element whose height is tweened (when the panel can grow). The authorship ref is carried here (not found by the store walking the DOM) because the workbench owns the layout — the store reads its scope and nothing outside it.
+The bundle of DOM refs a single line edit animates over — each panel's wrapper, its inner scroll box, and the provenance field. Passed into `split`/`merge`: `Flip.getState` captures the edited panel's tokens for reflow, and the edited wrapper is the element whose height is tweened (when the panel can grow). The provenance ref is carried here (not found by the store walking the DOM) because the workbench owns the layout — the store reads its scope and nothing outside it.
 _Avoid_: animation context, refs, targets
 
 **ViewHighlight**:
@@ -41,7 +41,7 @@ The view-tool hover-highlight timer state machine, extracted from `Alignment`. O
 _Avoid_: "hover state", "highlight machine"
 
 **token-grid DOM contract**:
-The single source of truth for every selector and attribute name coupling the rendered token grid — panel zones (`data-zone`), tokens (`data-token-index`, `role="option"`, `.tok`, `data-flip-id`), line divisors (`data-divisor-index`, `.split-zone`/`.merge-zone`/`.ws-split`), scroll boxes (`data-scrollbox`), the authorship field (`#authorship`) — to its readers: the keyboard navigator, the hover-spread (`redistribute`), the line-edit animation, the global shortcuts. Components write these in their markup; readers import from `src/lib/navigation/gridDom.ts` (selector constants, the `zoneSelector`/`tokenSelector`/`divisorSelector` builders, and `getZone`). Absorbs the former `constants/lineDivisor.ts`.
+The single source of truth for every selector and attribute name coupling the rendered token grid — panel zones (`data-zone`), tokens (`data-token-index`, `role="option"`, `.tok`, `data-flip-id`), line divisors (`data-divisor-index`, `.split-zone`/`.merge-zone`/`.ws-split`), scroll boxes (`data-scrollbox`), the provenance field (`#provenance`) — to its readers: the keyboard navigator, the hover-spread (`redistribute`), the line-edit animation, the global shortcuts. Components write these in their markup; readers import from `src/lib/navigation/gridDom.ts` (selector constants, the `zoneSelector`/`tokenSelector`/`divisorSelector` builders, and `getZone`). Absorbs the former `constants/lineDivisor.ts`.
 _Avoid_: scattering `querySelector('[data-…]')` in readers; "selectors file" (it owns the `Zone` type and `getZone`, not just strings)
 
 **line-edit animation**:

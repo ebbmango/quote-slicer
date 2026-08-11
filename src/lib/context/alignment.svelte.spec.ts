@@ -25,10 +25,10 @@ function makeStore() {
 }
 
 // Source '我爱你' → 我(0) 爱(1) 你(2). Target 'I love you' → I(0) ␣(1) love(2) ␣(3) you(4).
-function setup(sourceText = '我爱你', targetText = 'I love you') {
+function setup(sourceText = '我爱你', targetText = 'I love you', provenance = '') {
 	const { store, pinyinOf } = makeStore();
 	const alignment = new Alignment(store);
-	alignment.setMeta({ sourceText, targetText, authorship: '' });
+	alignment.setMeta({ sourceText, targetText, provenance });
 	return { alignment, pinyinOf };
 }
 
@@ -189,11 +189,15 @@ describe('derived views and token states', () => {
 
 describe('export', () => {
 	it('flattens line breaks in meta and drops colorIndex from mappings', () => {
-		const { alignment } = setup('我爱\n你', 'I love\nyou');
+		const { alignment } = setup('我爱\n你', 'I love\nyou', 'Book title\nTranslator');
 		alignment.toggleSource(0);
 		alignment.toggleTarget(0);
 		const data = alignment.exportData;
-		expect(data.meta).toEqual({ sourceText: '我爱你', targetText: 'I love you', authorship: '' });
+		expect(data.meta).toEqual({
+			sourceText: '我爱你',
+			targetText: 'I love you',
+			provenance: 'Book title Translator'
+		});
 		expect(data.mappings).toHaveLength(1);
 		expect(data.mappings[0]).not.toHaveProperty('colorIndex');
 		expect(data.mappings[0].sourceTokenIds).toEqual([0]);

@@ -21,10 +21,10 @@ tool lives in `ToolContext` (`src/lib/context/tool.svelte.ts`).
 
 | Tool key | User-facing name | What the user does                                                                                                                                                                        |
 | -------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'text'` | Text entry       | Paste/type the source (Chinese) and target (English) texts, plus an optional attribution line                                                                                             |
+| `'text'` | Text entry       | Paste/type the source (Chinese) and target (English) texts, plus an optional provenance line                                                                                              |
 | `'link'` | Link tool        | Click tokens in both panels to create word-to-word mappings; edit pinyin; delete mappings                                                                                                 |
 | `'line'` | Line tool        | Adjust where line breaks fall in source and target _independently_ — split one line into two, or merge two into one                                                                       |
-| `'view'` | View tool        | Read-only display of the alignment (tokens dimmed, authorship locked); hovering or tapping a mapped token highlights its whole mapping across both panels — see [View Tool](view-tool.md) |
+| `'view'` | View tool        | Read-only display of the alignment (tokens dimmed, provenance locked); hovering or tapping a mapped token highlights its whole mapping across both panels — see [View Tool](view-tool.md) |
 
 The app **starts** with the Text tool. Clicking the advance arrow commits both texts and
 animates into the Link tool (see [Tool Transitions](tool-transitions.md)). From then
@@ -52,7 +52,7 @@ character in the text. See [Link Tool](link-tool.md) for how they're built and
 
 ## Layout
 
-The app is a responsive grid with a centre **workbench** (source + target + authorship)
+The app is a responsive grid with a centre **workbench** (source + target + provenance)
 flanked by up to two side panels:
 
 - the **mappings list** (the cards), and

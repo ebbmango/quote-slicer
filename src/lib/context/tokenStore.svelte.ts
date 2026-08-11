@@ -12,15 +12,15 @@ const TOKEN_STORE_KEY = Symbol('tokenStore');
 // Everything a single line edit animates over. The edited panel's tokens reflow
 // individually (each carries data-flip-id, found via its scroll box); the edited
 // panel's wrapper is the element whose height is tweened when the panel can grow.
-// The panels below ride the flow (not flipped) — see animate(). The authorship
-// field (authEl) is carried here too: the workbench owns the layout, so it passes
+// The panels below ride the flow (not flipped) — see animate(). The provenance
+// field (provenanceEl) is carried here too: the workbench owns the layout, so it passes
 // the ref in rather than the store walking the DOM up to find it.
 export type EditScope = {
 	sourceWrapperEl: HTMLElement | null;
 	targetWrapperEl: HTMLElement | null;
 	sourceScrollEl: HTMLElement | null;
 	targetScrollEl: HTMLElement | null;
-	authEl: HTMLElement | null;
+	provenanceEl: HTMLElement | null;
 };
 
 // The token store (see CONTEXT.md "tokens"). The single owner of the
@@ -88,13 +88,13 @@ export function createTokenStore() {
 	}
 
 	// Flipped for an edit in `zone`: the whole vertical layout — both panel wrappers,
-	// the authorship field, and the edited panel's tokens.
+	// the provenance field, and the edited panel's tokens.
 	function flipTargets(zone: Zone, scope: EditScope): HTMLElement[] {
 		const editedScroll = zone === 'source' ? scope.sourceScrollEl : scope.targetScrollEl;
 		const tokens = editedScroll
 			? Array.from(editedScroll.querySelectorAll<HTMLElement>(FLIP_TOKEN_SELECTOR))
 			: [];
-		return [scope.sourceWrapperEl, scope.targetWrapperEl, scope.authEl, ...tokens].filter(
+		return [scope.sourceWrapperEl, scope.targetWrapperEl, scope.provenanceEl, ...tokens].filter(
 			(el): el is HTMLElement => el !== null
 		);
 	}
@@ -139,13 +139,13 @@ export function createTokenStore() {
 		});
 
 		// Flip with absolute:false tweens the edited wrapper's height, driving layout
-		// recomputation at each frame. Auth and the "other" wrapper can pick up wrong
+		// recomputation at each frame. Provenance and the "other" wrapper can pick up wrong
 		// transforms: Flip computes their before→after delta based on the true settled
 		// layout, but then its own height tween reverts the layout to before — so the
 		// element is ALREADY at its before-flow position, and the Flip transform on top
 		// double-counts the displacement.
 		//
-		// Auth has no height of its own (it moves only with the stack re-centering), so
+		// Provenance has no height of its own (it moves only with the stack re-centering), so
 		// always clear its transform — in the constrained regime it was 0 anyway.
 		//
 		// The other wrapper is only safe to clear if it didn't change height: if it changed
@@ -153,7 +153,7 @@ export function createTokenStore() {
 		// is load-bearing for the position animation that accompanies the height change.
 		const otherHeightChanged =
 			otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
-		if (scope.authEl) gsap.set(scope.authEl, { clearProps: 'transform' });
+		if (scope.provenanceEl) gsap.set(scope.provenanceEl, { clearProps: 'transform' });
 		if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 	}
 

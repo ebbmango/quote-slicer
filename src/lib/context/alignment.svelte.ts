@@ -41,7 +41,7 @@ export class Alignment {
 	// Checked by toggleSource/toggleTarget/delete* to throttle mutations during animation.
 	listAnimating: boolean = $state(false);
 	private mappings: Mapping[] = $state([]);
-	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', authorship: '' });
+	private meta: QuoteExportMeta = $state({ sourceText: '', targetText: '', provenance: '' });
 
 	// The token store is the single owner of the token arrays (with pinyin and the
 	// split/merge cache). Alignment reads them as live derivations of the store
@@ -77,7 +77,7 @@ export class Alignment {
 		meta: {
 			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
 			targetText: this.meta.targetText.replace(/\n+/g, ' ').trim(),
-			authorship: this.meta.authorship.replace(/\n+/g, ' ').trim()
+			provenance: this.meta.provenance.replace(/\n+/g, ' ').trim()
 		},
 		sourceTokens: this.sourceTokens,
 		targetTokens: this.targetTokens,

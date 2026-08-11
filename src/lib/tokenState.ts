@@ -19,7 +19,7 @@ export type Mapping = {
 export type QuoteExportMeta = {
 	sourceText: string;
 	targetText: string;
-	authorship: string;
+	provenance: string;
 };
 
 export type ExportMapping = Omit<Mapping, 'colorIndex'>;

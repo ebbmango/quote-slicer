@@ -23,7 +23,7 @@
 
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
-	let authorship: string = $state('');
+	let provenance: string = $state('');
 
 	onMount(() => initAlignmentShortcuts(alignment));
 
@@ -38,16 +38,16 @@
 		if (arrowExiting) return;
 		arrowExiting = true;
 		setTimeout(() => {
-			const anyFilled = sourceText || targetText || authorship;
+			const anyFilled = sourceText || targetText || provenance;
 			if (!anyFilled) {
 				sourceText = '知命者不怨天，知己者不怨人。';
 				targetText =
 					'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
-				authorship = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
+				provenance = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
 			} else {
 				if (!sourceText) sourceText = '空';
 				if (!targetText) targetText = 'Use this box to enter your translated text.';
-				if (!authorship) authorship = 'Source';
+				if (!provenance) provenance = 'Provenance';
 			}
 			toolCtx.current = 'link';
 		}, 450);
@@ -78,7 +78,7 @@
 			     The DataModal is a SIBLING absolute layer, positioned by the band — so
 			     it stays put and never rides this scroll. -->
 			<div class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto">
-				<QuoteWorkbench bind:sourceText bind:targetText bind:authorship {arrowExiting} />
+				<QuoteWorkbench bind:sourceText bind:targetText bind:provenance {arrowExiting} />
 			</div>
 			<DataModal
 				bind:this={dataModal}

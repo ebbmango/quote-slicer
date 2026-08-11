@@ -48,7 +48,7 @@ The extraction landed in dependency order:
 ## Implementation Details
 
 `+page.svelte` now: sets up contexts (`tool`, `breakpoints`, `tokenStore`, `alignment` — see
-[[26-06-14-token-store-consolidation]]), owns `sourceText`/`targetText`/`authorship` and the
+[[26-06-14-token-store-consolidation]]), owns `sourceText`/`targetText`/`provenance` and the
 `asideView`/`modalOpen` state that's threaded into `DataModal` and `ToolToolbar`, and keeps
 the text→link tool "arrow launch" animation (the one piece of bespoke interaction left
 in-file). Everything else is composition: `<DataPanel>` for the two asides, `<DataModal

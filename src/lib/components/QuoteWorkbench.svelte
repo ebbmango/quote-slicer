@@ -20,7 +20,7 @@
 	let {
 		sourceText = $bindable(),
 		targetText = $bindable(),
-		authorship = $bindable(),
+		provenance = $bindable(),
 		arrowExiting = false
 	} = $props();
 	let composing = $state(false);
@@ -54,12 +54,12 @@
 	let targetTokens = $derived(store.targetTokens(targetText));
 
 	$effect(() => {
-		alignment.setMeta({ sourceText, targetText, authorship });
+		alignment.setMeta({ sourceText, targetText, provenance });
 	});
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);
-	let authEl: HTMLTextAreaElement | null = $state(null);
+	let provenanceEl: HTMLTextAreaElement | null = $state(null);
 
 	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
 	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
@@ -70,7 +70,7 @@
 			targetWrapperEl,
 			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
 			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
-			authEl
+			provenanceEl
 		};
 	}
 
@@ -139,7 +139,7 @@
 	});
 </script>
 
-<!-- Quote stack: source/target/authorship as one rhythm (uniform gap). Capped at
+<!-- Quote stack: source/target/provenance as one rhythm (uniform gap). Capped at
      the band height (max-h-full) so when it's too tall the panels shrink to their
      floor and scroll internally; the scroll layer (in +page) centers it and takes
      over scrolling only once the panels bottom out. -->
@@ -245,18 +245,18 @@
 		</div>
 	{/if}
 	<textarea
-		id="authorship"
-		name="authorship"
-		bind:this={authEl}
+		id="provenance"
+		name="provenance"
+		bind:this={provenanceEl}
 		autocomplete="off"
-		bind:value={authorship}
+		bind:value={provenance}
 		rows="1"
 		use:autosize
 		disabled={tool.current === 'view'}
-		class="morph-author fade-y no-scrollbar max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default {arrowExiting
+		class="morph-provenance fade-y no-scrollbar max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent py-3 text-center font-ss4 text-sm font-[350] opacity-40 outline-none disabled:cursor-default {arrowExiting
 			? 'exiting'
 			: ''}"
-		placeholder="Source"
+		placeholder="Provenance"
 	></textarea>
 </div>
 
@@ -275,7 +275,7 @@
 
 	   - source: element stays opacity-30 (== source token). Filled text is already at
 	     the token level; only the empty placeholder's colour rises 0.5 → full.
-	   - authorship: element stays opacity-40 (== seeded value). Same: placeholder
+	   - provenance: element stays opacity-40 (== seeded value). Same: placeholder
 	     colour rises 0.5 → full.
 	   - target: element stays full; instead its text AND placeholder colour fade to
 	     currentColor @ 30% (== target token's currentColor × opacity-30). No element
@@ -307,7 +307,7 @@
 	   inside it never re-resolves on ::placeholder.) */
 	.morph-source::placeholder,
 	.morph-target::placeholder,
-	.morph-author::placeholder {
+	.morph-provenance::placeholder {
 		color: currentColor;
 		opacity: 0.5;
 	}
@@ -315,7 +315,7 @@
 	/* The morph animates the placeholder's OPACITY (0.5 → 1), not its colour: same
 	   visual as the old colour-alpha rise, without arming any colour transition. */
 	.morph-source.exiting::placeholder,
-	.morph-author.exiting::placeholder {
+	.morph-provenance.exiting::placeholder {
 		transition: opacity 400ms ease-out;
 		opacity: 1;
 	}
@@ -342,7 +342,7 @@
 	   easing — the .exiting state applies instantly at click instead of animating. */
 	@media (prefers-reduced-motion: reduce) {
 		.morph-source.exiting::placeholder,
-		.morph-author.exiting::placeholder,
+		.morph-provenance.exiting::placeholder,
 		.morph-target.exiting,
 		.morph-target.exiting::placeholder {
 			transition: none;

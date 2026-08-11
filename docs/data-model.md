@@ -156,7 +156,7 @@ Also in `src/lib/tokenState.ts` — the shape the app serialises to JSON (see
 type QuoteExportMeta = {
 	sourceText: string;
 	targetText: string;
-	authorship: string;
+	provenance: string;
 };
 
 type ExportMapping = Omit<Mapping, 'colorIndex'>; // colorIndex is presentation-only

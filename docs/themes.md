@@ -177,7 +177,7 @@ collide with.
 `color` transition is what carries every piece of text.** `color` is inherited, and all
 three engines (Firefox, WebKit, Chromium) repaint a descendant in lockstep with an
 ancestor's _animating_ inherited colour — **but only if the descendant has no `color`
-transition of its own.** So the authorship line, "No mappings", plain tokens, toolbar
+transition of its own.** So the provenance line, "No mappings", plain tokens, toolbar
 and toggle glyphs (SVG `fill: currentColor`) all just inherit `<body>`'s transition and
 settle with it, on every engine, for free.
 
@@ -289,6 +289,6 @@ tool-crossfade the rest of the time.
   frame for all transitions.
 
 Verified across Chromium / WebKit / Firefox by driving a theme toggle in Playwright and
-sampling each element's painted `color` per animation frame: authorship, "No mappings",
+sampling each element's painted `color` per animation frame: provenance, "No mappings",
 plain tokens, toolbar buttons, the toggle glyph and the JSON panel all trace the _same_
 luminance curve as `<body>`, with no post-window drop.

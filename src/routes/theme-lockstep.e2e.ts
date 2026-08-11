@@ -62,7 +62,7 @@ test('theme flip: lockstep structural invariants', async ({ page }) => {
 	await page.goto('/');
 
 	const fieldTransitions = await page.evaluate(() =>
-		['#source-text', '#target-text', '#authorship'].map(
+		['#source-text', '#target-text', '#provenance'].map(
 			(sel) => getComputedStyle(document.querySelector(sel)!).transitionProperty
 		)
 	);

@@ -8,10 +8,10 @@ move all of that smoothly while the tokens reflow inside the panels.
 ## Decision
 
 `animate()` is a **single nested GSAP Flip** over the whole vertical layout: both panel
-wrappers, the authorship field, and the edited panel's tokens.
+wrappers, the provenance field, and the edited panel's tokens.
 
 ```
-state = Flip.getState([sourceWrapper, targetWrapper, authorship, ...editedTokens])
+state = Flip.getState([sourceWrapper, targetWrapper, provenanceEl, ...editedTokens])
 mutate(); await tick(); void wrapper.offsetHeight   // settle flex
 Flip.from(state, { absolute: false, nested: true, ... })
 ```
@@ -25,7 +25,7 @@ true` lets the token flip ride inside the wrapper flip.
 
 With only the tokens flipped, the token reflow animated smoothly but the **panel boundary
 snapped to its post-edit position on the first frame** — an abrupt layout shift on click,
-followed by the smooth token animation. Flipping the wrappers + authorship makes the
+followed by the smooth token animation. Flipping the wrappers + provenance makes the
 boundary animate from its pre-edit position too.
 
 This is only possible because the tokens **already overflow** their wrapper (which has
@@ -43,23 +43,23 @@ re-introduces the cross-panel overlap bug.
 GSAP Flip with `absolute: false` tweens the **edited wrapper's inline `height`** at each
 frame, which drives the flex layout to recompute. In the unconstrained regime this causes
 the outer-stack to re-center via `justify-content: safe center` as a side-effect of the
-height tween. Auth and the "other" (non-edited) wrapper follow this layout change
+height tween. Provenance and the "other" (non-edited) wrapper follow this layout change
 naturally — but Flip had ALSO applied explicit transforms to them based on the full
 before→after delta. Those transforms were computed BEFORE the height was reverted to
 "before" by `Flip.from`, so the elements ended up double-displaced:
 flow already at before-position + transform = 2× the correct offset.
 
-Fix (in `animate()`): after `Flip.from`, immediately clear the GSAP transform on auth
+Fix (in `animate()`): after `Flip.from`, immediately clear the GSAP transform on the provenance
 (always safe — in constrained regime it was 0) and on the other wrapper **only if its
 height didn't change** (height change = constrained flex redistribution, where the
 transform is load-bearing for the position animation).
 
 ```js
-if (auth) gsap.set(auth, { clearProps: 'transform' });
+if (provenanceEl) gsap.set(provenanceEl, { clearProps: 'transform' });
 if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 ```
 
-This fixes the abrupt jump of auth and the opposite panel on split/merge in the
+This fixes the abrupt jump of the provenance field and the opposite panel on split/merge in the
 unconstrained regime without affecting the constrained regime.
 
 ## Considered alternatives

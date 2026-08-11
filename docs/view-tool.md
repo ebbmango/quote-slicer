@@ -1,7 +1,7 @@
 # View Tool
 
 View tool (`tool.current === 'view'`) is the read-only presentation layer: the tokens
-are dimmed, the line-tool affordances are inert, and the authorship field is locked.
+are dimmed, the line-tool affordances are inert, and the provenance field is locked.
 Its one piece of interactivity is the **mapping highlight** — hovering (or tapping) a
 mapped token lights up every token in the same mapping across **both** panels, so the
 reader can see a connection at a glance instead of decoding per-token colour chips.

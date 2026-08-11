@@ -3,7 +3,7 @@ import { formatExport } from './exportFormat';
 import type { QuoteExport } from './tokenState';
 
 const base: QuoteExport = {
-	meta: { sourceText: '你好', targetText: 'hello', authorship: 'me' },
+	meta: { sourceText: '你好', targetText: 'hello', provenance: 'me' },
 	sourceTokens: [
 		{ id: 0, text: '你', line: 0, type: 'character', pinyin: 'nǐ' },
 		{ id: 1, text: '好', line: 0, type: 'character', pinyin: undefined }
@@ -16,6 +16,13 @@ const base: QuoteExport = {
 };
 
 describe('formatExport', () => {
+	it('uses provenance as the exported metadata key', () => {
+		const out = formatExport(base);
+		expect(out).toContain(
+			'"meta": {\n    "sourceText": "你好",\n    "targetText": "hello",\n    "provenance": "me"\n  }'
+		);
+	});
+
 	it('keeps primitive id arrays on one line', () => {
 		const out = formatExport(base);
 		expect(out).toContain('"sourceTokenIds": [0, 1]');

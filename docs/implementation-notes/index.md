@@ -88,7 +88,7 @@ contract, `buildMappingIndex`, the line-edit animation's dual regime, the remova
 | 2026-06-16 | [Line-tool divisor visual affordances](./old/26-06-16-line-tool-divisor-styling.md)                                           | `87d3622` … `55425cc`           |
 | 2026-06-17 | [Source token punctuation grouping](./old/26-06-17-source-punctuation-grouping.md)                                            | `1523814`                       |
 | 2026-06-17 | [Seamless text→token handoff](./old/26-06-17-text-token-seamless-handoff.md)                                                  | `4921932`, `62c5de3`            |
-| 2026-06-17 | [Authorship browser restoration fix](./old/26-06-17-authorship-browser-restoration.md)                                        | `4670950`                       |
+| 2026-06-17 | [Provenance browser restoration fix](./old/26-06-17-provenance-browser-restoration.md)                                        | `4670950`                       |
 | 2026-06-17 | [Toolbar touch sticky hover/focus fix](./old/26-06-17-toolbar-touch-sticky-hover.md)                                          | `3c5412f`                       |
 | 2026-06-17 | [CI guard for ICONS_JSON_B64 secret](./old/26-06-17-ci-icons-secret-guard.md)                                                 | `7b37ba2`                       |
 | 2026-06-17 | [Line-tool redistribution CSS @property fix](./old/26-06-17-line-tool-redistribution-css-property.md)                         | `a83a715`, `34b50d8`            |

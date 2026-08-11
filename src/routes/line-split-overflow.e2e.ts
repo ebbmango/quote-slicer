@@ -21,7 +21,7 @@ import { expect, test } from '@playwright/test';
 const SRC = '知命者不怨天，知己者不怨人。知命者不怨天，知己者不怨人。';
 const TGT =
 	'One who knows his fate does not resent Heaven;\none who knows himself does not resent others.';
-const AUTH = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
+const PROVENANCE = 'A New Practical Primer of Literary Chinese (Paul F. Rouzer)';
 
 test.describe('line split in an overflowing panel', () => {
 	test.use({ viewport: { width: 390, height: 480 } });
@@ -30,7 +30,7 @@ test.describe('line split in an overflowing panel', () => {
 		await page.goto('/');
 		await page.locator('#source-text').fill(SRC);
 		await page.locator('#target-text').fill(TGT);
-		await page.locator('#authorship').fill(AUTH);
+		await page.locator('#provenance').fill(PROVENANCE);
 		await page.getByRole('button', { name: 'next' }).click();
 		await page.getByRole('button', { name: 'line', exact: true }).click();
 

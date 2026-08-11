@@ -130,20 +130,20 @@ type EditScope = {
 	targetWrapperEl: HTMLElement | null; //   when the edited one can grow)
 	sourceScrollEl: HTMLElement | null; // each panel's [data-scrollbox] — the edited one's
 	targetScrollEl: HTMLElement | null; //   tokens (data-flip-id) are found inside it
-	authEl: HTMLElement | null; // the authorship textarea
+	provenanceEl: HTMLElement | null; // the provenance textarea
 };
 ```
 
-The authorship ref (`authEl`) is **passed in**, not discovered: the workbench owns the
+The provenance ref (`provenanceEl`) is **passed in**, not discovered: the workbench owns the
 layout, so the store reads only what its scope hands it rather than walking the DOM up
-from a panel to find `#authorship`. See [`CONTEXT.md`](../CONTEXT.md) ("edit scope").
+from a panel to find `#provenance`. See [`CONTEXT.md`](../CONTEXT.md) ("edit scope").
 
 `animate(zone, scope, mutate)` runs one Flip over the whole vertical layout — no manual
 height locking, measuring, or tweening:
 
 1. Capture the edited panel's tokens (`[data-flip-id]` inside its scroll box) and the
    other wrapper's height, then `Flip.getState(...)` over the flip targets: **both panel
-   wrappers + the authorship field + the edited tokens**. Capturing the _layout boxes_
+   wrappers + the provenance field + the edited tokens**. Capturing the _layout boxes_
    (not just the tokens) is what lets the panel boundary animate from its pre-edit
    position instead of snapping there on the first frame.
 2. Set `animating = true` (gates the panel's height `$effect`), run `mutate()`
@@ -160,7 +160,7 @@ height locking, measuring, or tweening:
 
 ### The slide is flow-driven, not a second Flip
 
-`Flip.getState` _includes_ the other (non-edited) wrapper and the authorship field, but
+`Flip.getState` _includes_ the other (non-edited) wrapper and the provenance field, but
 they are not meant to carry an independent transform — they should ride the flow as the
 edited wrapper's height changes. Because `absolute: false` reverts the layout to "before"
 when `Flip.from` starts, any transform Flip computed for them (from the full before→after
@@ -168,11 +168,11 @@ delta) lands on an element already at its before-flow position and **double-coun
 displacement. So immediately after `Flip.from` the store clears those transforms:
 
 ```js
-if (scope.authEl) gsap.set(scope.authEl, { clearProps: 'transform' });
+if (scope.provenanceEl) gsap.set(scope.provenanceEl, { clearProps: 'transform' });
 if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 ```
 
-Auth is always cleared (it has no height of its own — it only moves with the stack
+Provenance is always cleared (it has no height of its own — it only moves with the stack
 re-centring). The other wrapper is cleared **only if its height didn't change**: a changed
 height signals the constrained/overflow regime, where flex redistributes both panels and
 the Flip transform _is_ load-bearing for the position animation. The other wrapper's

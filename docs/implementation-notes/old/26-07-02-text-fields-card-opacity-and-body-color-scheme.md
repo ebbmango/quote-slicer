@@ -28,7 +28,7 @@ computed style alone for form-control colour timing; decode screenshots.
 An author declaration of that _identical value_ is what arms the chase when a
 `transition: color` is present; colour-transition-free placeholders ride
 inheritance in lockstep. That asymmetry is why Chrome lagged only the target
-placeholder (explicit author colour) and not source/authorship (UA colour, even
+placeholder (explicit author colour) and not source/provenance (UA colour, even
 though they also had a placeholder transition).
 
 **Placeholder trap #2 (found post-fix, by the user, on a dark-OS machine).** The
@@ -114,7 +114,7 @@ own background). Form controls now re-theme in the same frame as the flip.
 
 - Per-frame computed sampling: all textarea channels settle with `body` (both
   directions, filled + placeholder, Chromium + WebKit).
-- Painted-pixel decode: all four regions (page bg, source, target, authorship)
+- Painted-pixel decode: all four regions (page bg, source, target, provenance)
   within ±7 % progress of each other across the whole flip, both engines, both
   directions; no post-500 ms reversal (white-flicker trigger gone).
 - Double-flip sweep at gaps 250/480/558/570/590/650/800/1200 ms: text settle ==
