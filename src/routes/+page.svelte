@@ -11,6 +11,7 @@
 	import { setAlignmentContext } from '$lib/context/alignment.svelte';
 	import { setTokenStoreContext } from '$lib/context/tokenStore.svelte';
 	import { initAlignmentShortcuts } from '$lib/actions/globalShortcuts';
+	import { parseSource, parseTarget } from '$lib/tokenize';
 
 	const toolCtx = setToolContext();
 	const breakpoints = setBreakpointContext();
@@ -24,6 +25,10 @@
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let provenance: string = $state('');
+	let inputErrors = $derived([
+		...parseSource(sourceText).errors,
+		...parseTarget(targetText).errors
+	]);
 
 	onMount(() => initAlignmentShortcuts(alignment));
 
@@ -35,7 +40,7 @@
 	let arrowExiting = $state(false);
 
 	function advanceToLinkTool() {
-		if (arrowExiting) return;
+		if (arrowExiting || inputErrors.length) return;
 		arrowExiting = true;
 		setTimeout(() => {
 			const anyFilled = sourceText || targetText || provenance;
@@ -79,6 +84,9 @@
 			     it stays put and never rides this scroll. -->
 			<div class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto">
 				<QuoteWorkbench bind:sourceText bind:targetText bind:provenance {arrowExiting} />
+				{#if toolCtx.current === 'text' && inputErrors.length}
+					<p role="alert" class="text-sm">{inputErrors[0]}</p>
+				{/if}
 			</div>
 			<DataModal
 				bind:this={dataModal}

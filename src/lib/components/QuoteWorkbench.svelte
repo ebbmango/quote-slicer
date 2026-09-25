@@ -77,16 +77,16 @@
 	// sourceTokens/targetTokens already carry pinyin from the store's overlay, so
 	// split/merge no longer need a special "live" array — the store owns it.
 	function splitSource(afterIndex: number) {
-		store.split('source', sourceText, sourceTokens, afterIndex, editScope());
+		store.split('source', sourceText, afterIndex, editScope());
 	}
 	function mergeSource(lineN: number) {
-		store.merge('source', sourceText, sourceTokens, lineN, editScope());
+		store.merge('source', sourceText, lineN, editScope());
 	}
 	function splitTarget(afterIndex: number) {
-		store.split('target', targetText, targetTokens, afterIndex, editScope());
+		store.split('target', targetText, afterIndex, editScope());
 	}
 	function mergeTarget(lineN: number) {
-		store.merge('target', targetText, targetTokens, lineN, editScope());
+		store.merge('target', targetText, lineN, editScope());
 	}
 
 	// Touch line tool: which divisor is "highlighted" (first tap). Shared across
@@ -217,6 +217,7 @@
 			>
 				<InteractiveSourceText
 					tokens={sourceTokens}
+					breaks={store.sourceBreaks(sourceText)}
 					onSplit={splitSource}
 					onMerge={mergeSource}
 					animating={store.animating}
@@ -233,6 +234,7 @@
 			>
 				<InteractiveTargetText
 					tokens={targetTokens}
+					breaks={store.targetBreaks(targetText)}
 					onSplit={splitTarget}
 					onMerge={mergeTarget}
 					animating={store.animating}

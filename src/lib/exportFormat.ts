@@ -4,14 +4,14 @@ function isPrimitive(v: unknown): boolean {
 	return v === null || typeof v !== 'object';
 }
 
-const TOKEN_FIELDS = ['id', 'text', 'pinyin', 'line', 'type'] as const;
+const TOKEN_FIELDS = ['id', 'text', 'pinyin', 'type'] as const;
 
 function isTokenObject(v: unknown): v is Record<string, unknown> {
 	if (v === null || typeof v !== 'object' || Array.isArray(v)) return false;
 	const entries = Object.entries(v as Record<string, unknown>);
 	const keys = entries.map(([k]) => k);
 	return (
-		['id', 'text', 'line', 'type'].every((k) => keys.includes(k)) &&
+		['id', 'text', 'type'].every((k) => keys.includes(k)) &&
 		entries.every(([, val]) => isPrimitive(val))
 	);
 }

@@ -1,8 +1,8 @@
 import { tick, onMount, getContext, setContext } from 'svelte';
 import 'gsap'; // pulls in ambient gsap.* type namespace used by Flip's vars types
-import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
+import { parseSource, parseTarget, type Tokenized } from '$lib/tokenize';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
-import { splitAfterToken, mergeLines } from '$lib/line';
+import { editBreak } from '$lib/breaks';
 import { FLIP_TOKEN_SELECTOR, type Zone } from '$lib/navigation/gridDom';
 
 const DURATION = 0.35;
@@ -33,15 +33,24 @@ export type TokenStore = ReturnType<typeof createTokenStore>;
 
 // The read/annotate surface Alignment needs — excludes split/merge/animate/EditScope
 // so changes to the animation-only members of TokenStore don't ripple into Alignment.
-export type TokenAccess = Pick<TokenStore, 'sourceTokens' | 'targetTokens' | 'setPinyin'>;
+export type TokenAccess = Pick<
+	TokenStore,
+	'sourceTokens' | 'targetTokens' | 'sourceBreaks' | 'targetBreaks' | 'setPinyin' | 'lockText'
+>;
 
 export function createTokenStore() {
 	let Flip: (typeof import('gsap/Flip'))['Flip'] | null = $state(null);
 	let gsap: (typeof import('gsap'))['gsap'] | null = $state(null);
 	let animating = $state(false);
 
-	let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
-	let targetCache: { text: string; tokens: TargetToken[] } | null = $state(null);
+	// Plain memoization avoids reactive writes inside callers' derived reads.
+	let sourceCache: ({ text: string } & Tokenized<SourceToken>) | null = null;
+	let targetCache: ({ text: string } & Tokenized<TargetToken>) | null = null;
+	let nextSourceId = 0;
+	let nextTargetId = 0;
+	let locked = false;
+	let sourceEdits: { text: string; breaks: number[] } | null = $state(null);
+	let targetEdits: { text: string; breaks: number[] } | null = $state(null);
 
 	// Pinyin overlay, keyed by stable token id. Kept separate from the text-keyed
 	// cache because pinyin is annotated before any split exists to populate the
@@ -68,14 +77,38 @@ export function createTokenStore() {
 	// the text they ran against; once the text changes the cache is stale and we
 	// retokenize. Pinyin is reapplied from the id-keyed overlay either way.
 	function sourceTokens(text: string): SourceToken[] {
-		const base =
-			sourceCache !== null && sourceCache.text === text ? sourceCache.tokens : tokenizeSource(text);
-		return applyPinyin(base);
+		if (!sourceCache || sourceCache.text !== text) {
+			if (locked) throw new Error('Mapped text requires an explicit identity-aware edit');
+			if (sourceCache && pinyin.size)
+				throw new Error('Annotated text requires an explicit identity-aware edit');
+			const parsed = parseSource(text);
+			sourceCache = {
+				text,
+				...parsed,
+				tokens: parsed.tokens.map((t) => ({ ...t, id: nextSourceId++ }))
+			};
+		}
+		return applyPinyin(sourceCache.tokens);
 	}
 	function targetTokens(text: string): TargetToken[] {
-		return targetCache !== null && targetCache.text === text
-			? targetCache.tokens
-			: tokenizeTarget(text);
+		if (!targetCache || targetCache.text !== text) {
+			if (locked) throw new Error('Mapped text requires an explicit identity-aware edit');
+			const parsed = parseTarget(text);
+			targetCache = {
+				text,
+				...parsed,
+				tokens: parsed.tokens.map((t) => ({ ...t, id: nextTargetId++ }))
+			};
+		}
+		return targetCache.tokens;
+	}
+	function sourceBreaks(text: string): number[] {
+		sourceTokens(text);
+		return sourceEdits?.text === text ? sourceEdits.breaks : sourceCache!.breaks;
+	}
+	function targetBreaks(text: string): number[] {
+		targetTokens(text);
+		return targetEdits?.text === text ? targetEdits.breaks : targetCache!.breaks;
 	}
 
 	// Annotate (or clear, with undefined) a source token's pinyin by stable id.
@@ -157,64 +190,38 @@ export function createTokenStore() {
 		if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 	}
 
-	function split(
-		zone: Zone,
-		text: string,
-		tokens: SourceToken[],
-		afterIndex: number,
-		scope: EditScope
-	): void;
-	function split(
-		zone: Zone,
-		text: string,
-		tokens: TargetToken[],
-		afterIndex: number,
-		scope: EditScope
-	): void;
-	function split(
-		zone: Zone,
-		text: string,
-		tokens: (SourceToken | TargetToken)[],
-		afterIndex: number,
-		scope: EditScope
-	): void {
-		const next = splitAfterToken(tokens, afterIndex);
-		animate(zone, scope, () => writeCache(zone, text, next));
+	function split(zone: Zone, text: string, afterIndex: number, scope: EditScope): void {
+		changeBreak(zone, text, afterIndex + 1, true, scope);
 	}
 
-	function merge(
-		zone: Zone,
-		text: string,
-		tokens: SourceToken[],
-		lineN: number,
-		scope: EditScope
-	): void;
-	function merge(
-		zone: Zone,
-		text: string,
-		tokens: TargetToken[],
-		lineN: number,
-		scope: EditScope
-	): void;
-	function merge(
-		zone: Zone,
-		text: string,
-		tokens: (SourceToken | TargetToken)[],
-		lineN: number,
-		scope: EditScope
-	): void {
-		const next = mergeLines(tokens, lineN);
-		animate(zone, scope, () => writeCache(zone, text, next));
+	function merge(zone: Zone, text: string, boundary: number, scope: EditScope): void {
+		changeBreak(zone, text, boundary, false, scope);
 	}
 
-	function writeCache(zone: Zone, text: string, tokens: (SourceToken | TargetToken)[]): void {
-		if (zone === 'source') sourceCache = { text, tokens: tokens as SourceToken[] };
-		else targetCache = { text, tokens: tokens as TargetToken[] };
+	function changeBreak(
+		zone: Zone,
+		text: string,
+		boundary: number,
+		present: boolean,
+		scope: EditScope
+	) {
+		const tokens = zone === 'source' ? sourceTokens(text) : targetTokens(text);
+		const breaks = zone === 'source' ? sourceBreaks(text) : targetBreaks(text);
+		const next = editBreak(breaks, tokens.length, boundary, present);
+		void animate(zone, scope, () => {
+			if (zone === 'source') sourceEdits = { text, breaks: next };
+			else targetEdits = { text, breaks: next };
+		});
 	}
 
 	return {
+		lockText() {
+			locked = true;
+		},
 		sourceTokens,
 		targetTokens,
+		sourceBreaks,
+		targetBreaks,
 		setPinyin,
 		split,
 		merge,

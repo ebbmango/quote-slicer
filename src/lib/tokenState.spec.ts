@@ -14,7 +14,7 @@ function mapping(overrides: Partial<Mapping> = {}): Mapping {
 }
 
 function targetToken(overrides: Partial<TargetToken> = {}): TargetToken {
-	return { id: 0, text: '', line: 0, type: 'text', ...overrides };
+	return { id: 0, text: '', type: 'text', ...overrides };
 }
 
 describe('buildMappingIndex', () => {

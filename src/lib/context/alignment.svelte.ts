@@ -1,4 +1,4 @@
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, untrack } from 'svelte';
 import { pinyin } from 'pinyin-pro';
 import { toCanonical, toDisplay } from '$lib/pinyinConvert';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
@@ -73,16 +73,18 @@ export class Alignment {
 		this.sourceTokens.map((t) => toDisplay(t.pinyin ?? ''))
 	);
 
-	exportData: QuoteExport = $derived({
-		meta: {
-			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
-			targetText: this.meta.targetText.replace(/\n+/g, ' ').trim(),
-			provenance: this.meta.provenance.replace(/\n+/g, ' ').trim()
-		},
-		sourceTokens: this.sourceTokens,
-		targetTokens: this.targetTokens,
-		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest)
-	});
+	exportData: QuoteExport = $derived.by(() => ({
+		attestation: { tokens: this.sourceTokens },
+		translation: { tokens: this.targetTokens },
+		alignment: {
+			mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
+			breaks: {
+				attestation: this.store.sourceBreaks(this.meta.sourceText),
+				translation: this.store.targetBreaks(this.meta.targetText)
+			}
+		}
+	}));
+	provenance: string = $derived(this.meta.provenance);
 
 	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
 	private sourceIdToIndex: Map<number, number> = $derived(
@@ -121,6 +123,7 @@ export class Alignment {
 	}
 
 	private createMapping(): Mapping {
+		this.store.lockText();
 		// Lowest free palette slot, so deleting a mapping releases its color for reuse.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per call, never mutated
 		const used = new Set(this.mappings.map((m) => m.colorIndex));
@@ -163,6 +166,15 @@ export class Alignment {
 	}
 
 	setMeta(meta: QuoteExportMeta): void {
+		if (
+			untrack(
+				() =>
+					this.mappings.length &&
+					(meta.sourceText !== this.meta.sourceText || meta.targetText !== this.meta.targetText)
+			)
+		) {
+			throw new Error('Mapped text requires an explicit identity-aware edit');
+		}
 		this.meta = meta;
 	}
 
