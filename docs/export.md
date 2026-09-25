@@ -21,7 +21,8 @@ not a versioned strict-JSON interchange protocol.
 
 Run `node tools/migrate-quotation.ts <quotation.json|quotation.ts> [...]` with Node 24.
 The command parses literal data without executing source files, validates it, and
-prints deterministic quotation/metadata/report records. Original files are never
+prints deterministic JavaScript data-literal quotation/metadata/report records
+(not JSON, so explicit undefined and omitted properties remain distinct). Original files are never
 overwritten. Review the report and canonical text comparison before accepting any
 conversion. Content discrepancies and unrepresentable line assignments are reported,
 not repaired. Runtime code does not import this converter.

@@ -75,7 +75,7 @@ to the removed representation and remains intact.
 
 ## Completion checks
 
-- Final local results: Quote Slicer 150 unit tests and 21 browser tests passed;
+- Final local results: Quote Slicer 151 unit tests and 21 browser tests passed;
   Svelte check reported no errors or warnings; production build passed. Verbarium
   76 tests, typecheck and production build passed under Node 24.20.0.
 - These are local verification results, not a claim of deployed or merged code.

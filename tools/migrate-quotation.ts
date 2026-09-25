@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { inspect } from 'node:util';
 import ts from 'typescript';
 import { migrateQuotation } from './legacyMigration.ts';
 
@@ -44,7 +45,19 @@ try {
 				throw new Error(`${path}: expected exactly one literal quotation declaration`);
 			input = literal(values[0].initializer!);
 		}
-		console.log(JSON.stringify({ path, ...migrateQuotation(input) }, null, 2));
+		// Data-literal output preserves explicit undefined separately from omitted fields.
+		console.log(
+			inspect(
+				{ path, ...migrateQuotation(input) },
+				{
+					depth: null,
+					compact: false,
+					maxArrayLength: null,
+					maxStringLength: null,
+					colors: false
+				}
+			)
+		);
 	}
 } catch (error) {
 	console.error((error as Error).message);

@@ -24,13 +24,14 @@ function formatValue(v: unknown): string {
 // Render "id": 1, "text": "你", ... — padding each field to colWidths so the
 // same field lines up across every token in the array. Braces added by caller.
 // `fields` is fixed per array (e.g. includes "pinyin" for source tokens) so every
-// row has the same columns; missing values render as null.
+// row has consistent columns, but omitted optional fields stay omitted.
 function formatTokenBody(
 	token: Record<string, unknown>,
 	fields: readonly string[],
 	colWidths: Record<string, number>
 ): string {
 	return fields
+		.filter((k) => Object.hasOwn(token, k))
 		.map((k) => `${JSON.stringify(k)}: ${formatValue(token[k]).padEnd(colWidths[k] ?? 0)}`)
 		.join(', ')
 		.trimEnd();
@@ -76,7 +77,7 @@ function formatJson(value: unknown, indent = 0): string {
 		return `{\n${items.join(',\n')}\n${pad}}`;
 	}
 
-	return JSON.stringify(value);
+	return formatValue(value);
 }
 
 /**

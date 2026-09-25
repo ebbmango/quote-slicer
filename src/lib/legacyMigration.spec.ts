@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { migrateQuotation } from '../../tools/legacyMigration';
 import { validateQuotation } from './quotationValidation';
 import { execFileSync } from 'node:child_process';
+import { runInNewContext } from 'node:vm';
 
 const legacy = {
 	meta: { sourceText: '道一', targetText: 'The Way. One.', provenance: 'Book' },
@@ -28,7 +29,7 @@ it('converts a real historical TypeScript export deterministically through the o
 	];
 	const first = execFileSync(process.execPath, args, { encoding: 'utf8' });
 	expect(execFileSync(process.execPath, args, { encoding: 'utf8' })).toBe(first);
-	const result = JSON.parse(first);
+	const result = runInNewContext(`(${first})`);
 	expect(result.report.changed).toBe(true);
 	expect(result.report.warnings).toEqual([]);
 	expect(result.quotation.alignment.breaks).toEqual({
@@ -38,6 +39,10 @@ it('converts a real historical TypeScript export deterministically through the o
 	expect(result.quotation.alignment.mappings).toHaveLength(14);
 	expect(result.quotation.alignment.mappings[0].id).toBe('fb8ab1d6-2171-47c7-99ac-d0101ef8be9e');
 	expect(result.metadata.provenance).toBe('Shuowen Jiezi');
+	expect(Object.hasOwn(result.quotation.attestation.tokens[0], 'pinyin')).toBe(true);
+	expect(result.quotation.attestation.tokens[0].pinyin).toBeUndefined();
+	expect(result.quotation.attestation.tokens[4].pinyin).toBeNull();
+	expect(Object.hasOwn(result.quotation.translation.tokens[0], 'pinyin')).toBe(false);
 	validateQuotation(result.quotation);
 });
 it('converts independently without changing IDs, mappings, text, or optional metadata', () => {
