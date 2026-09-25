@@ -75,7 +75,7 @@ to the removed representation and remains intact.
 
 ## Completion checks
 
-- Final local results: Quote Slicer 151 unit tests and 21 browser tests passed;
+- Final local results: Quote Slicer 152 unit tests and 21 browser tests passed;
   Svelte check reported no errors or warnings; production build passed. Verbarium
   76 tests, typecheck and production build passed under Node 24.20.0.
 - These are local verification results, not a claim of deployed or merged code.
@@ -85,6 +85,12 @@ to the removed representation and remains intact.
 - Changed TypeScript/Svelte files: ESLint; both repositories: `git diff --check`.
 - All original Verbarium quotation assets: no diff from `fbe65d5`.
 - Runtime search: no token line properties, old grouping helpers or adapters.
+
+The final repeated browser gate exposed an existing asynchronous preview race:
+an older syntax-highlighting result could overwrite the current export. A
+deterministic mounted-component test reproduced the reversed completion order;
+effect cleanup now discards obsolete results. This protects the actual copy/export
+surface rather than masking the failure with retries.
 
 Permanent database/quotation identity, full DBML, ingestion/version negotiation,
 responsive break variants, transliteration presentation and unrelated UI remain

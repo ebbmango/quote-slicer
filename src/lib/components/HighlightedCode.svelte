@@ -27,6 +27,7 @@
 		const currentCode = code;
 		const currentLang = lang;
 		const currentTheme = theme;
+		let active = true;
 		import('shiki')
 			.then(({ codeToTokens }) =>
 				codeToTokens(currentCode, {
@@ -35,8 +36,11 @@
 				})
 			)
 			.then((result) => {
-				lines = result.tokens;
+				if (active) lines = result.tokens;
 			});
+		return () => {
+			active = false;
+		};
 	});
 </script>
 
