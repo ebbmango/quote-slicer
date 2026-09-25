@@ -1,0 +1,157 @@
+{
+  "attestation": {
+    "tokens": [
+      { "id": 0 , "text": "惟", "pinyin": undefined, "type": "character"   },
+      { "id": 1 , "text": "初", "pinyin": "chu1"   , "type": "character"   },
+      { "id": 2 , "text": "太", "pinyin": "tai4"   , "type": "character"   },
+      { "id": 3 , "text": "始", "pinyin": "shi3"   , "type": "character"   },
+      { "id": 4 , "text": "，", "pinyin": null     , "type": "punctuation" },
+      { "id": 5 , "text": "道", "pinyin": "dao4"   , "type": "character"   },
+      { "id": 6 , "text": "立", "pinyin": "li4"    , "type": "character"   },
+      { "id": 7 , "text": "於", "pinyin": "wu1"    , "type": "character"   },
+      { "id": 8 , "text": "一", "pinyin": "yi1"    , "type": "character"   },
+      { "id": 9 , "text": "，", "pinyin": null     , "type": "punctuation" },
+      { "id": 10, "text": "造", "pinyin": "zao4"   , "type": "character"   },
+      { "id": 11, "text": "分", "pinyin": "fen1"   , "type": "character"   },
+      { "id": 12, "text": "天", "pinyin": "tian1"  , "type": "character"   },
+      { "id": 13, "text": "地", "pinyin": "di4"    , "type": "character"   },
+      { "id": 14, "text": "，", "pinyin": null     , "type": "punctuation" },
+      { "id": 15, "text": "化", "pinyin": "hua4"   , "type": "character"   },
+      { "id": 16, "text": "成", "pinyin": "cheng2" , "type": "character"   },
+      { "id": 17, "text": "萬", "pinyin": "wan4"   , "type": "character"   },
+      { "id": 18, "text": "物", "pinyin": "wu4"    , "type": "character"   },
+      { "id": 19, "text": "。", "pinyin": null     , "type": "punctuation" }
+    ]
+  },
+  "translation": {
+    "tokens": [
+      { "id": 0 , "text": "At"          , "type": "text"       },
+      { "id": 1 , "text": " "           , "type": "whitespace" },
+      { "id": 2 , "text": "the"         , "type": "text"       },
+      { "id": 3 , "text": " "           , "type": "whitespace" },
+      { "id": 4 , "text": "very"        , "type": "text"       },
+      { "id": 5 , "text": " "           , "type": "whitespace" },
+      { "id": 6 , "text": "beginning,"  , "type": "text"       },
+      { "id": 7 , "text": " "           , "type": "whitespace" },
+      { "id": 8 , "text": "at"          , "type": "text"       },
+      { "id": 9 , "text": " "           , "type": "whitespace" },
+      { "id": 10, "text": "the"         , "type": "text"       },
+      { "id": 11, "text": " "           , "type": "whitespace" },
+      { "id": 12, "text": "great"       , "type": "text"       },
+      { "id": 13, "text": " "           , "type": "whitespace" },
+      { "id": 14, "text": "origin,"     , "type": "text"       },
+      { "id": 15, "text": " "           , "type": "whitespace" },
+      { "id": 16, "text": "the"         , "type": "text"       },
+      { "id": 17, "text": " "           , "type": "whitespace" },
+      { "id": 18, "text": "Dao"         , "type": "text"       },
+      { "id": 19, "text": " "           , "type": "whitespace" },
+      { "id": 20, "text": "was"         , "type": "text"       },
+      { "id": 21, "text": " "           , "type": "whitespace" },
+      { "id": 22, "text": "established" , "type": "text"       },
+      { "id": 23, "text": " "           , "type": "whitespace" },
+      { "id": 24, "text": "in"          , "type": "text"       },
+      { "id": 25, "text": " "           , "type": "whitespace" },
+      { "id": 26, "text": "One."        , "type": "text"       },
+      { "id": 27, "text": " "           , "type": "whitespace" },
+      { "id": 28, "text": "It"          , "type": "text"       },
+      { "id": 29, "text": " "           , "type": "whitespace" },
+      { "id": 30, "text": "created"     , "type": "text"       },
+      { "id": 31, "text": " "           , "type": "whitespace" },
+      { "id": 32, "text": "and"         , "type": "text"       },
+      { "id": 33, "text": " "           , "type": "whitespace" },
+      { "id": 34, "text": "separated"   , "type": "text"       },
+      { "id": 35, "text": " "           , "type": "whitespace" },
+      { "id": 36, "text": "Heaven"      , "type": "text"       },
+      { "id": 37, "text": " "           , "type": "whitespace" },
+      { "id": 38, "text": "and"         , "type": "text"       },
+      { "id": 39, "text": " "           , "type": "whitespace" },
+      { "id": 40, "text": "Earth,"      , "type": "text"       },
+      { "id": 41, "text": " "           , "type": "whitespace" },
+      { "id": 42, "text": "transforming", "type": "text"       },
+      { "id": 43, "text": " "           , "type": "whitespace" },
+      { "id": 44, "text": "into"        , "type": "text"       },
+      { "id": 45, "text": " "           , "type": "whitespace" },
+      { "id": 46, "text": "all"         , "type": "text"       },
+      { "id": 47, "text": " "           , "type": "whitespace" },
+      { "id": 48, "text": "things."     , "type": "text"       }
+    ]
+  },
+  "alignment": {
+    "mappings": [
+      {
+        "id": "0f9239d4-942f-4226-97ce-c44427d1a387",
+        "sourceTokenIds": [1],
+        "targetTokenIds": [6, 4]
+      },
+      {
+        "id": "39a60a9b-1f53-4275-8a2c-d206a3b15ea4",
+        "sourceTokenIds": [2],
+        "targetTokenIds": [12]
+      },
+      {
+        "id": "f8ddcbaa-d1bd-45d6-95c9-001feb2e2562",
+        "sourceTokenIds": [3],
+        "targetTokenIds": [14]
+      },
+      {
+        "id": "e34963dc-0463-4173-818a-4b996173ffbf",
+        "sourceTokenIds": [5],
+        "targetTokenIds": [18]
+      },
+      {
+        "id": "bc357dbf-1788-4e32-9d02-137205d76e2e",
+        "sourceTokenIds": [6],
+        "targetTokenIds": [22, 20]
+      },
+      {
+        "id": "62bd0d23-ff2c-42cf-8035-bd647c2384eb",
+        "sourceTokenIds": [7],
+        "targetTokenIds": [24]
+      },
+      {
+        "id": "ccd79881-4b56-447e-85b4-a96af4052d48",
+        "sourceTokenIds": [8],
+        "targetTokenIds": [26]
+      },
+      {
+        "id": "fa910245-ffa8-4c64-b44c-cff8851a5799",
+        "sourceTokenIds": [10],
+        "targetTokenIds": [30]
+      },
+      {
+        "id": "9df29997-f151-42cb-b6a8-10333d94e5c7",
+        "sourceTokenIds": [11],
+        "targetTokenIds": [34]
+      },
+      {
+        "id": "7fec5e7f-4946-466e-8fce-273dfe9f616b",
+        "sourceTokenIds": [12],
+        "targetTokenIds": [36]
+      },
+      {
+        "id": "2d54305d-efa7-42b0-a417-f59e5a6b5d06",
+        "sourceTokenIds": [13],
+        "targetTokenIds": [40]
+      },
+      {
+        "id": "9eb86030-b057-4985-8df9-d96ce97fbc91",
+        "sourceTokenIds": [15, 16],
+        "targetTokenIds": [42, 44]
+      },
+      {
+        "id": "1fa5f357-ee60-4f01-8b5d-06ce23bf4654",
+        "sourceTokenIds": [17],
+        "targetTokenIds": [46]
+      },
+      {
+        "id": "e5c24f72-de85-4d81-a042-dbb32a7e7504",
+        "sourceTokenIds": [18],
+        "targetTokenIds": [48]
+      }
+    ],
+    "breaks": {
+      "attestation": [10],
+      "translation": [16, 28, 42]
+    }
+  }
+}
