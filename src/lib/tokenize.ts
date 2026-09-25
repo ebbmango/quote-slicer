@@ -20,7 +20,7 @@ function tokenizeLines<T extends { id: number }>(
 	const lines = text.split('\n');
 	lines.forEach((line, i) => {
 		tokens.push(...tokenize(line));
-		if (text && !line.length)
+		if (text && !line.length && (!separator || i === lines.length - 1))
 			errors.push(
 				`Empty authored line ${i + 1} cannot be represented; remove it or enter textual content.`
 			);
@@ -76,10 +76,8 @@ const isLeading = (t: SourceToken) => isPunct(t) && LEADING_PUNCT_RE.test(t.text
  * each group is one base token plus its glued leading/trailing punctuation, or a
  * standalone punctuation run with no base to bind to.
  *
- * Grouping never crosses a `.line` boundary: a punct on a different line than its
- * would-be base splits off into its own group, so a line-tool split between a
- * char and its punctuation separates them naturally (they fall onto different
- * lines → different groups).
+ * Grouping never crosses an explicit sequence boundary. Imported breaks can
+ * separate punctuation from its base without changing canonical tokens.
  */
 export function groupSourceTokens(
 	tokens: SourceToken[],

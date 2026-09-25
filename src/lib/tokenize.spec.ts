@@ -37,6 +37,8 @@ describe('tokenizeSource', () => {
 		expect(parseSource('我\n\n你').errors).toHaveLength(1);
 		expect(parseTarget('a\nb').breaks).toEqual([2]);
 		expect(parseTarget('a\n').errors).toHaveLength(1);
+		expect(parseTarget('a\n\nb').errors).toEqual([]);
+		expect(parseTarget('a\n\nb').breaks).toEqual([2, 3]);
 	});
 	it('preserves all textual characters, including non-Latin translations', () => {
 		for (const text of ['café déjà vu', 'λόγος', 'a\t  b', '𠀀！', 'naïve\n世界']) {

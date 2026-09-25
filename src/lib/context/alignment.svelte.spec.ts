@@ -36,6 +36,14 @@ function setup(sourceText = '我爱你', targetText = 'I love you', provenance =
 }
 
 describe('mapping lifecycle', () => {
+	it('preserves source whitespace and null metadata for non-character tokens', () => {
+		const { alignment } = setup('５ 道', 'five ways');
+		alignment.toggleSource(1);
+		expect(alignment.sortedMappingViews).toEqual([]);
+		alignment.toggleSource(0);
+		expect(alignment.exportData.attestation.tokens[0].pinyin).toBeNull();
+		expect(alignment.exportData.attestation.tokens.map((t) => t.text).join('')).toBe('５ 道');
+	});
 	it('clicking an unmapped source token creates an active mapping with auto pinyin', () => {
 		const { alignment, pinyinOf } = setup();
 		alignment.toggleSource(0);

@@ -123,6 +123,9 @@ export class Alignment {
 	}
 
 	private createMapping(): Mapping {
+		// Materialize both sides before freezing identity, including one-sided mappings.
+		this.store.sourceTokens(this.meta.sourceText);
+		this.store.targetTokens(this.meta.targetText);
 		this.store.lockText();
 		// Lowest free palette slot, so deleting a mapping releases its color for reuse.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per call, never mutated
@@ -226,10 +229,9 @@ export class Alignment {
 
 	toggleSource(i: number, opts: { force?: boolean } = {}): void {
 		if (this.listAnimating) return;
-		const type = this.sourceTokens[i]?.type;
-		// Source tokens are never whitespace (only target streams carry whitespace);
-		// punctuation can't anchor a mapping.
-		if (type === 'punctuation') return;
+		const token = this.sourceTokens[i];
+		// Textual whitespace is canonical content, but cannot anchor a mapping.
+		if (!token || token.type === 'punctuation' || /^\s+$/u.test(token.text)) return;
 		const tokenId = this.sourceTokens[i].id;
 		if (this.tryRemoveOrSwitch('source', tokenId)) return;
 
@@ -244,7 +246,7 @@ export class Alignment {
 			this.mappings = [...this.mappings, newM];
 			this.activeMappingId = newM.id;
 		}
-		this.store.setPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
+		if (token.type === 'character') this.store.setPinyin(tokenId, tokenPinyin(token));
 	}
 
 	toggleTarget(i: number): void {

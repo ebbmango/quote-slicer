@@ -50,7 +50,7 @@ export function validateQuotation(
 		try {
 			validateBreaks(array(breaks[side]) as number[], tokens.length);
 		} catch (error) {
-			throw new Error(`${side} breaks: ${(error as Error).message}`);
+			throw new Error(`${side} breaks: ${(error as Error).message}`, { cause: error });
 		}
 		ids.push(seen);
 	}

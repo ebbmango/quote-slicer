@@ -1,6 +1,6 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
 import type { ThemeName } from '$lib/types';
-import type { SourceToken, TargetToken } from '$lib/tokenize';
+import type { TargetToken } from '$lib/tokenize';
 import type { AttestationTranslationAlignment } from '$lib/quotation';
 
 export type MappingId = string;
