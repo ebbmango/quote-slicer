@@ -29,7 +29,7 @@
 		tokens: TargetToken[];
 		breaks: number[];
 		onSplit: (afterIndex: number) => void;
-		onMerge: (lineN: number) => void;
+		onMerge: (boundary: number) => void;
 		animating: boolean;
 		// Running divisor count from the source panel, so the palette continues
 		// here instead of restarting (see divisorColor).

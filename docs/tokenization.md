@@ -8,17 +8,17 @@ what can be mapped to what. The two sides have different needs — Chinese is ma
 character at a time, English one word at a time — so there are two tokenizers, both in
 `src/lib/tokenize.ts`.
 
-Both tokenizers assign each token a stable integer `id` (its position in the flat
-output array) as the very last step. See [Data Model](data-model.md#stable-token-ids)
-for why that ID matters.
+The array-only tokenizers assign local IDs for standalone use. The store allocates
+monotonic IDs when accepting draft text. `parseSource` and `parseTarget` return
+`{ tokens, breaks, errors }`; incomplete/unrepresentable authored lines are
+reported before the user can advance to mapping.
 
 ## Source tokenizer
 
 `tokenizeSource(text: string): SourceToken[]`
 
 One Chinese character per token. Newlines delimit lines and are **consumed** (not
-emitted as tokens); each token's `.line` is the index of the newline-separated segment
-it came from.
+emitted as tokens); each interior newline becomes a boundary position in the separate break array.
 
 Token types are assigned by Unicode class:
 
@@ -31,12 +31,12 @@ Token types are assigned by Unicode class:
 
 In practice the source rarely contains anything but Han characters, because the source
 input field filters input in real time against `SOURCE_INPUT_RE` (`tokenize.ts`),
-which only allows Han characters, CJK punctuation blocks, and newlines. (The filter is
+which allows Han characters, CJK punctuation blocks, and textual whitespace. (The filter is
 IME-aware — see [UI Architecture](ui-architecture.md).)
 
 ### Source punctuation grouping
 
-`groupSourceTokens(tokens)` (also in `tokenize.ts`) is a **display grouping** over the
+`groupSourceTokens(tokens, breaks)` (also in `tokenize.ts`) is a **display grouping** over the
 already-tokenized source array — it returns `number[][]`, arrays of token _indices_,
 one per group. It does **not** create new tokens or touch IDs, mapping, or pinyin; it
 only tells the renderer which tokens to keep on the same visual unit.
@@ -51,7 +51,7 @@ non-breaking unit (`.tok-group`).
 The side a mark binds to is derived from the character itself via Unicode property
 escapes — `\p{Ps}` (opening brackets) and `\p{Pi}` (initial quotes) bind to the token
 that _follows_; everything else binds to the token that _precedes_ — rather than a
-hand-maintained list. **Grouping never crosses a `.line` boundary**, so a line split
+hand-maintained list. **Grouping never crosses an explicit break**, so a line split
 that lands between a character and its punctuation simply puts them in different groups,
 and this invariant is what makes the [line-tool no-split rule](line-tool.md#source-panel-interactivesourcetext)
 safe.
@@ -70,6 +70,9 @@ A single regex, `TARGET_RE`, matches in priority order:
 2. a word (Latin letters / digits) with any _flanking_ punctuation absorbed;
 3. a whitespace run (excluding newlines);
 4. a standalone punctuation run not adjacent to any word.
+
+Any unmatched text is retained as text tokens, including non-Latin letters and
+combining marks; the matcher must never drop canonical content.
 
 ```
 There's nothing "simple" in programming.
@@ -109,20 +112,13 @@ in `src/lib/tokenize.spec.ts`.
 | `'text'`        | any token containing a letter or digit (`[\p{L}\p{N}]`) — so `$5` and `simple.` are `'text'` and therefore mappable |
 | `'punctuation'` | pure-symbol runs                                                                                                    |
 
-## Line stamping and the boundary whitespace token
+## Initial authored breaks
 
-The target tokenizer splits on `\n` and stamps each token with its segment's `line`
-index. Newlines are consumed, not emitted.
-
-After the tokens of each line segment — but **not** after the last line — a synthetic
-**boundary whitespace** token is appended:
-
-```ts
-if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
-```
-
-This token is the **merge affordance** in line tool: clicking it merges the two lines
-it sits between. See [Line Tool](line-tool.md#the-line-tool-affordances).
+Source newlines produce boundary positions without text tokens. Translation
+newlines produce a canonical space token followed by a boundary. That space is
+retained if the break is later removed. Initial empty source lines and a trailing
+empty translation line are reported as unrepresentable. Consecutive translation
+newlines can produce whitespace-only lines and adjacent boundaries.
 
 ## Whitespace strategy
 
@@ -144,4 +140,4 @@ specially:
   `<span role="button">` with `user-select: text`, not `<button>`, so selecting and
   copying the target text preserves the spaces.
 
-Source tokens have no whitespace type — the source input filter strips spaces entirely.
+Source textual whitespace is preserved as symbol tokens; it is never inferred from editorial breaks.

@@ -24,8 +24,8 @@ export type EditScope = {
 };
 
 // The token store (see CONTEXT.md "tokens"). The single owner of the
-// source/target token arrays: it tokenizes, holds the text-keyed split/merge
-// cache, owns per-character pinyin as an id-keyed overlay, and runs the unified
+// source/target token arrays: it tokenizes, owns independent break arrays,
+// owns per-character pinyin as an id-keyed overlay, and runs the
 // Flip around split/merge. Alignment derives mapping/colouring state from this
 // store rather than holding its own copy, so there is no second token owner to
 // keep in sync — split/merge can no longer be fed the "wrong" array.

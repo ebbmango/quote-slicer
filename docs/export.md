@@ -1,60 +1,30 @@
 # Export
 
-The right side of the app shows a **live JSON export** of the alignment — the same data
-structure the app is built to produce, rendered as syntax-highlighted, column-aligned
-JSON. It updates as the user works. Three pieces make it: the export _data_, the
-_formatter_, and the _panel_.
+`Alignment.exportData` produces Verbarium's `AttestationTranslationAlignment`
+directly: attestation tokens, translation tokens, ID-based mappings, and independent
+break arrays. Token text is canonical; reconstruct by joining it in sequence order.
+No textual normalization occurs during export. Mapping UI colors are omitted.
 
-## The export data
+Provenance is displayed separately below the alignment object and can be passed
+unchanged to Verbarium's provenance prop. Its lesson-owned source URL remains
+separate. The object itself can be copied into a TypeScript declaration and passed
+unchanged as the Quote component's quote prop.
 
-`Alignment.exportData` is a `$derived` [`QuoteExport`](data-model.md#export-types):
+## Formatter
 
-```ts
-{
-  meta:        { sourceText, targetText, provenance },  // sanitised
-  sourceTokens, targetTokens,                            // the live token arrays
-  mappings,                                              // colorIndex stripped (ExportMapping)
-}
-```
+`formatExport` keeps primitive arrays on one line and token fields column-aligned.
+It recognizes tokens through id, text and type. Unannotated pinyin is shown as
+literal undefined; null remains distinct. This is a TypeScript-object preview,
+not a versioned strict-JSON interchange protocol.
 
-Two deliberate transforms:
+## Offline migration
 
-- **`meta` whitespace is sanitised.** The textareas can contain newlines, which would
-  leak into the export. `sourceText` has newlines removed entirely (Han text has no
-  inter-word spaces); `targetText` and `provenance` collapse newline runs to a single
-  space and `.trim()`. Without this, raw newlines would dump into the `meta` block.
-- **`colorIndex` is dropped** from each mapping — color is a UI concern, not alignment
-  data.
-
-## The formatter — `formatExport()`
-
-`src/lib/exportFormat.ts`. A recursive pretty-printer (`formatJson`) that is _almost_
-`JSON.stringify(v, null, 2)`, with two purpose-built differences that make the output
-readable:
-
-1. **Arrays of primitives stay on one line.** `"sourceTokenIds": [0, 1]` instead of one
-   element per line — so the ID lists don't dominate the output vertically.
-2. **Arrays of token objects render as a column-aligned table.** `isTokenObject()`
-   recognises a token by its keys (`id`, `text`, `line`, `type`, all primitive-valued).
-   `formatTokenBody()` then pads each field to the widest value across the array, so the
-   same field starts at the same column on every row:
-
-   ```
-   { "id": 0, "text": "知", "pinyin": "zhī",  "line": 0, "type": "character" }
-   { "id": 1, "text": "命", "pinyin": "mìng", "line": 0, "type": "character" }
-   ```
-
-   The `pinyin` column is **omitted entirely** when no token in the array carries it
-   (e.g. `targetTokens` never have pinyin).
-
-`formatValue()` renders `undefined` as the literal string `undefined` — not valid JSON,
-but intentional: an un-annotated source `pinyin` shows up visibly in the export rather
-than being silently dropped. (See the
-[`pinyin` semantics](data-model.md#why-pinyin-is-string--null--undefined).)
-
-This formatter has no component dependencies, so it's unit-tested directly in
-`exportFormat.spec.ts` (primitive one-lining, literal `undefined`, column alignment,
-and column omission).
+Run `node tools/migrate-quotation.ts <quotation.json|quotation.ts> [...]` with Node 24.
+The command parses literal data without executing source files, validates it, and
+prints deterministic quotation/metadata/report records. Original files are never
+overwritten. Review the report and canonical text comparison before accepting any
+conversion. Content discrepancies and unrepresentable line assignments are reported,
+not repaired. Runtime code does not import this converter.
 
 ## The panel — `JsonExportPanel` + `HighlightedCode`
 

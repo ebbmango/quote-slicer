@@ -33,7 +33,7 @@
 		tokens: SourceToken[];
 		breaks: number[];
 		onSplit: (afterIndex: number) => void;
-		onMerge: (lineN: number) => void;
+		onMerge: (boundary: number) => void;
 		animating: boolean;
 		// Touch line tool: the divisor index currently highlighted in THIS panel
 		// (null if none / the other panel owns the highlight). First tap highlights,

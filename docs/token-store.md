@@ -1,118 +1,43 @@
 # Token Store
 
-`src/lib/context/tokenStore.svelte.ts` — `createTokenStore()` /
-`setTokenStoreContext()` / `getTokenStoreContext()`.
+`src/lib/context/tokenStore.svelte.ts` owns canonical source and target tokens,
+independent break arrays, the ID-keyed pinyin overlay, and line-edit animation.
+Alignment and QuoteWorkbench read the same store.
 
-## Why it exists
+## Token identity and draft text
 
-Two facts about the app are in tension:
+Tokenization is memoized by exact input text. IDs are allocated monotonically
+per side; a raw-text edit consumes fresh IDs rather than reusing positions.
+Plain memoization avoids reactive writes from derived readers.
 
-1. **Line edits must survive.** When the user splits or merges a line, only the tokens'
-   `.line` fields change. But the tokenizer reads the _raw text string_ — so naively
-   re-tokenizing on every render would throw the user's line breaks away.
-2. **Pinyin must survive.** Pinyin is annotated onto source tokens as they join
-   mappings, and it must persist across line edits too.
+Break edits are separate reactive arrays keyed to the draft text. A split or
+merge modifies only one array. Source and target tokens are never copied into
+a line-bearing view or compatibility adapter.
 
-Earlier versions split these concerns across `QuoteWorkbench` (which held the cache)
-and `Alignment` (which held a synced copy of the tokens, with pinyin on it). Keeping
-two token owners in sync via `$effect` was fragile: split/merge had to be handed the
-_specific_ pinyin-bearing array, and passing the "wrong" (freshly-tokenized) array
-silently dropped pinyin.
+Creating the first mapping locks text identity on both sides. Annotated source
+text is also protected against retokenization. Future text editing must use the
+explicit correspondence utilities in `tokenMutation.ts`; a string replacement
+cannot silently reuse IDs for new text.
 
-The token store collapses all of this into **one owner**. It is the single source of
-truth for the source/target token arrays: it tokenizes, holds the line-edit cache,
-holds the pinyin overlay, and runs the split/merge animation. Both `QuoteWorkbench`
-and `Alignment` _derive_ their token views from it — neither keeps a copy.
+## Pinyin
 
-> Naming: always call this the **token store**. Avoid the old name _lineEdit_, and
-> avoid "token cache" (the cache is only one part of it). See
-> [`CONTEXT.md`](../CONTEXT.md).
+The overlay is keyed by token ID and applied on read. Setting undefined removes
+an annotation; null remains not-applicable. Alignment converts display pinyin
+to its canonical numbered form before storing it.
 
-The cache and overlay behaviour below is unit-tested in `tokenStore.spec.ts` — under
-plain node, since `onMount` (which arms the animation) is a no-op there. See
-[Testing](testing.md).
+## Public surface
 
-## The text-keyed cache
+- `sourceTokens(text)` / `targetTokens(text)`: canonical sequences.
+- `sourceBreaks(text)` / `targetBreaks(text)`: independent editorial boundaries.
+- `setPinyin(id, value)`: annotation only.
+- `lockText()`: prohibit unsafe retokenization.
+- `split(zone, text, afterIndex, scope)`: add boundary after an index.
+- `merge(zone, text, boundary, scope)`: remove a boundary.
+- `animating`: whether the line-edit animation is in progress.
 
-The cache answers "have the tokens for _this exact text_ been line-edited?"
-
-```ts
-let sourceCache: { text: string; tokens: SourceToken[] } | null = $state(null);
-
-function sourceTokens(text: string): SourceToken[] {
-	const base =
-		sourceCache !== null && sourceCache.text === text
-			? sourceCache.tokens // cache hit: text unchanged → reuse split/merged tokens
-			: tokenizeSource(text); // cache miss: text changed → re-tokenize fresh
-	return applyPinyin(base); // overlay pinyin either way
-}
-```
-
-- **Cache hit** (text unchanged) → the line-edited token array is returned, so manual
-  line breaks are preserved across re-renders.
-- **Cache miss** (text changed) → fresh tokenize. The old cache is simply ignored, so
-  editing the raw text implicitly resets the line structure.
-
-`split`/`merge` write the cache (keyed by the text they ran against). The target side
-works identically via `targetCache`.
-
-## The pinyin overlay
-
-Pinyin is kept **separate** from the cache, in an id-keyed map:
-
-```ts
-let pinyin: Map<number, string | undefined> = $state(new Map());
-```
-
-Why separate? Because pinyin is annotated _before_ any split exists to populate the
-cache. If pinyin lived only on the cached tokens, a cache miss (the common case before
-the first line edit) would lose it. Keeping it in its own id-keyed overlay means it is
-re-applied on **every** read, cache hit or miss:
-
-```ts
-function applyPinyin(tokens: SourceToken[]): SourceToken[] {
-	return tokens.map((t) => {
-		if (pinyin.has(t.id)) return { ...t, pinyin: pinyin.get(t.id) };
-		if (t.pinyin != null) return { ...t, pinyin: undefined };
-		return t;
-	});
-}
-```
-
-`setPinyin(tokenId, value)` reassigns a **new** `Map` (rather than mutating in place)
-so dependent `$derived` recompute. Passing `undefined` deletes the entry (clearing
-pinyin when a token leaves a mapping).
-
-The value stored here is **canonical numbered pinyin** (`"zhi1"`), not the diacritic
-display form — `Alignment` canonicalizes before calling `setPinyin`, and the diacritic
-is derived for display only. See
-[Link Tool → Pinyin](link-tool.md#pinyin-auto-fill-and-canonical-storage).
-
-> Trade-off: `applyPinyin` allocates a new array on every read (`.map()`). That is the
-> price of `$derived` recomputing when pinyin changes — don't memoize it without
-> confirming pinyin updates still propagate.
-
-## The public surface, and `TokenAccess`
-
-The store exposes:
-
-| Member                                      | Used by                       | Purpose                                               |
-| ------------------------------------------- | ----------------------------- | ----------------------------------------------------- |
-| `sourceTokens(text)` / `targetTokens(text)` | `QuoteWorkbench`, `Alignment` | read tokens for a given text (cache + pinyin applied) |
-| `setPinyin(id, value)`                      | `Alignment`                   | annotate/clear a source token's pinyin                |
-| `split(...)` / `merge(...)`                 | `QuoteWorkbench`              | line edit + animation                                 |
-| `animating` (getter)                        | `QuoteWorkbench` → panels     | true while a split/merge tween is in flight           |
-
-`Alignment` only needs read + pinyin-write access, so its constructor takes a narrowed
-type:
-
-```ts
-type TokenAccess = Pick<TokenStore, 'sourceTokens' | 'targetTokens' | 'setPinyin'>;
-```
-
-This keeps the animation-only members (`split`/`merge`/`animating`) out of
-`Alignment`'s type surface, so changes to the animation internals can't ripple into
-the alignment logic.
+Alignment receives the narrower `TokenAccess` surface without animation methods.
+Store tests exercise identity, independent lineation, canonical whitespace and
+pinyin preservation.
 
 ## The line-edit animation (split/merge)
 
@@ -147,7 +72,7 @@ height locking, measuring, or tweening:
    (not just the tokens) is what lets the panel boundary animate from its pre-edit
    position instead of snapping there on the first frame.
 2. Set `animating = true` (gates the panel's height `$effect`), run `mutate()`
-   (split/merge + cache write), `await tick()`, then force one synchronous reflow
+   (break-array update), `await tick()`, then force one synchronous reflow
    (read `offsetHeight`) so flex fully resolves before Flip reads the after-state.
    (Flex settles in a _single_ reflow — confirmed with GSAP disabled — so no
    release-and-wait loop is needed.)
