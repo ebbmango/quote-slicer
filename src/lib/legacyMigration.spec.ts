@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
-import { migrateQuotation } from './legacyMigration';
+import { migrateQuotation } from '../../tools/legacyMigration';
 import { validateQuotation } from './quotationValidation';
+import { execFileSync } from 'node:child_process';
 
 const legacy = {
 	meta: { sourceText: '道一', targetText: 'The Way. One.', provenance: 'Book' },
@@ -18,6 +19,27 @@ const legacy = {
 		{ id: 'b', sourceTokenIds: [2], targetTokenIds: [1] }
 	]
 };
+
+it('converts a real historical TypeScript export deterministically through the offline CLI', () => {
+	const args = [
+		'--experimental-strip-types',
+		'tools/migrate-quotation.ts',
+		'tools/fixtures/legacy-dao-one.txt'
+	];
+	const first = execFileSync(process.execPath, args, { encoding: 'utf8' });
+	expect(execFileSync(process.execPath, args, { encoding: 'utf8' })).toBe(first);
+	const result = JSON.parse(first);
+	expect(result.report.changed).toBe(true);
+	expect(result.report.warnings).toEqual([]);
+	expect(result.quotation.alignment.breaks).toEqual({
+		attestation: [10],
+		translation: [16, 28, 42]
+	});
+	expect(result.quotation.alignment.mappings).toHaveLength(14);
+	expect(result.quotation.alignment.mappings[0].id).toBe('fb8ab1d6-2171-47c7-99ac-d0101ef8be9e');
+	expect(result.metadata.provenance).toBe('Shuowen Jiezi');
+	validateQuotation(result.quotation);
+});
 it('converts independently without changing IDs, mappings, text, or optional metadata', () => {
 	const result = migrateQuotation(legacy);
 	expect(result.quotation.alignment.breaks).toEqual({ attestation: [1], translation: [2] });

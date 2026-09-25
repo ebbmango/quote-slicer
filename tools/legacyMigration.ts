@@ -1,6 +1,10 @@
-import { canonicalText } from './breaks.ts';
-import { validateQuotation } from './quotationValidation.ts';
-import type { AttestationTranslationAlignment, SourceToken, TargetToken } from './quotation.ts';
+import { canonicalText } from '../src/lib/breaks.ts';
+import { validateQuotation } from '../src/lib/quotationValidation.ts';
+import type {
+	AttestationTranslationAlignment,
+	SourceToken,
+	TargetToken
+} from '../src/lib/quotation.ts';
 
 type LegacyToken = (SourceToken | TargetToken) & { line: number };
 
