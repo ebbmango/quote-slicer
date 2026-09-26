@@ -216,3 +216,34 @@ describe('tokenizeTarget — full sentence', () => {
 		]);
 	});
 });
+
+describe('target authoring normalization', () => {
+	it.each(['hello ', ' hello', '  hello  ', '\thello\t', '\u00a0hello\u00a0'])(
+		'removes accidental outer whitespace from %j before assigning IDs',
+		(text) => {
+			expect(parseTarget(text)).toEqual({
+				tokens: [{ id: 0, text: 'hello', type: 'text' }],
+				breaks: [],
+				errors: []
+			});
+		}
+	);
+	it.each([
+		['hello world', 'hello world', []],
+		['  hello\t  world  ', 'hello\t  world', []],
+		['  hello\nworld  ', 'hello world', [2]],
+		[' hello  \n  world ', 'hello     world', [3]],
+		[' hello\n\nworld ', 'hello  world', [2, 3]],
+		['\nhello ', ' hello', [1]],
+		['   ', '', []]
+	])('preserves internal text and authored breaks in %j', (text, canonical, breaks) => {
+		const parsed = parseTarget(text);
+		expect(parsed.tokens.map((t) => t.text).join('')).toBe(canonical);
+		expect(parsed.breaks).toEqual(breaks);
+		expect(parsed.errors).toEqual([]);
+	});
+	it('keeps a trailing authored newline invalid, including padded empty lines', () => {
+		expect(parseTarget('hello\n').errors).toHaveLength(1);
+		expect(parseTarget('hello\n  ').errors).toHaveLength(1);
+	});
+});

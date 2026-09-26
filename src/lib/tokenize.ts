@@ -164,6 +164,9 @@ export function tokenizeTarget(text: string): TargetToken[] {
 }
 
 export function parseTarget(text: string): Tokenized<TargetToken> {
+	// Authoring boundary: discard only outer non-newline whitespace before allocating
+	// tokens/IDs. Keep authored newlines (and their validation) and internal text intact.
+	text = text.replace(/^[^\S\n]+|[^\S\n]+$/gu, '');
 	return tokenizeLines<TargetToken>(
 		text,
 		(lineText) => {
