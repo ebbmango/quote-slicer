@@ -5,22 +5,20 @@ tokenization, link tool, the export — is built on these.
 
 ## Token types
 
-Defined in `src/lib/tokenize.ts`. A **token** is the smallest selectable unit of
+Defined in `src/lib/quotation.ts`, re-exported by `tokenize.ts`. A **token** is the smallest selectable unit of
 text.
 
 ```ts
 type SourceToken = {
-	id: number; // stable across split/merge; assigned once as flat-array position
+	id: number; // opaque side-local identity; allocated monotonically
 	text: string;
-	line: number; // which line the token currently belongs to
 	type: 'character' | 'punctuation' | 'number' | 'symbol';
 	pinyin?: string | null; // undefined: character not yet annotated; null: not applicable
 };
 
 type TargetToken = {
-	id: number; // stable across split/merge; assigned once as flat-array position
+	id: number; // opaque side-local identity; allocated monotonically
 	text: string;
-	line: number;
 	type: 'text' | 'hanzi' | 'punctuation' | 'whitespace';
 };
 ```
@@ -60,32 +58,27 @@ type Mapping = {
 ```
 
 A mapping stores **token IDs**, not array positions — this is what lets line edits
-(which reshuffle the arrays) leave mappings untouched. See _Stable token IDs_ below.
+(which only update break arrays) leave mappings untouched. See _Stable token IDs_ below.
 
 ## Stable token IDs
 
-`SourceToken.id` / `TargetToken.id` are assigned as the token's position in the flat
-array at tokenization time, then **never change** (`tokenize.ts`,
-`.map((t, id) => ({ ...t, id }))`).
+Token IDs are unique within each side and independent of sequence indexes.
+They may be non-contiguous and out of numeric order. The store allocates new IDs
+monotonically; line edits never change them. Mapping creation freezes raw-text
+retokenization. `tokenMutation.ts` provides explicit transformations for insert,
+delete, replace, split and merge; ambiguous correspondence is rejected.
 
-The line-edit functions in `src/lib/line.ts` (`splitAfterToken`, `mergeLines`) only
-ever mutate the `.line` field and spread tokens — they never insert or remove tokens.
-So IDs survive split/merge intact, and a mapping's stored IDs keep pointing at the
-same characters no matter how the lines are rearranged.
+The renderer resolves IDs to indexes through `buildMappingIndex`. Its omission of
+unresolved IDs is defensive rendering, not data validation: `validateQuotation`
+rejects dangling references and overlapping membership.
 
-Because mappings hold IDs but rendering needs array indices, `Alignment` derives two
-reverse maps at runtime:
+## Editorial breaks
 
-- `sourceIdToIndex: Map<tokenId, arrayIndex>`
-- `targetIdToIndex: Map<tokenId, arrayIndex>`
-
-These are `$derived` and rebuild whenever the token arrays change. The
-**index → mapping** lookups `sourceMappingIndex` / `targetMappingIndex` are built from
-them in turn by `buildMappingIndex` (see [TokenState](#tokenstate--per-token-display-state)).
-If a token ID is ever _not_ found in the current array, it simply drops out of the
-derived maps — no corruption, no error. This means a future feature that removes tokens
-(e.g. editing the source text after linking) cannot leave dangling references inside a
-mapping.
+`alignment.breaks.attestation` and `alignment.breaks.translation` are sorted,
+unique integer arrays. A boundary b is before index b; only 0 < b < tokenCount
+is valid. Empty and one-token sequences require empty arrays. Adjacent boundaries
+are allowed. Canonical reconstruction is the concatenation of token text,
+including textual whitespace, without consulting breaks.
 
 ## TokenState — per-token display state
 
@@ -149,28 +142,23 @@ type MappingView = {
 
 ## Export types
 
-Also in `src/lib/tokenState.ts` — the shape the app serialises to JSON (see
-[Export](export.md)):
+The authoritative `AttestationTranslationAlignment` is defined in
+`src/lib/quotation.ts`. `QuoteExport` aliases it:
 
 ```ts
-type QuoteExportMeta = {
-	sourceText: string;
-	targetText: string;
-	provenance: string;
-};
-
-type ExportMapping = Omit<Mapping, 'colorIndex'>; // colorIndex is presentation-only
-
-type QuoteExport = {
-	meta: QuoteExportMeta;
-	sourceTokens: SourceToken[];
-	targetTokens: TargetToken[];
-	mappings: ExportMapping[];
-};
+{
+  attestation: { tokens: SourceToken[] },
+  translation: { tokens: TargetToken[] },
+  alignment: {
+    mappings: QuoteMapping[],
+    breaks: { attestation: number[], translation: number[] }
+  }
+}
 ```
 
-`colorIndex` is dropped from the export because color is a UI concern, not part of the
-alignment data.
+Draft `QuoteExportMeta` holds input strings and provenance, separately from the
+exported alignment. Provenance is displayed separately for Verbarium's existing
+prop; source URL remains lesson-owned. `colorIndex` is never exported.
 
 ## Colors
 

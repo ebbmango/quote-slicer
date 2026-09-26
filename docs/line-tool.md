@@ -1,99 +1,31 @@
 # Line Tool
 
-Line tool (`tool.current === 'line'`) lets the user adjust where line breaks fall in
-the source and target texts **independently**. A line edit never changes the raw text
-strings — it only rewrites the tokens' `.line` fields, and those edits are preserved by
-the token store's [text-keyed cache](token-store.md#the-text-keyed-cache).
+The line tool edits independent attestation and translation boundary arrays.
+A boundary is an interior token-sequence position, not a token ID. Splitting
+after index i adds i+1; merging removes that boundary. Tokens, canonical text,
+mappings and pinyin remain unchanged.
 
 ## The core functions
 
-All three live in `src/lib/line.ts` as pure generics over `T extends { line: number }`,
-so they work on both `SourceToken` and `TargetToken` and are unit-tested directly in
-`line.spec.ts` (immutability, line math, and `splitAfterToken`'s documented
-precondition that `afterIndex` be in range — out of range throws).
-
-### `splitAfterToken(tokens, afterIndex)`
-
-Inserts a line break _after_ `tokens[afterIndex]`. Returns a new array (no mutation):
-
-- tokens on lines **above** `splitLine` → unchanged;
-- tokens at/before `afterIndex` on `splitLine` → unchanged;
-- tokens **after** `afterIndex` on `splitLine` → `line = splitLine + 1` (the new line);
-- tokens on lines **below** `splitLine` → `line + 1` (shift down to make room).
-
-### `mergeLines(tokens, lineN)`
-
-Merges line `lineN + 1` up into line `lineN`. Returns a new array:
-
-- tokens on `lineN + 1` → `line = lineN`;
-- tokens on lines below that → `line - 1` (close the gap);
-- everything else → unchanged.
-
-Neither function adds or removes tokens, so **token IDs are invariant** across line
-edits — this is the whole reason mappings (which store IDs) survive them. See
-[Data Model](data-model.md#stable-token-ids).
+`src/lib/breaks.ts` validates sorted unique boundaries and implements immutable
+`editBreak` and `replaceBreaks`. The store calls these helpers and owns animation.
+`src/lib/tokenMutation.ts` handles count-changing edits with explicit identity
+correspondence; those operations are domain utilities, not additional UI tools.
 
 ## The line-tool affordances
 
-The source and target panels expose split/merge differently, because their token
-streams differ (source has no whitespace tokens; target does). Both render the same
-module — **`LineDivisor`** — for the affordance itself: it owns the three divisor
-surfaces (`.split-zone` / `.ws-split` / `.merge-zone`), the touch first-tap/second-tap
-state machine, the mouse/keyboard hover-spread wiring (`redistributeRow`), the
-instant-clear that precedes a Flip, and all the divisor CSS. The panels only choose
-_which_ divisor goes _where_ (from their own token stream) and pass down the resolved
-palette colour, the panel-specific `SPREAD` tuning, the row container, and the
-`onActivate` edit. So a change to divisor behaviour lands in one place, not two.
+`LineDivisor.svelte` owns split-zone, whitespace and merge-zone controls, touch
+staging, focus and animation wiring. Source controls appear between punctuation
+groups. `groupSourceTokens(tokens, breaks)` respects imported boundaries even
+when they separate punctuation from its usual base.
 
-### Source panel (`InteractiveSourceText`)
+Target interior whitespace provides the split control. At a break after that
+whitespace, the same token is visually replaced by a merge control; its text
+remains in the canonical stream. A valid break after a non-whitespace token also
+renders a merge control. Terminal whitespace is text, never a split control.
 
-A zero-width `<button>` is rendered **between groups** (not between every token pair) —
-where a group is a base character plus its glued punctuation, from
-[`groupSourceTokens`](tokenization.md#source-punctuation-grouping):
-
-- **same line** → a `.split-zone` button; clicking it calls `onSplit(globalIndex)`.
-- **line boundary** (the next group is on a different line) → a `.merge-zone` button;
-  clicking it calls `onMerge(token.line)`.
-
-Each carries a hairline indicator (`.split-indicator` / `.merge-indicator`) that
-appears on hover/focus.
-
-**A group is unsplittable.** There are no divisors _inside_ a `.tok-group`, so a line
-break can fall before or after a base+punctuation group but never between a character
-and its mark — which would orphan `，` or `。` at the start of a line, typographically
-wrong for CJK. (This replaced a fuller, dropped design where punctuation was instead
-click-to-exclude from the export; see [Future Features](future-features.md).)
-
-### Target panel (`InteractiveTargetText`)
-
-The target panel reuses its **whitespace tokens** as the interaction surface:
-
-- **interior whitespace** → a `<span role="button" class="ws-split">`. Using a span
-  (not a `<button>`) with `user-select: text` keeps the space copyable when selecting
-  target text; the split click is wired via `onclick` + `role="button"`.
-- **boundary whitespace** (the synthetic token appended between lines during
-  tokenization) → a full-width `.merge-zone` button; clicking it merges the two lines.
-
-> Earlier there were _two_ overlapping merge affordances on the target boundary (a
-> `.ws-boundary` text button plus a `.merge-zone`). The redundant `.ws-boundary` was
-> removed; the boundary token now renders as a single `.merge-zone` button.
-
-These callbacks bubble up to `QuoteWorkbench`, which forwards them into the token store:
-
-```ts
-function splitSource(afterIndex) {
-	store.split('source', sourceText, sourceTokens, afterIndex, editScope());
-}
-function mergeSource(lineN) {
-	store.merge('source', sourceText, sourceTokens, lineN, editScope());
-}
-// …and splitTarget / mergeTarget for the target zone.
-```
-
-Because the rendered `sourceTokens`/`targetTokens` already carry pinyin from the
-store's overlay, they are passed straight in — there is no special "live" array to fish
-out (a past source of pinyin-loss bugs, now eliminated by the
-[single-owner store](token-store.md#why-it-exists)).
+`QuoteWorkbench` calls `store.split(zone, text, afterIndex, scope)` or
+`store.merge(zone, text, boundary, scope)`; neither accepts or rewrites tokens.
 
 ### Touch: the two-tap model
 

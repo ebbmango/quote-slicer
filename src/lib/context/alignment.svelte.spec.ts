@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Alignment } from './alignment.svelte';
-import { tokenizeSource, tokenizeTarget } from '$lib/tokenize';
+import { tokenizeSource, tokenizeTarget, parseSource, parseTarget } from '$lib/tokenize';
 import { MAPPING_COLORS } from '$lib/constants/colors';
 import type { TokenAccess } from '$lib/context/tokenStore.svelte';
 
@@ -10,6 +10,9 @@ import type { TokenAccess } from '$lib/context/tokenStore.svelte';
 function makeStore() {
 	let overlay = $state(new Map<number, string | undefined>());
 	const store: TokenAccess = {
+		lockText: () => {},
+		sourceBreaks: (text) => parseSource(text).breaks,
+		targetBreaks: (text) => parseTarget(text).breaks,
 		sourceTokens: (text) =>
 			tokenizeSource(text).map((t) =>
 				overlay.has(t.id) ? { ...t, pinyin: overlay.get(t.id) } : t
@@ -33,6 +36,14 @@ function setup(sourceText = '我爱你', targetText = 'I love you', provenance =
 }
 
 describe('mapping lifecycle', () => {
+	it('preserves source whitespace and null metadata for non-character tokens', () => {
+		const { alignment } = setup('５ 道', 'five ways');
+		alignment.toggleSource(1);
+		expect(alignment.sortedMappingViews).toEqual([]);
+		alignment.toggleSource(0);
+		expect(alignment.exportData.attestation.tokens[0].pinyin).toBeNull();
+		expect(alignment.exportData.attestation.tokens.map((t) => t.text).join('')).toBe('５ 道');
+	});
 	it('clicking an unmapped source token creates an active mapping with auto pinyin', () => {
 		const { alignment, pinyinOf } = setup();
 		alignment.toggleSource(0);
@@ -188,19 +199,19 @@ describe('derived views and token states', () => {
 });
 
 describe('export', () => {
-	it('flattens line breaks in meta and drops colorIndex from mappings', () => {
+	it('exports independent breaks and separate provenance without presentation fields', () => {
 		const { alignment } = setup('我爱\n你', 'I love\nyou', 'Book title\nTranslator');
 		alignment.toggleSource(0);
 		alignment.toggleTarget(0);
 		const data = alignment.exportData;
-		expect(data.meta).toEqual({
-			sourceText: '我爱你',
-			targetText: 'I love you',
-			provenance: 'Book title Translator'
-		});
-		expect(data.mappings).toHaveLength(1);
-		expect(data.mappings[0]).not.toHaveProperty('colorIndex');
-		expect(data.mappings[0].sourceTokenIds).toEqual([0]);
+		expect(alignment.provenance).toBe('Book title\nTranslator');
+		expect(data.attestation.tokens.map((t) => t.text).join('')).toBe('我爱你');
+		expect(data.translation.tokens.map((t) => t.text).join('')).toBe('I love you');
+		expect(data.alignment.breaks).toEqual({ attestation: [2], translation: [4] });
+		expect(data.alignment.mappings).toHaveLength(1);
+		expect(data.alignment.mappings[0]).not.toHaveProperty('colorIndex');
+		expect(data.alignment.mappings[0].sourceTokenIds).toEqual([0]);
+		expect(data.attestation.tokens.every((t) => !('line' in t))).toBe(true);
 	});
 });
 

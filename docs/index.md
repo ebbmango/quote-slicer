@@ -27,8 +27,8 @@ Then the feature-specific pages as you need them.
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | [Overview](overview.md)                                     | Product description, the four tools, responsive layout                                                                 |
 | [Data Model](data-model.md)                                 | `SourceToken`, `TargetToken`, `Mapping`, `TokenState`, `MappingView`, export types; stable token IDs                   |
-| [Tokenization](tokenization.md)                             | Source/target tokenizers, source punctuation grouping, line stamping, whitespace strategy                              |
-| [Token Store](token-store.md)                               | The single token owner: text-keyed cache, pinyin overlay, the line-edit animation                                      |
+| [Tokenization](tokenization.md)                             | Source/target tokenizers, source punctuation grouping, boundary extraction, whitespace strategy                        |
+| [Token Store](token-store.md)                               | The single token owner: canonical tokens and breaks, pinyin overlay, the line-edit animation                           |
 | [Link Tool](link-tool.md)                                   | `Alignment`, the click state machine, mapping lifecycle, canonical pinyin, whitespace bridging                         |
 | [Line Tool](line-tool.md)                                   | Split/merge functions, the line-tool affordances, two-tap touch, the split/merge animation                             |
 | [View Tool](view-tool.md)                                   | The read-only layer and the `ViewHighlight` hover/tap mapping highlight                                                |

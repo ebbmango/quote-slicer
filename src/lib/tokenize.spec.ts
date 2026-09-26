@@ -1,21 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { groupSourceTokens, tokenizeSource, tokenizeTarget } from '$lib/tokenize';
+import {
+	groupSourceTokens,
+	tokenizeSource,
+	tokenizeTarget,
+	parseSource,
+	parseTarget
+} from '$lib/tokenize';
 
 // Helper: tokenize and project to [text, type] pairs for terse assertions.
 const toks = (s: string) => tokenizeTarget(s).map((t) => [t.text, t.type] as const);
 
 // Helper: group and project each group's indices back to a joined text string.
 const groups = (s: string) => {
-	const tokens = tokenizeSource(s);
-	return groupSourceTokens(tokens).map((g) => g.map((i) => tokens[i].text).join(''));
+	const { tokens, breaks } = parseSource(s);
+	return groupSourceTokens(tokens, breaks).map((g) => g.map((i) => tokens[i].text).join(''));
 };
 
 describe('tokenizeSource', () => {
 	it('makes every character its own token with sequential stable ids', () => {
 		expect(tokenizeSource('我爱你')).toEqual([
-			{ id: 0, text: '我', line: 0, type: 'character', pinyin: undefined },
-			{ id: 1, text: '爱', line: 0, type: 'character', pinyin: undefined },
-			{ id: 2, text: '你', line: 0, type: 'character', pinyin: undefined }
+			{ id: 0, text: '我', type: 'character', pinyin: undefined },
+			{ id: 1, text: '爱', type: 'character', pinyin: undefined },
+			{ id: 2, text: '你', type: 'character', pinyin: undefined }
 		]);
 	});
 
@@ -25,11 +31,23 @@ describe('tokenizeSource', () => {
 		expect(punct).toMatchObject({ type: 'punctuation', pinyin: null });
 	});
 
-	it('stamps lines from newlines without emitting newline tokens', () => {
-		expect(tokenizeSource('我\n你').map((t) => [t.text, t.line, t.id])).toEqual([
-			['我', 0, 0],
-			['你', 1, 1]
-		]);
+	it('parses authored breaks independently of tokens', () => {
+		expect(parseSource('我\n你').breaks).toEqual([1]);
+		expect(tokenizeSource('我\n你')).toEqual(tokenizeSource('我你'));
+		expect(parseSource('我\n\n你').errors).toHaveLength(1);
+		expect(parseTarget('a\nb').breaks).toEqual([2]);
+		expect(parseTarget('a\n').errors).toHaveLength(1);
+		expect(parseTarget('a\n\nb').errors).toEqual([]);
+		expect(parseTarget('a\n\nb').breaks).toEqual([2, 3]);
+	});
+	it('preserves all textual characters, including non-Latin translations', () => {
+		for (const text of ['café déjà vu', 'λόγος', 'a\t  b', '𠀀！', 'naïve\n世界']) {
+			expect(
+				tokenizeTarget(text)
+					.map((t) => t.text)
+					.join('')
+			).toBe(text.replaceAll('\n', ' '));
+		}
 	});
 });
 

@@ -41,6 +41,8 @@
 
 <div class="shiki-export no-scrollbar h-full w-full overflow-auto p-6 text-xs">
 	<HighlightedCode code={exportJson} {colorMap} />
+	<p class="mt-4">Provenance</p>
+	<pre data-export-provenance>{JSON.stringify(alignment.provenance)}</pre>
 </div>
 
 <style lang="postcss">

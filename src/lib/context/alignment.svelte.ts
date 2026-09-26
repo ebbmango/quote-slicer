@@ -1,4 +1,4 @@
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, untrack } from 'svelte';
 import { pinyin } from 'pinyin-pro';
 import { toCanonical, toDisplay } from '$lib/pinyinConvert';
 import type { SourceToken, TargetToken } from '$lib/tokenize';
@@ -73,16 +73,18 @@ export class Alignment {
 		this.sourceTokens.map((t) => toDisplay(t.pinyin ?? ''))
 	);
 
-	exportData: QuoteExport = $derived({
-		meta: {
-			sourceText: this.meta.sourceText.replace(/\n+/g, ''),
-			targetText: this.meta.targetText.replace(/\n+/g, ' ').trim(),
-			provenance: this.meta.provenance.replace(/\n+/g, ' ').trim()
-		},
-		sourceTokens: this.sourceTokens,
-		targetTokens: this.targetTokens,
-		mappings: this.mappings.map(({ colorIndex, ...rest }) => rest)
-	});
+	exportData: QuoteExport = $derived.by(() => ({
+		attestation: { tokens: this.sourceTokens },
+		translation: { tokens: this.targetTokens },
+		alignment: {
+			mappings: this.mappings.map(({ colorIndex, ...rest }) => rest),
+			breaks: {
+				attestation: this.store.sourceBreaks(this.meta.sourceText),
+				translation: this.store.targetBreaks(this.meta.targetText)
+			}
+		}
+	}));
+	provenance: string = $derived(this.meta.provenance);
 
 	// id → current array index; re-derives whenever tokens update (e.g. after split/merge)
 	private sourceIdToIndex: Map<number, number> = $derived(
@@ -121,6 +123,10 @@ export class Alignment {
 	}
 
 	private createMapping(): Mapping {
+		// Materialize both sides before freezing identity, including one-sided mappings.
+		this.store.sourceTokens(this.meta.sourceText);
+		this.store.targetTokens(this.meta.targetText);
+		this.store.lockText();
 		// Lowest free palette slot, so deleting a mapping releases its color for reuse.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built fresh per call, never mutated
 		const used = new Set(this.mappings.map((m) => m.colorIndex));
@@ -163,6 +169,15 @@ export class Alignment {
 	}
 
 	setMeta(meta: QuoteExportMeta): void {
+		if (
+			untrack(
+				() =>
+					this.mappings.length &&
+					(meta.sourceText !== this.meta.sourceText || meta.targetText !== this.meta.targetText)
+			)
+		) {
+			throw new Error('Mapped text requires an explicit identity-aware edit');
+		}
 		this.meta = meta;
 	}
 
@@ -214,10 +229,9 @@ export class Alignment {
 
 	toggleSource(i: number, opts: { force?: boolean } = {}): void {
 		if (this.listAnimating) return;
-		const type = this.sourceTokens[i]?.type;
-		// Source tokens are never whitespace (only target streams carry whitespace);
-		// punctuation can't anchor a mapping.
-		if (type === 'punctuation') return;
+		const token = this.sourceTokens[i];
+		// Textual whitespace is canonical content, but cannot anchor a mapping.
+		if (!token || token.type === 'punctuation' || /^\s+$/u.test(token.text)) return;
 		const tokenId = this.sourceTokens[i].id;
 		if (this.tryRemoveOrSwitch('source', tokenId)) return;
 
@@ -232,7 +246,7 @@ export class Alignment {
 			this.mappings = [...this.mappings, newM];
 			this.activeMappingId = newM.id;
 		}
-		this.store.setPinyin(tokenId, tokenPinyin(this.sourceTokens[i]));
+		if (token.type === 'character') this.store.setPinyin(tokenId, tokenPinyin(token));
 	}
 
 	toggleTarget(i: number): void {

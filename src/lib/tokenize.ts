@@ -2,22 +2,40 @@
 // \u3000-\u303F: CJK Symbols and Punctuation (ideographic space through 〿); \uFF00-\uFFEF: Halfwidth
 // and Fullwidth Forms (＀ to ￯). Escapes, not literals — the raw characters are
 // invisible/confusable in an editor (and trip no-irregular-whitespace).
-export const SOURCE_INPUT_RE = /[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF\n]/gu;
+export const SOURCE_INPUT_RE = /[^\p{Script=Han}\u3000-\u303F\uFF00-\uFFEF\s]/gu;
 
-export type SourceToken = {
-	id: number; // stable across split/merge; assigned once at tokenization as array position
-	text: string;
-	line: number;
-	type: 'character' | 'punctuation' | 'number' | 'symbol';
-	pinyin?: string | null; // canonical numbered pinyin ("zhi1") when parseable, raw text otherwise; undefined: character not yet annotated; null: not applicable
-};
+import type { SourceToken, TargetToken } from './quotation';
+export type { SourceToken, TargetToken } from './quotation';
 
-export type TargetToken = {
-	id: number; // stable across split/merge; assigned once at tokenization as array position
-	text: string;
-	line: number;
-	type: 'text' | 'hanzi' | 'punctuation' | 'whitespace';
-};
+export type Tokenized<T> = { tokens: T[]; breaks: number[]; errors: string[] };
+
+function tokenizeLines<T extends { id: number }>(
+	text: string,
+	tokenize: (line: string) => T[],
+	separator?: () => T
+): Tokenized<T> {
+	const tokens: T[] = [];
+	const breaks: number[] = [];
+	const errors: string[] = [];
+	const lines = text.split('\n');
+	lines.forEach((line, i) => {
+		tokens.push(...tokenize(line));
+		if (text && !line.length && (!separator || i === lines.length - 1))
+			errors.push(
+				`Empty authored line ${i + 1} cannot be represented; remove it or enter textual content.`
+			);
+		if (i < lines.length - 1) {
+			if (separator) tokens.push(separator());
+			breaks.push(tokens.length);
+		}
+	});
+	return {
+		tokens: tokens.map((token, id) => ({ ...token, id })),
+		// A draft may temporarily contain incomplete lines. Errors block committing it.
+		breaks: [...new Set(breaks)].filter((b) => b > 0 && b < tokens.length),
+		errors
+	};
+}
 
 // ── Source ────────────────────────────────────────────────────────────────────
 
@@ -26,19 +44,20 @@ export type TargetToken = {
  * Newlines delimit lines; they are not emitted as tokens.
  */
 export function tokenizeSource(text: string): SourceToken[] {
-	return text
-		.split('\n')
-		.flatMap((lineText, line) =>
-			[...lineText].map((char) => {
-				if (/\p{Script=Han}/u.test(char))
-					return { text: char, line, type: 'character' as const, pinyin: undefined };
-				if (/\p{N}/u.test(char)) return { text: char, line, type: 'number' as const, pinyin: null };
-				if (/[\p{P}\p{S}]/u.test(char))
-					return { text: char, line, type: 'punctuation' as const, pinyin: null };
-				return { text: char, line, type: 'symbol' as const, pinyin: null };
-			})
-		)
-		.map((t, id) => ({ ...t, id }));
+	return parseSource(text).tokens;
+}
+
+export function parseSource(text: string): Tokenized<SourceToken> {
+	return tokenizeLines<SourceToken>(text, (lineText) =>
+		[...lineText].map((char) => {
+			if (/\p{Script=Han}/u.test(char))
+				return { id: 0, text: char, type: 'character', pinyin: undefined };
+			if (/\p{N}/u.test(char)) return { id: 0, text: char, type: 'number', pinyin: null };
+			if (/[\p{P}\p{S}]/u.test(char))
+				return { id: 0, text: char, type: 'punctuation', pinyin: null };
+			return { id: 0, text: char, type: 'symbol', pinyin: null };
+		})
+	);
 }
 
 // Leading punctuation — opening brackets (`\p{Ps}`: 「『《【（) and initial quotes
@@ -57,12 +76,13 @@ const isLeading = (t: SourceToken) => isPunct(t) && LEADING_PUNCT_RE.test(t.text
  * each group is one base token plus its glued leading/trailing punctuation, or a
  * standalone punctuation run with no base to bind to.
  *
- * Grouping never crosses a `.line` boundary: a punct on a different line than its
- * would-be base splits off into its own group, so a line-tool split between a
- * char and its punctuation separates them naturally (they fall onto different
- * lines → different groups).
+ * Grouping never crosses an explicit sequence boundary. Imported breaks can
+ * separate punctuation from its base without changing canonical tokens.
  */
-export function groupSourceTokens(tokens: SourceToken[]): number[][] {
+export function groupSourceTokens(
+	tokens: SourceToken[],
+	breaks: readonly number[] = []
+): number[][] {
 	const groups: number[][] = [];
 	let cur: number[] | null = null; // open group anchored by a base token
 	let pending: number[] = []; // buffered leading puncts awaiting their base
@@ -78,15 +98,18 @@ export function groupSourceTokens(tokens: SourceToken[]): number[][] {
 
 	for (let i = 0; i < tokens.length; i++) {
 		const t = tokens[i];
+		if (breaks.includes(i)) {
+			flushCur();
+			flushPending();
+		}
 		if (isLeading(t)) {
 			// Binds to the NEXT base → buffer it. A line change orphans any earlier
 			// buffered leading puncts into their own group.
-			if (pending.length && tokens[pending[0]].line !== t.line) flushPending();
 			flushCur();
 			pending.push(i);
 		} else if (isPunct(t)) {
 			// Trailing punct: binds to the PREVIOUS base on the same line, if any.
-			if (cur && tokens[cur[0]].line === t.line) {
+			if (cur) {
 				cur.push(i);
 			} else {
 				flushCur();
@@ -96,7 +119,7 @@ export function groupSourceTokens(tokens: SourceToken[]): number[][] {
 		} else {
 			// Base token: absorb same-line leading puncts buffered ahead of it.
 			flushCur();
-			if (pending.length && tokens[pending[0]].line === t.line) {
+			if (pending.length) {
 				cur = [...pending, i];
 				pending = [];
 			} else {
@@ -137,24 +160,35 @@ const TARGET_RE =
  * → [There's][ ][nothing][ ]["simple"][ ][in][ ][programming.]
  */
 export function tokenizeTarget(text: string): TargetToken[] {
-	const lines = text.split('\n');
-	return lines
-		.flatMap((lineText, line) => {
-			const tokens: Omit<TargetToken, 'id'>[] = [];
+	return parseTarget(text).tokens;
+}
+
+export function parseTarget(text: string): Tokenized<TargetToken> {
+	return tokenizeLines<TargetToken>(
+		text,
+		(lineText) => {
+			const tokens: TargetToken[] = [];
+			let cursor = 0;
 			for (const { 0: t } of lineText.matchAll(TARGET_RE)) {
+				const index = lineText.indexOf(t, cursor);
+				// Preserve letters outside the legacy Latin/Han matcher, including diacritics.
+				if (index > cursor)
+					tokens.push({ id: 0, text: lineText.slice(cursor, index), type: 'text' });
+				cursor = index + t.length;
 				if (/^\s+$/.test(t)) {
-					tokens.push({ text: t, line, type: 'whitespace' });
+					tokens.push({ id: 0, text: t, type: 'whitespace' });
 				} else if (/^\p{Script=Han}$/u.test(t)) {
-					tokens.push({ text: t, line, type: 'hanzi' });
+					tokens.push({ id: 0, text: t, type: 'hanzi' });
 				} else if (/[\p{L}\p{N}]/u.test(t)) {
-					tokens.push({ text: t, line, type: 'text' });
+					tokens.push({ id: 0, text: t, type: 'text' });
 				} else {
-					tokens.push({ text: t, line, type: 'punctuation' });
+					tokens.push({ id: 0, text: t, type: 'punctuation' });
 				}
 			}
-			// Boundary whitespace: acts as merge affordance in line tool.
-			if (line < lines.length - 1) tokens.push({ text: ' ', line, type: 'whitespace' });
+			if (cursor < lineText.length)
+				tokens.push({ id: 0, text: lineText.slice(cursor), type: 'text' });
 			return tokens;
-		})
-		.map((t, id) => ({ ...t, id }));
+		},
+		() => ({ id: 0, text: ' ', type: 'whitespace' })
+	);
 }

@@ -22,6 +22,7 @@
 
 	let {
 		tokens,
+		breaks,
 		onSplit,
 		onMerge,
 		animating,
@@ -30,8 +31,9 @@
 		onClearTouchDivisor = () => {}
 	}: {
 		tokens: SourceToken[];
+		breaks: number[];
 		onSplit: (afterIndex: number) => void;
-		onMerge: (lineN: number) => void;
+		onMerge: (boundary: number) => void;
 		animating: boolean;
 		// Touch line tool: the divisor index currently highlighted in THIS panel
 		// (null if none / the other panel owns the highlight). First tap highlights,
@@ -59,7 +61,7 @@
 	// row) holding only tokens — no intra-group divisors, so punctuation can never
 	// be split off from its base. Divisors live only between groups, as direct
 	// children of the row container. See groupSourceTokens.
-	let groups = $derived(groupSourceTokens(tokens));
+	let groups = $derived(groupSourceTokens(tokens, breaks));
 
 	// Clear any lingering divisor-hover redistribution when leaving line tool.
 	$effect(() => {
@@ -194,7 +196,7 @@
 			</span>
 			{#if group[group.length - 1] < tokens.length - 1}
 				{@const di = group[group.length - 1]}
-				{@const isMerge = tokens[di + 1].line !== tokens[di].line}
+				{@const isMerge = breaks.includes(di + 1)}
 				<LineDivisor
 					kind={isMerge ? 'merge' : 'split'}
 					surface="zone"
@@ -203,7 +205,7 @@
 					container={lineContainer}
 					spread={SPREAD}
 					{touchedDivisorIndex}
-					onActivate={() => (isMerge ? onMerge(tokens[di].line) : onSplit(di))}
+					onActivate={() => (isMerge ? onMerge(di + 1) : onSplit(di))}
 					onTouch={onTouchDivisor}
 					onClearTouch={onClearTouchDivisor}
 				/>

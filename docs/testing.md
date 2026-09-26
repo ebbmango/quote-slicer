@@ -51,10 +51,9 @@ The spec-by-spec table lives in the [File Map](file-map.md#tests). The shape of 
   `viewHighlight.svelte.spec.ts` (the cold/warm/grace timers, with fake timers).
   Both use a mock token store rather than the real context wiring.
 - **Server project** — everything else, including two files that look like they might
-  need a browser but don't: `tokenStore.spec.ts` exercises the text-keyed cache and
-  pinyin overlay under node because `onMount` is a no-op there, and `line.spec.ts`
-  covers split/merge immutability plus the out-of-range throw (documented as a
-  precondition comment on `splitAfterToken`).
+  need a browser but don't: `tokenStore.spec.ts` exercises the canonical tokens and breaks and
+  pinyin overlay under node because `onMount` is a no-op there, and `breaks.spec.ts` / `tokenMutation.spec.ts`
+  cover boundary and identity transformations.
 
 Specs are **colocated** beside their sources (`tokenize.spec.ts` next to
 `tokenize.ts`, etc.); there is no separate test tree.

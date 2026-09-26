@@ -17,6 +17,7 @@
 
 	let {
 		tokens,
+		breaks,
 		onSplit,
 		onMerge,
 		animating,
@@ -26,8 +27,9 @@
 		onClearTouchDivisor = () => {}
 	}: {
 		tokens: TargetToken[];
+		breaks: number[];
 		onSplit: (afterIndex: number) => void;
-		onMerge: (lineN: number) => void;
+		onMerge: (boundary: number) => void;
 		animating: boolean;
 		// Running divisor count from the source panel, so the palette continues
 		// here instead of restarting (see divisorColor).
@@ -149,8 +151,7 @@
 	}}
 >
 	{#each tokens as token, i (i)}
-		{@const isBoundary =
-			token.type === 'whitespace' && i < tokens.length - 1 && tokens[i + 1].line !== token.line}
+		{@const isBoundary = token.type === 'whitespace' && breaks.includes(i + 1)}
 		{#if isBoundary}
 			<LineDivisor
 				kind="merge"
@@ -161,11 +162,11 @@
 				container={lineContainer}
 				spread={SPREAD}
 				{touchedDivisorIndex}
-				onActivate={() => onMerge(token.line)}
+				onActivate={() => onMerge(i + 1)}
 				onTouch={onTouchDivisor}
 				onClearTouch={onClearTouchDivisor}
 			/>
-		{:else if token.type === 'whitespace'}
+		{:else if token.type === 'whitespace' && i < tokens.length - 1}
 			<LineDivisor
 				kind="split"
 				surface="whitespace"
@@ -207,6 +208,20 @@
 					focusedIndex = null;
 				}}>{token.text}</span
 			>
+		{/if}
+		{#if token.type !== 'whitespace' && breaks.includes(i + 1)}
+			<LineDivisor
+				kind="merge"
+				surface="zone"
+				divisorIndex={i}
+				color={divisorColor(i, DIVISOR_FIELD, colorTheme)}
+				container={lineContainer}
+				spread={SPREAD}
+				{touchedDivisorIndex}
+				onActivate={() => onMerge(i + 1)}
+				onTouch={onTouchDivisor}
+				onClearTouch={onClearTouchDivisor}
+			/>
 		{/if}
 	{/each}
 </div>

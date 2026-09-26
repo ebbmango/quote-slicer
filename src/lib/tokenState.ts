@@ -1,6 +1,7 @@
 import { MAPPING_COLORS } from '$lib/constants/colors';
 import type { ThemeName } from '$lib/types';
-import type { SourceToken, TargetToken } from '$lib/tokenize';
+import type { TargetToken } from '$lib/tokenize';
+import type { AttestationTranslationAlignment } from '$lib/quotation';
 
 export type MappingId = string;
 
@@ -24,12 +25,7 @@ export type QuoteExportMeta = {
 
 export type ExportMapping = Omit<Mapping, 'colorIndex'>;
 
-export type QuoteExport = {
-	meta: QuoteExportMeta;
-	sourceTokens: SourceToken[];
-	targetTokens: TargetToken[];
-	mappings: ExportMapping[];
-};
+export type QuoteExport = AttestationTranslationAlignment;
 
 export type TokenState =
 	| { kind: 'unmapped' }
