@@ -60,6 +60,14 @@ safe.
 
 `tokenizeTarget(text: string): TargetToken[]`
 
+`parseTarget` is the raw target authoring boundary: it removes non-newline
+whitespace only at the beginning and end of the whole input, before tokenization
+and ID allocation. Internal spaces/tabs and spaces beside internal line boundaries
+remain lossless. Authored newlines are never trimmed: their separator tokens,
+breaks, and empty-line validation keep their existing semantics. The raw textarea
+and store cache key remain unchanged; mapped text still requires an explicit
+identity-aware edit. Existing token arrays and exports are never trimmed.
+
 The hard part is punctuation. The guiding rule: **punctuation that touches a word is
 absorbed into that word, but punctuation wedged _between_ two word-characters splits
 out** so each piece stays individually mappable.

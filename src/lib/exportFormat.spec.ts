@@ -1,3 +1,4 @@
+import { parseTarget } from './tokenize';
 import { expect, it } from 'vitest';
 import { runInNewContext } from 'node:vm';
 import { formatExport } from './exportFormat';
@@ -37,3 +38,25 @@ it('preserves omitted, undefined, null and string pinyin independently', () => {
 	expect(Object.hasOwn(restored.attestation.tokens[1], 'pinyin')).toBe(true);
 	expect(Object.hasOwn(restored.attestation.tokens[3], 'pinyin')).toBe(false);
 });
+
+it.each([
+	['hello ', 'hello'],
+	[' hello', 'hello'],
+	['  hello  ', 'hello'],
+	['hello world', 'hello world'],
+	[' hello\nworld ', 'hello world'],
+	[' hello  \n  world ', 'hello     world']
+])(
+	'exports canonical target text without independent string sanitization: %j',
+	(raw, canonical) => {
+		const parsed = parseTarget(raw);
+		const quote: QuoteExport = {
+			...base,
+			translation: { tokens: parsed.tokens },
+			alignment: { mappings: [], breaks: { attestation: [], translation: parsed.breaks } }
+		};
+		const restored = runInNewContext(`(${formatExport(quote)})`) as QuoteExport;
+		expect(restored.translation.tokens.map((t) => t.text).join('')).toBe(canonical);
+		expect(structuredClone(restored)).toStrictEqual(quote);
+	}
+);

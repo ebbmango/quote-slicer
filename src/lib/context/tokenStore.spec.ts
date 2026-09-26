@@ -51,3 +51,18 @@ describe('canonical tokens and independent editorial breaks', () => {
 		expect(store.sourceBreaks('我。')).toEqual([1]);
 	});
 });
+
+it('normalizes draft text before allocation and preserves mapped IDs through line edits', () => {
+	const store = createTokenStore();
+	const text = '  hello\nworld  ';
+	const tokens = store.targetTokens(text);
+	expect(tokens.map((t) => t.text)).toEqual(['hello', ' ', 'world']);
+	expect(tokens.map((t) => t.id)).toEqual([0, 1, 2]);
+	store.lockText();
+	store.merge('target', text, 2, scope);
+	expect(store.targetBreaks(text)).toEqual([]);
+	store.split('target', text, 1, scope);
+	expect(store.targetBreaks(text)).toEqual([2]);
+	expect(store.targetTokens(text)).toBe(tokens);
+	expect(() => store.targetTokens('hello\nworld')).toThrow(/identity/);
+});
