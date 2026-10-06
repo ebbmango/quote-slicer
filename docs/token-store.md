@@ -56,10 +56,11 @@ type EditScope = {
 	sourceScrollEl: HTMLElement | null; // each panel's [data-scrollbox] — the edited one's
 	targetScrollEl: HTMLElement | null; //   tokens (data-flip-id) are found inside it
 	provenanceEl: HTMLElement | null; // the provenance textarea
+	sourceLinkEl: HTMLElement | null; // the source-link textarea under it
 };
 ```
 
-The provenance ref (`provenanceEl`) is **passed in**, not discovered: the workbench owns the
+The provenance and source-link refs (`provenanceEl`, `sourceLinkEl`) are **passed in**, not discovered: the workbench owns the
 layout, so the store reads only what its scope hands it rather than walking the DOM up
 from a panel to find `#provenance`. See [`CONTEXT.md`](../CONTEXT.md) ("edit scope").
 

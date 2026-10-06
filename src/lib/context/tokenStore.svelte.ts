@@ -13,14 +13,16 @@ const TOKEN_STORE_KEY = Symbol('tokenStore');
 // individually (each carries data-flip-id, found via its scroll box); the edited
 // panel's wrapper is the element whose height is tweened when the panel can grow.
 // The panels below ride the flow (not flipped) — see animate(). The provenance
-// field (provenanceEl) is carried here too: the workbench owns the layout, so it passes
-// the ref in rather than the store walking the DOM up to find it.
+// and source-link fields (provenanceEl, sourceLinkEl) are carried here too: the
+// workbench owns the layout, so it passes the refs in rather than the store
+// walking the DOM up to find them.
 export type EditScope = {
 	sourceWrapperEl: HTMLElement | null;
 	targetWrapperEl: HTMLElement | null;
 	sourceScrollEl: HTMLElement | null;
 	targetScrollEl: HTMLElement | null;
 	provenanceEl: HTMLElement | null;
+	sourceLinkEl: HTMLElement | null;
 };
 
 // The token store (see CONTEXT.md "tokens"). The single owner of the
@@ -121,15 +123,19 @@ export function createTokenStore() {
 	}
 
 	// Flipped for an edit in `zone`: the whole vertical layout — both panel wrappers,
-	// the provenance field, and the edited panel's tokens.
+	// the provenance and source-link fields, and the edited panel's tokens.
 	function flipTargets(zone: Zone, scope: EditScope): HTMLElement[] {
 		const editedScroll = zone === 'source' ? scope.sourceScrollEl : scope.targetScrollEl;
 		const tokens = editedScroll
 			? Array.from(editedScroll.querySelectorAll<HTMLElement>(FLIP_TOKEN_SELECTOR))
 			: [];
-		return [scope.sourceWrapperEl, scope.targetWrapperEl, scope.provenanceEl, ...tokens].filter(
-			(el): el is HTMLElement => el !== null
-		);
+		return [
+			scope.sourceWrapperEl,
+			scope.targetWrapperEl,
+			scope.provenanceEl,
+			scope.sourceLinkEl,
+			...tokens
+		].filter((el): el is HTMLElement => el !== null);
 	}
 
 	async function animate(zone: Zone, scope: EditScope, mutate: () => void): Promise<void> {
@@ -187,6 +193,7 @@ export function createTokenStore() {
 		const otherHeightChanged =
 			otherBeforeH !== null && otherAfterH !== null && Math.abs(otherBeforeH - otherAfterH) > 1;
 		if (scope.provenanceEl) gsap.set(scope.provenanceEl, { clearProps: 'transform' });
+		if (scope.sourceLinkEl) gsap.set(scope.sourceLinkEl, { clearProps: 'transform' });
 		if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 	}
 

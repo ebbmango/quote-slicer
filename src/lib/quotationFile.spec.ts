@@ -138,6 +138,21 @@ describe('quotationFileProblems', () => {
 		expect(quotationFileProblems(JSON.parse(verbariumExample))).toEqual([]);
 	});
 
+	it('names a source link that is not a web address', () => {
+		const file = buildQuotationFile(data, { provenance: 'x', sourceLink: 'ctext.org/x' });
+		expect(quotationFileProblems(file)).toEqual([
+			'The source link is not an http or https address.'
+		]);
+		expect(
+			quotationFileProblems(buildQuotationFile(data, { provenance: 'x', sourceLink: 'ftp://x' }))
+		).toEqual(['The source link is not an http or https address.']);
+		expect(
+			quotationFileProblems(
+				buildQuotationFile(data, { provenance: 'x', sourceLink: 'https://ctext.org/x#:~:text=a' })
+			)
+		).toEqual([]);
+	});
+
 	it('names an empty provenance and outer whitespace, which the workbench lets through', () => {
 		const file = buildQuotationFile(
 			{

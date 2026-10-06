@@ -28,10 +28,10 @@ function makeStore() {
 }
 
 // Source '我爱你' → 我(0) 爱(1) 你(2). Target 'I love you' → I(0) ␣(1) love(2) ␣(3) you(4).
-function setup(sourceText = '我爱你', targetText = 'I love you', provenance = '') {
+function setup(sourceText = '我爱你', targetText = 'I love you', provenance = '', sourceLink = '') {
 	const { store, pinyinOf } = makeStore();
 	const alignment = new Alignment(store);
-	alignment.setMeta({ sourceText, targetText, provenance });
+	alignment.setMeta({ sourceText, targetText, provenance, sourceLink });
 	return { alignment, pinyinOf };
 }
 
@@ -200,11 +200,18 @@ describe('derived views and token states', () => {
 
 describe('export', () => {
 	it('exports independent breaks and separate provenance without presentation fields', () => {
-		const { alignment } = setup('我爱\n你', 'I love\nyou', 'Book title\nTranslator');
+		const { alignment } = setup(
+			'我爱\n你',
+			'I love\nyou',
+			'Book title\nTranslator',
+			'https://ctext.org/x'
+		);
 		alignment.toggleSource(0);
 		alignment.toggleTarget(0);
 		const data = alignment.exportData;
 		expect(alignment.provenance).toBe('Book title\nTranslator');
+		expect(alignment.sourceLink).toBe('https://ctext.org/x');
+		expect(data).not.toHaveProperty('sourceLink');
 		expect(data.attestation.tokens.map((t) => t.text).join('')).toBe('我爱你');
 		expect(data.translation.tokens.map((t) => t.text).join('')).toBe('I love you');
 		expect(data.alignment.breaks).toEqual({ attestation: [2], translation: [4] });

@@ -64,6 +64,8 @@ export function buildQuotationFile(
 export function quotationFileProblems(file: QuotationFile): string[] {
 	const problems: string[] = [];
 	if (file.provenance === '') problems.push('The provenance is empty.');
+	if (file.sourceLink !== undefined && !isWebAddress(file.sourceLink))
+		problems.push('The source link is not an http or https address.');
 	for (const [side, { tokens }] of [
 		['source text', file.attestation],
 		['translation', file.translation]
@@ -72,6 +74,16 @@ export function quotationFileProblems(file: QuotationFile): string[] {
 		if (text !== text.trim()) problems.push(`The ${side} starts or ends with whitespace.`);
 	}
 	return problems;
+}
+
+function isWebAddress(link: string): boolean {
+	if (/\s/.test(link)) return false;
+	try {
+		const { protocol } = new URL(link);
+		return protocol === 'http:' || protocol === 'https:';
+	} catch {
+		return false;
+	}
 }
 
 /**

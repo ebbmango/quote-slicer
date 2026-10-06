@@ -156,9 +156,10 @@ The authoritative `AttestationTranslationAlignment` is defined in
 }
 ```
 
-Draft `QuoteExportMeta` holds input strings and provenance, separately from the
-exported alignment. The export panel folds the provenance into the quotation
-file Verbarium commits (`src/lib/quotationFile.ts`, see [Export](export.md)).
+Draft `QuoteExportMeta` holds the input strings, the provenance and the source
+link, separately from the exported alignment. The export panel folds the
+provenance and the source link into the quotation file Verbarium commits
+(`src/lib/quotationFile.ts`, see [Export](export.md)).
 `colorIndex` is never exported.
 
 ## Colors

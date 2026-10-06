@@ -13,7 +13,8 @@ are omitted.
 `src/lib/quotationFile.ts` does the work:
 
 - `buildQuotationFile(exportData, { provenance, sourceLink })` adds the format
-  version, trims the provenance, leaves a blank source link out, and drops every
+  version, trims the provenance and the source link, leaves a blank source link
+  out, and drops every
   `pinyin` key whose value is `undefined`. JSON has no `undefined`: an
   unannotated character simply has no `pinyin` key, and `null` stays for a token
   where pinyin does not apply (punctuation). The two states that used to be
@@ -25,9 +26,12 @@ are omitted.
   newline. `quotationFile.spec.ts` pins it to the example in Verbarium's
   contract, so a downloaded file can be committed unchanged.
 
-Provenance lives inside the file. While it is empty the panel says so, because
-Verbarium's build rejects a quotation file without one. The source link field
-arrives with [#20](https://github.com/ebbmango/quote-slicer/issues/20).
+Provenance and the source link (the URL of the quotation's online witness,
+typed into the field under the provenance) live inside the file; a blank source
+link is simply left out. The panel's Copy and Download buttons wait, and the
+panel says why, while Verbarium's build would reject the file: an empty
+provenance, a source link that is not an `http`/`https` address, or a source or
+translation text that starts or ends with whitespace (`quotationFileProblems`).
 
 ## Copy, download, check
 

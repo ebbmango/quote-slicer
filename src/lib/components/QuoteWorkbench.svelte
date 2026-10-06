@@ -21,6 +21,7 @@
 		sourceText = $bindable(),
 		targetText = $bindable(),
 		provenance = $bindable(),
+		sourceLink = $bindable(),
 		arrowExiting = false
 	} = $props();
 	let composing = $state(false);
@@ -54,12 +55,13 @@
 	let targetTokens = $derived(store.targetTokens(targetText));
 
 	$effect(() => {
-		alignment.setMeta({ sourceText, targetText, provenance });
+		alignment.setMeta({ sourceText, targetText, provenance, sourceLink });
 	});
 
 	let sourceWrapperEl: HTMLDivElement | null = $state(null);
 	let targetWrapperEl: HTMLDivElement | null = $state(null);
 	let provenanceEl: HTMLTextAreaElement | null = $state(null);
+	let sourceLinkEl: HTMLTextAreaElement | null = $state(null);
 
 	// The DOM refs one line edit animates over. Scroll boxes (the overflow-y-auto
 	// elements inside each panel) are tagged data-scrollbox by the Interactive*Text
@@ -70,7 +72,8 @@
 			targetWrapperEl,
 			sourceScrollEl: sourceWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
 			targetScrollEl: targetWrapperEl?.querySelector<HTMLElement>(SCROLLBOX_SELECTOR) ?? null,
-			provenanceEl
+			provenanceEl,
+			sourceLinkEl
 		};
 	}
 
@@ -259,6 +262,23 @@
 			? 'exiting'
 			: ''}"
 		placeholder="Provenance"
+	></textarea>
+	<!-- The source link: the URL of the quotation's online witness, optional. It
+	     rides the same rhythm and morph as the provenance line, one step dimmer. -->
+	<textarea
+		id="source-link"
+		name="source-link"
+		bind:this={sourceLinkEl}
+		autocomplete="off"
+		spellcheck="false"
+		bind:value={sourceLink}
+		rows="1"
+		use:autosize
+		disabled={tool.current === 'view'}
+		class="morph-provenance fade-y no-scrollbar max-h-[10vh] min-h-0 w-full shrink-0 resize-none overflow-y-auto bg-transparent pb-3 text-center font-ss4 text-xs font-[350] break-all opacity-40 outline-none disabled:cursor-default {arrowExiting
+			? 'exiting'
+			: ''}"
+		placeholder="Source link"
 	></textarea>
 </div>
 

@@ -21,6 +21,8 @@ export type QuoteExportMeta = {
 	sourceText: string;
 	targetText: string;
 	provenance: string;
+	/** The URL of the quotation's online textual witness; empty when there is none. */
+	sourceLink: string;
 };
 
 export type ExportMapping = Omit<Mapping, 'colorIndex'>;
