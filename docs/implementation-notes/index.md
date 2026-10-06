@@ -21,6 +21,7 @@ level always shows only "not yet documented" work.
 
 | Date       | Note                                                                                | Commits   |
 | ---------- | ----------------------------------------------------------------------------------- | --------- |
+| 2026-10-06 | [Quotation file export](./26-10-06-quotation-file-export.md)                               | —                               |
 | 2026-08-05 | [Layout mode as a shared runtime contract](./26-08-05-layout-mode-single-source.md) | `5390525` |
 
 ## Archived notes (already parsed into the docs)

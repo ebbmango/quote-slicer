@@ -1,16 +1,42 @@
 <script lang="ts">
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { formatExport } from '$lib/exportFormat';
+	import { buildQuotationFile, formatQuotationFile } from '$lib/quotationFile';
 	import { colors } from '$lib/constants/colors';
 	import { theme as appTheme } from '$lib/theme';
 
 	const alignment = getAlignmentContext();
 
-	const exportJson = $derived(formatExport(alignment.exportData));
+	// The quotation file Verbarium commits, exactly as it should be saved.
+	const quotationFile = $derived(
+		formatQuotationFile(
+			buildQuotationFile(alignment.exportData, { provenance: alignment.provenance })
+		)
+	);
+	const provenanceMissing = $derived(alignment.provenance.trim() === '');
+
+	let copied = $state(false);
+	let copyTimer: ReturnType<typeof setTimeout> | undefined;
+
+	async function copy() {
+		await navigator.clipboard.writeText(quotationFile);
+		copied = true;
+		clearTimeout(copyTimer);
+		copyTimer = setTimeout(() => (copied = false), 1500);
+	}
+
+	// The author renames the file to its Quote asset name when committing it.
+	function download() {
+		const url = URL.createObjectURL(new Blob([quotationFile], { type: 'application/json' }));
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = 'quotation.json';
+		link.click();
+		URL.revokeObjectURL(url);
+	}
 
 	// Highlight palette tracks the theme so the JSON panel doesn't stay in
-	// light-theme colours under dark theme. Strings/numbers/undefined draw from the
+	// light-theme colours under dark theme. Strings/numbers/null draw from the
 	// matching light|dark mapping shade; the neutral grey (props, colons, braces)
 	// is dimmed for the dark panel background.
 	const isDark = $derived(appTheme.current === 'dark');
@@ -32,17 +58,34 @@
 		// colons & brackets
 		'#ff79c6': neutral,
 		'#f8f8f2': neutral,
-		// numbers
-		'#bd93f9': colors.azure[shade].base,
-		// undefined
-		'#ff5555': colors.sugar[shade].base
+		// numbers and null
+		'#bd93f9': colors.azure[shade].base
 	});
 </script>
 
 <div class="shiki-export no-scrollbar h-full w-full overflow-auto p-6 text-xs">
-	<HighlightedCode code={exportJson} {colorMap} />
-	<p class="mt-4">Provenance</p>
-	<pre data-export-provenance>{JSON.stringify(alignment.provenance)}</pre>
+	<div class="mb-4 flex items-center gap-3">
+		<button
+			type="button"
+			class="rounded border border-current/25 px-2 py-1 opacity-70 transition-opacity hover:opacity-100"
+			onclick={copy}
+		>
+			{copied ? 'Copied' : 'Copy'}
+		</button>
+		<button
+			type="button"
+			class="rounded border border-current/25 px-2 py-1 opacity-70 transition-opacity hover:opacity-100"
+			onclick={download}
+		>
+			Download
+		</button>
+		{#if provenanceMissing}
+			<p role="status" class="opacity-60">
+				No provenance yet: Verbarium rejects a quotation file without one.
+			</p>
+		{/if}
+	</div>
+	<HighlightedCode code={quotationFile} {colorMap} />
 </div>
 
 <style lang="postcss">
