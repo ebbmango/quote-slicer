@@ -1,16 +1,51 @@
 <script lang="ts">
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { formatExport } from '$lib/exportFormat';
+	import {
+		buildQuotationFile,
+		formatQuotationFile,
+		quotationFileProblems
+	} from '$lib/quotationFile';
 	import { colors } from '$lib/constants/colors';
 	import { theme as appTheme } from '$lib/theme';
 
 	const alignment = getAlignmentContext();
 
-	const exportJson = $derived(formatExport(alignment.exportData));
+	// The quotation file Verbarium commits, exactly as it should be saved.
+	const file = $derived(
+		buildQuotationFile(alignment.exportData, { provenance: alignment.provenance })
+	);
+	const quotationFile = $derived(formatQuotationFile(file));
+	// Verbarium's build rejects a file with these; the buttons wait until they are gone.
+	const problems = $derived(quotationFileProblems(file));
+
+	let copyState: 'idle' | 'copied' | 'failed' = $state('idle');
+	let copyTimer: ReturnType<typeof setTimeout> | undefined;
+
+	async function copy() {
+		try {
+			await navigator.clipboard.writeText(quotationFile);
+			copyState = 'copied';
+		} catch {
+			copyState = 'failed';
+		}
+		clearTimeout(copyTimer);
+		copyTimer = setTimeout(() => (copyState = 'idle'), 1500);
+	}
+
+	// The author renames the file to its Quote asset name when committing it.
+	function download() {
+		const url = URL.createObjectURL(new Blob([quotationFile], { type: 'application/json' }));
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = 'quotation.json';
+		link.click();
+		// Some browsers start the download after click() returns; keep the URL alive for them.
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	}
 
 	// Highlight palette tracks the theme so the JSON panel doesn't stay in
-	// light-theme colours under dark theme. Strings/numbers/undefined draw from the
+	// light-theme colours under dark theme. Strings/numbers/null draw from the
 	// matching light|dark mapping shade; the neutral grey (props, colons, braces)
 	// is dimmed for the dark panel background.
 	const isDark = $derived(appTheme.current === 'dark');
@@ -32,20 +67,45 @@
 		// colons & brackets
 		'#ff79c6': neutral,
 		'#f8f8f2': neutral,
-		// numbers
-		'#bd93f9': colors.azure[shade].base,
-		// undefined
-		'#ff5555': colors.sugar[shade].base
+		// numbers and null
+		'#bd93f9': colors.azure[shade].base
 	});
 </script>
 
 <div class="shiki-export no-scrollbar h-full w-full overflow-auto p-6 text-xs">
-	<HighlightedCode code={exportJson} {colorMap} />
-	<p class="mt-4">Provenance</p>
-	<pre data-export-provenance>{JSON.stringify(alignment.provenance)}</pre>
+	<div class="mb-4 flex flex-wrap items-center gap-3">
+		<button type="button" class="export-action" disabled={problems.length > 0} onclick={copy}>
+			{copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Could not copy' : 'Copy'}
+		</button>
+		<button type="button" class="export-action" disabled={problems.length > 0} onclick={download}>
+			Download
+		</button>
+		{#if problems.length > 0}
+			<p role="status" class="opacity-60">
+				Not yet a file Verbarium accepts: {problems.join(' ')}
+			</p>
+		{/if}
+	</div>
+	<HighlightedCode code={quotationFile} {colorMap} />
 </div>
 
 <style lang="postcss">
+	.export-action {
+		padding: 0.25rem 0.5rem;
+		border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+		border-radius: 0.25rem;
+		opacity: 0.7;
+		transition: opacity 150ms;
+	}
+
+	.export-action:hover:enabled {
+		opacity: 1;
+	}
+
+	.export-action:disabled {
+		opacity: 0.3;
+	}
+
 	.shiki-export :global(pre) {
 		background: transparent !important;
 	}

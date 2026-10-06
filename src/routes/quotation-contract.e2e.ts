@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { runInNewContext } from 'node:vm';
 import { writeFile } from 'node:fs/promises';
+import type { QuotationFile } from '../lib/quotationFile';
 import { validateQuotation } from '../lib/quotationValidation';
 
 test.use({
@@ -62,8 +62,8 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 	const exportCode = page.locator('.highlighted-code code');
 	await expect(exportCode).toContainText('"wu1"');
 	const beforeRaw = await exportCode.innerText();
-	// This is trusted formatter output from this test's UI input, evaluated as a data expression.
-	const before = runInNewContext(`(${beforeRaw})`);
+	// The panel shows the quotation file: strict JSON, so it parses as such.
+	const before: QuotationFile = JSON.parse(beforeRaw);
 	validateQuotation(before);
 	await page.getByRole('button', { name: 'line', exact: true }).click();
 	await page.locator('[data-zone="source"] .split-zone[data-divisor-index="9"]').click();
@@ -71,7 +71,7 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 		await page.locator(`[data-zone="target"] .ws-split[data-divisor-index="${index}"]`).click();
 	await expect(exportCode).toContainText('"translation": [16, 28, 42]');
 	const raw = await exportCode.innerText();
-	const quotation = runInNewContext(`(${raw})`);
+	const quotation: QuotationFile = JSON.parse(raw);
 	validateQuotation(quotation);
 	expect(quotation.attestation.tokens).toEqual(before.attestation.tokens);
 	expect(quotation.translation.tokens).toEqual(before.translation.tokens);
@@ -87,7 +87,9 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 			targets.map((index) => quotation.translation.tokens[index].id)
 		);
 	}
-	await expect(page.locator('[data-export-provenance]')).toHaveText('"Shuowen Jiezi"');
+	expect(quotation.formatVersion).toBe(1);
+	expect(quotation.provenance).toBe('Shuowen Jiezi');
+	await expect(exportCode).toContainText('"provenance": "Shuowen Jiezi"');
 	await page.getByRole('button', { name: 'view', exact: true }).click();
 	await page.waitForTimeout(700); // Let the line-control collapse transition settle before visual verification.
 	const rowTops = await page
@@ -102,9 +104,9 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 		);
 	for (let i = 1; i < rowTops.length; i++) expect(rowTops[i] - rowTops[i - 1]).toBeGreaterThan(10);
 	await page.screenshot({ path: info.outputPath('dao-one.png'), fullPage: true });
-	const exportPath = info.outputPath('dao-one-export.txt');
+	const exportPath = info.outputPath('dao-one-export.json');
 	await writeFile(exportPath, raw);
-	await info.attach('dao-one-export', { path: exportPath, contentType: 'text/plain' });
+	await info.attach('dao-one-export', { path: exportPath, contentType: 'application/json' });
 	expect(errors).toEqual([]);
 });
 
@@ -126,7 +128,7 @@ test('keyboard and two-tap touch merge independent breaks while preserving token
 	await page.getByRole('button', { name: 'line', exact: true }).click();
 	const code = page.locator('.highlighted-code code');
 	await expect(code).toContainText('"translation": [2]');
-	const before = runInNewContext(`(${await code.innerText()})`);
+	const before = JSON.parse(await code.innerText());
 	const sourceMerge = page.locator('[data-zone="source"] .merge-zone');
 	await sourceMerge.focus();
 	await page.keyboard.press('Alt+Space');
@@ -139,7 +141,7 @@ test('keyboard and two-tap touch merge independent breaks while preserving token
 	await expect(code).toContainText('"translation": [2]');
 	await targetMerge.tap();
 	await expect(code).toContainText('"translation": []');
-	const after = runInNewContext(`(${await code.innerText()})`);
+	const after = JSON.parse(await code.innerText());
 	expect(after.attestation).toEqual(before.attestation);
 	expect(after.translation).toEqual(before.translation);
 	expect(after.alignment.mappings).toEqual(before.alignment.mappings);

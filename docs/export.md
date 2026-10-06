@@ -1,21 +1,46 @@
 # Export
 
-`Alignment.exportData` produces Verbarium's `AttestationTranslationAlignment`
-directly: attestation tokens, translation tokens, ID-based mappings, and independent
-break arrays. Token text is canonical; reconstruct by joining it in sequence order.
-No textual normalization occurs during export. Mapping UI colors are omitted.
+The export panel shows the **quotation file** Verbarium commits for a quotation,
+and copies or downloads it. The format is defined in Verbarium's
+`docs/quotation-contract.md` (format version 1): one JSON object with
+`formatVersion`, `provenance`, `sourceLink` (optional), `attestation`,
+`translation` and `alignment`, where the last three are `Alignment.exportData`
+unchanged: attestation tokens, translation tokens, ID-based mappings, and
+independent break arrays. Token text is canonical; reconstruct by joining it in
+sequence order. No textual normalization occurs during export. Mapping UI colors
+are omitted.
 
-Provenance is displayed separately below the alignment object and can be passed
-unchanged to Verbarium's provenance prop. Its lesson-owned source URL remains
-separate. The object itself can be copied into a TypeScript declaration and passed
-unchanged as the Quote component's quote prop.
+`src/lib/quotationFile.ts` does the work:
 
-## Formatter
+- `buildQuotationFile(exportData, { provenance, sourceLink })` adds the format
+  version, trims the provenance, leaves a blank source link out, and drops every
+  `pinyin` key whose value is `undefined`. JSON has no `undefined`: an
+  unannotated character simply has no `pinyin` key, and `null` stays for a token
+  where pinyin does not apply (punctuation). The two states that used to be
+  told apart by a literal `undefined` in a TypeScript preview are now told apart
+  by the key's absence.
+- `formatQuotationFile(file)` writes the layout Verbarium commits, byte for
+  byte: two-space indentation, one token and one mapping per line, number
+  arrays on one line, `id`, `text`, `pinyin`, `type` inside a token, a final
+  newline. `quotationFile.spec.ts` pins it to the example in Verbarium's
+  contract, so a downloaded file can be committed unchanged.
 
-`formatExport` keeps primitive arrays on one line and token fields column-aligned.
-It recognizes tokens through id, text and type. Unannotated pinyin is shown as
-literal undefined; null remains distinct. This is a TypeScript-object preview,
-not a versioned strict-JSON interchange protocol.
+Provenance lives inside the file. While it is empty the panel says so, because
+Verbarium's build rejects a quotation file without one. The source link field
+arrives with [#20](https://github.com/ebbmango/quote-slicer/issues/20).
+
+## Copy, download, check
+
+The panel's **Copy** button puts the file text on the clipboard; **Download**
+saves it as `quotation.json`. The author renames it to its Quote asset name
+(`<Quote ID>-<slug>.json`, for example `L001I-Q01-blocked-breath.json`) when
+committing it under `apps/web/app/content/quotes/` in Verbarium, where the
+build validates every file. To check a file before committing, from the
+Verbarium repository root:
+
+```bash
+pnpm --filter @verbarium/web validate-quotations /path/to/quotation.json
+```
 
 ## Offline migration
 
@@ -29,8 +54,8 @@ not repaired. Runtime code does not import this converter.
 
 ## The panel — `JsonExportPanel` + `HighlightedCode`
 
-`JsonExportPanel.svelte` derives `formatExport(alignment.exportData)` and feeds it to
-`HighlightedCode.svelte`, the generic Shiki-based highlighter.
+`JsonExportPanel.svelte` derives `formatQuotationFile(buildQuotationFile(alignment.exportData, …))`
+and feeds it to `HighlightedCode.svelte`, the generic Shiki-based highlighter.
 
 ### Recoloring Shiki to the app palette
 
@@ -46,8 +71,7 @@ light or dark variant — so the export tracks the app's [dark theme](themes.md)
 | ------------------------------ | ------------------------------------------ | --------------------- |
 | strings                        | `#f1fa8c`, `#e9f284`                       | `colors..base`        |
 | properties / colons / brackets | `#8be9fe`, `#8be9fd`, `#ff79c6`, `#f8f8f2` | a dimmer neutral grey |
-| numbers                        | `#bd93f9`                                  | `colors..base`        |
-| `undefined` literal            | `#ff5555`                                  | `colors..base`        |
+| numbers and `null`             | `#bd93f9`                                  | `colors..base`        |
 
 This is why `colors.ts` exports the name-keyed [`colors` lookup](data-model.md#colors)
 alongside the index-keyed array — the recolor wants _specific_ palette entries.

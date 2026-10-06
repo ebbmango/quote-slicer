@@ -34,7 +34,7 @@ Then the feature-specific pages as you need them.
 | [View Tool](view-tool.md)                                   | The read-only layer and the `ViewHighlight` hover/tap mapping highlight                                                |
 | [Tool Transitions](tool-transitions.md)                     | How the workbench animates between text/link/line/view (arrow launch, seamless handoff, persistent DOM, sidebar slide) |
 | [Keyboard & Navigation](mediums-and-keyboard-navigation.md) | `tokenGridNav`, the grid DOM contract, visual-neighbour math, the interaction sensor                                   |
-| [Export](export.md)                                         | The export data shape, the JSON pretty-printer, the theme-aware syntax-highlighted panel                               |
+| [Export](export.md)                                         | The quotation file Verbarium commits, copy/download, the theme-aware syntax-highlighted panel                          |
 | [Mappings List](mappings-list.md)                           | The sidebar card GSAP Flip animations, swipe-to-delete, the `$state` re-entrancy rule                                  |
 | [Themes](themes.md)                                         | No-flash prepaint, cross-tab theme controller, per-scheme palette, synchronized transitions                            |
 | [UI Architecture](ui-architecture.md)                       | Component tree, responsibilities, context wiring, the responsive data panels/modal                                     |

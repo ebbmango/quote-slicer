@@ -24,9 +24,13 @@ The blocked-breath missing-space correction remains complete and regression-test
 creates all 14 mappings, edits pinyin through its input, authors source break [10]
 and translation breaks [16,28,42], and captures the actual export panel text.
 It asserts exact canonical strings, all memberships, unchanged token/pinyin/mapping
-objects across lineation edits, separate provenance, and visible independent rows.
+objects across lineation edits, the provenance inside the file, and visible
+independent rows. Since [#19](https://github.com/ebbmango/quote-slicer/issues/19)
+the panel shows the quotation file (strict JSON), and the test attaches it as
+`dao-one-export.json`.
 
-`docs/fixtures/dao-one-export.txt` is the captured object. Its payload SHA-256,
+`docs/fixtures/dao-one-export.txt` is the object captured before that change, when
+the panel printed a TypeScript-flavoured preview. Its payload SHA-256,
 excluding the file's final newline, is:
 
 `4ebd7d402f5da54be119b74cb5ebdb92da8df4ece12c04daec1d84ed2458338b`
