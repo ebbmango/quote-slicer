@@ -77,6 +77,7 @@ export function quotationFileProblems(file: QuotationFile): string[] {
 }
 
 function isWebAddress(link: string): boolean {
+	if (/\s/.test(link)) return false;
 	try {
 		const { protocol } = new URL(link);
 		return protocol === 'http:' || protocol === 'https:';
