@@ -178,14 +178,15 @@ export function createTokenStore() {
 		});
 
 		// Flip with absolute:false tweens the edited wrapper's height, driving layout
-		// recomputation at each frame. Provenance and the "other" wrapper can pick up wrong
+		// recomputation at each frame. The meta fields and the "other" wrapper can pick up wrong
 		// transforms: Flip computes their before→after delta based on the true settled
 		// layout, but then its own height tween reverts the layout to before — so the
 		// element is ALREADY at its before-flow position, and the Flip transform on top
 		// double-counts the displacement.
 		//
-		// Provenance has no height of its own (it moves only with the stack re-centering), so
-		// always clear its transform — in the constrained regime it was 0 anyway.
+		// The provenance and source-link fields have no height of their own (they move only
+		// with the stack re-centering), so always clear their transforms — in the constrained
+		// regime they were 0 anyway.
 		//
 		// The other wrapper is only safe to clear if it didn't change height: if it changed
 		// height (flex redistribution in the constrained/overflow regime) its Flip transform

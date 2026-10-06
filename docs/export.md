@@ -14,8 +14,7 @@ are omitted.
 
 - `buildQuotationFile(exportData, { provenance, sourceLink })` adds the format
   version, trims the provenance and the source link, leaves a blank source link
-  out, and drops every
-  `pinyin` key whose value is `undefined`. JSON has no `undefined`: an
+  out, and drops every `pinyin` key whose value is `undefined`. JSON has no `undefined`: an
   unannotated character simply has no `pinyin` key, and `null` stays for a token
   where pinyin does not apply (punctuation). The two states that used to be
   told apart by a literal `undefined` in a TypeScript preview are now told apart

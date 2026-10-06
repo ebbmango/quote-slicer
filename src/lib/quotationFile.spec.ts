@@ -148,6 +148,11 @@ describe('quotationFileProblems', () => {
 		).toEqual(['The source link is not an http or https address.']);
 		expect(
 			quotationFileProblems(
+				buildQuotationFile(data, { provenance: 'x', sourceLink: 'https://ctext.org/x\ny' })
+			)
+		).toEqual(['The source link is not an http or https address.']);
+		expect(
+			quotationFileProblems(
 				buildQuotationFile(data, { provenance: 'x', sourceLink: 'https://ctext.org/x#:~:text=a' })
 			)
 		).toEqual([]);

@@ -62,7 +62,7 @@ scope. The panel components contribute three things to make that work:
 
 Because the workbench centres its three stacked panels, a height change in one panel
 shifts the others too — which is why the _other_ panel's wrapper and the provenance
-field are also flip targets, repositioned as whole units.
+and source-link fields are also flip targets, repositioned as whole units.
 
 ## Keyboard scheme (line tool)
 
