@@ -46,7 +46,8 @@ self-contained piece into its own component/context. It:
 
 - sets up the four contexts (in order: `tool`, `breakpoints`, `tokenStore`,
   `alignment` — `alignment` takes the store);
-- owns `sourceText` / `targetText` / `provenance` / `sourceLink`, and the `asideView` / `modalOpen`
+- owns `sourceText` / `targetText` / `provenance` / `sourceLink`, and the `asideView` /
+  `modalOpen`
   state threaded into `DataModal` and `ToolToolbar`;
 - publishes `BreakpointContext.layoutMode` as `data-layout-mode`, then owns the CSS
   geometry for each published mode and the sidebar open/close animation
@@ -75,7 +76,8 @@ self-contained piece into its own component/context. It:
 - **Link/line/view:** renders the `role="grid"` token workspace.
 - Builds `editScope()` (the DOM refs for the [line-edit
   animation](token-store.md#the-line-edit-animation-splitmerge), including the
-  provenance and source-link refs) and forwards split/merge into the store; passes `store.animating` down
+  provenance and source-link refs) and forwards split/merge into the store; passes
+  `store.animating` down
   to the panels.
 - Creates the single `createTokenGridNav()` instance and wires it to the grid container
   with a tool-dependent config (see [Keyboard & Navigation](mediums-and-keyboard-navigation.md)).

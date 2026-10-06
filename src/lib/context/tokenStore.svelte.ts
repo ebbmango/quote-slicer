@@ -178,7 +178,8 @@ export function createTokenStore() {
 		});
 
 		// Flip with absolute:false tweens the edited wrapper's height, driving layout
-		// recomputation at each frame. The meta fields and the "other" wrapper can pick up wrong
+		// recomputation at each frame. The provenance and source-link fields and the "other"
+		// wrapper can pick up wrong
 		// transforms: Flip computes their before→after delta based on the true settled
 		// layout, but then its own height tween reverts the layout to before — so the
 		// element is ALREADY at its before-flow position, and the Flip transform on top

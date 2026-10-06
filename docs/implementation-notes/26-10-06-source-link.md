@@ -13,6 +13,8 @@ has a field for it.
 - `QuoteExportMeta.sourceLink`, `Alignment.sourceLink`; the export panel passes
   it to `buildQuotationFile`, which trims it and leaves a blank one out.
 - `quotationFileProblems` holds the Copy and Download buttons while the link is
-  not an `http`/`https` address, since Verbarium rejects such a file.
+  not an `http`/`https` address, or contains whitespace, since Verbarium rejects
+  such a file.
+- Typing only a link does not trigger the demo seed; the demo seeds no link.
 - `quotation-contract.e2e.ts` fills the field and checks `sourceLink` in the
   file; `theme-lockstep.e2e.ts` samples the new field too.

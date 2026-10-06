@@ -19,11 +19,11 @@ level always shows only "not yet documented" work.
 
 ## New notes (awaiting next parse)
 
-| Date       | Note                                                                                | Commits              |
-| ---------- | ----------------------------------------------------------------------------------- | -------------------- |
-| 2026-10-06 | [Source link field](./26-10-06-source-link.md)                                      | `0b7d5c4`, `b3099ed` |
-| 2026-10-06 | [Quotation file export](./26-10-06-quotation-file-export.md)                        | `033114c`            |
-| 2026-08-05 | [Layout mode as a shared runtime contract](./26-08-05-layout-mode-single-source.md) | `5390525`            |
+| Date       | Note                                                                                | Commits                         |
+| ---------- | ----------------------------------------------------------------------------------- | ------------------------------- |
+| 2026-10-06 | [Source link field](./26-10-06-source-link.md)                                      | `0b7d5c4`, `b3099ed`, `b508152` |
+| 2026-10-06 | [Quotation file export](./26-10-06-quotation-file-export.md)                        | `033114c`                       |
+| 2026-08-05 | [Layout mode as a shared runtime contract](./26-08-05-layout-mode-single-source.md) | `5390525`                       |
 
 ## Archived notes (already parsed into the docs)
 
