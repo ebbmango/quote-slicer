@@ -13,7 +13,10 @@
 
 	// The quotation file Verbarium commits, exactly as it should be saved.
 	const file = $derived(
-		buildQuotationFile(alignment.exportData, { provenance: alignment.provenance })
+		buildQuotationFile(alignment.exportData, {
+			provenance: alignment.provenance,
+			sourceLink: alignment.sourceLink
+		})
 	);
 	const quotationFile = $derived(formatQuotationFile(file));
 	// Verbarium's build rejects a file with these; the buttons wait until they are gone.

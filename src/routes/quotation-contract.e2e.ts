@@ -21,6 +21,7 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 	await page.locator('#source-text').fill(source);
 	await page.locator('#target-text').fill(target);
 	await page.locator('#provenance').fill('Shuowen Jiezi');
+	await page.locator('#source-link').fill('https://ctext.org/shuo-wen-jie-zi/yi-bu#n26162');
 	await page.getByRole('button', { name: 'next', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'line', exact: true })).toBeVisible();
 	const mappings = [
@@ -89,6 +90,7 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 	}
 	expect(quotation.formatVersion).toBe(1);
 	expect(quotation.provenance).toBe('Shuowen Jiezi');
+	expect(quotation.sourceLink).toBe('https://ctext.org/shuo-wen-jie-zi/yi-bu#n26162');
 	await expect(exportCode).toContainText('"provenance": "Shuowen Jiezi"');
 	await page.getByRole('button', { name: 'view', exact: true }).click();
 	await page.waitForTimeout(700); // Let the line-control collapse transition settle before visual verification.

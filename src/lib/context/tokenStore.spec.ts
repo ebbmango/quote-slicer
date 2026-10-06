@@ -5,7 +5,8 @@ const scope: EditScope = {
 	targetWrapperEl: null,
 	sourceScrollEl: null,
 	targetScrollEl: null,
-	provenanceEl: null
+	provenanceEl: null,
+	sourceLinkEl: null
 };
 describe('canonical tokens and independent editorial breaks', () => {
 	it('split/merge changes only breaks, preserving pinyin and whitespace', () => {

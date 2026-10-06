@@ -21,7 +21,7 @@ tool lives in `ToolContext` (`src/lib/context/tool.svelte.ts`).
 
 | Tool key | User-facing name | What the user does                                                                                                                                                                        |
 | -------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'text'` | Text entry       | Paste/type the source (Chinese) and target (English) texts, plus an optional provenance line                                                                                              |
+| `'text'` | Text entry       | Paste/type the source (Chinese) and target (English) texts, plus a provenance line and an optional source link                                                                            |
 | `'link'` | Link tool        | Click tokens in both panels to create word-to-word mappings; edit pinyin; delete mappings                                                                                                 |
 | `'line'` | Line tool        | Adjust where line breaks fall in source and target _independently_ — split one line into two, or merge two into one                                                                       |
 | `'view'` | View tool        | Read-only display of the alignment (tokens dimmed, provenance locked); hovering or tapping a mapped token highlights its whole mapping across both panels — see [View Tool](view-tool.md) |
@@ -52,7 +52,7 @@ character in the text. See [Link Tool](link-tool.md) for how they're built and
 
 ## Layout
 
-The app is a responsive grid with a centre **workbench** (source + target + provenance)
+The app is a responsive grid with a centre **workbench** (source + target + provenance + source link)
 flanked by up to two side panels:
 
 - the **mappings list** (the cards), and

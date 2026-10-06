@@ -25,6 +25,7 @@
 	let sourceText: string = $state('');
 	let targetText: string = $state('');
 	let provenance: string = $state('');
+	let sourceLink: string = $state('');
 	let inputErrors = $derived([
 		...parseSource(sourceText).errors,
 		...parseTarget(targetText).errors
@@ -83,7 +84,13 @@
 			     The DataModal is a SIBLING absolute layer, positioned by the band — so
 			     it stays put and never rides this scroll. -->
 			<div class="absolute inset-0 flex flex-col items-center justify-center-safe overflow-y-auto">
-				<QuoteWorkbench bind:sourceText bind:targetText bind:provenance {arrowExiting} />
+				<QuoteWorkbench
+					bind:sourceText
+					bind:targetText
+					bind:provenance
+					bind:sourceLink
+					{arrowExiting}
+				/>
 				{#if toolCtx.current === 'text' && inputErrors.length}
 					<p role="alert" class="text-sm">{inputErrors[0]}</p>
 				{/if}
