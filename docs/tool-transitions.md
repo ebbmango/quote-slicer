@@ -42,7 +42,7 @@ risks flicker; pre-matching costs nothing at mount.
   animates **one multiplier per field** so the effective opacity moves monotonically (an
   earlier version faded the target's element opacity _and_ its placeholder colour at
   once; the product overshot brighter before settling — an "up then down" flicker):
-  - **source / provenance** stay at their resting element opacity and only raise the
+  - **source / provenance / source link** stay at their resting element opacity and only raise the
     _placeholder's_ pseudo-element `opacity` 0.5 → 1;
   - **target** keeps element opacity at 1 and dims via _text colour_ to
     `color-mix(in oklab, currentColor 30%, transparent)`; its placeholder rises to
@@ -59,7 +59,7 @@ risks flicker; pre-matching costs nothing at mount.
 `.exiting` state instantly instead of animating it.
 
 > **The launch is one-way, and the CSS relies on it.** `advanceToLinkTool` seeds every
-> field and swaps tool; `.exiting` never comes off while text tool is visible, so no
+> field but the source link and swaps tool; `.exiting` never comes off while text tool is visible, so no
 > reverse transition exists. If a "back to text tool" path is ever added that un-sets
 > `arrowExiting` while the fields are visible, the reverse morph will snap — add a
 > transition scoped to that path only, never a resting one.

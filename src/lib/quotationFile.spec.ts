@@ -139,18 +139,14 @@ describe('quotationFileProblems', () => {
 	});
 
 	it('names a source link that is not a web address', () => {
-		const file = buildQuotationFile(data, { provenance: 'x', sourceLink: 'ctext.org/x' });
-		expect(quotationFileProblems(file)).toEqual([
-			'The source link is not an http or https address.'
-		]);
-		expect(
-			quotationFileProblems(buildQuotationFile(data, { provenance: 'x', sourceLink: 'ftp://x' }))
-		).toEqual(['The source link is not an http or https address.']);
-		expect(
-			quotationFileProblems(
-				buildQuotationFile(data, { provenance: 'x', sourceLink: 'https://ctext.org/x#:~:text=a' })
-			)
-		).toEqual([]);
+		const notAnAddress = ['The source link is not an http or https address.'];
+		const problemsFor = (sourceLink: string) =>
+			quotationFileProblems(buildQuotationFile(data, { provenance: 'x', sourceLink }));
+		expect(problemsFor('ctext.org/x')).toEqual(notAnAddress);
+		expect(problemsFor('ftp://x')).toEqual(notAnAddress);
+		expect(problemsFor('https://ctext.org/x\ny')).toEqual(notAnAddress);
+		expect(problemsFor('https://ctext.org/x y')).toEqual(notAnAddress);
+		expect(problemsFor('https://ctext.org/x#:~:text=a')).toEqual([]);
 	});
 
 	it('names an empty provenance and outer whitespace, which the workbench lets through', () => {

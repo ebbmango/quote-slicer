@@ -24,7 +24,8 @@ or a modal. Feature-specific behaviour is covered elsewhere and linked from here
 │   │   │   │   └── LineDivisor.svelte (×N)     │ LineDivisor between
 │   │   │   └── InteractiveTargetText.svelte   ┘ them (line tool)
 │   │   │       └── LineDivisor.svelte (×N)
-│   │   └── <textarea> provenance  always present (disabled in view tool)
+│   │   ├── <textarea> provenance  always present (disabled in view tool)
+│   │   └── <textarea> source link always present (disabled in view tool)
 │   ├── DataModal.svelte           drawer layout: slide-in over the workbench
 │   │   └── DataPanel.svelte
 │   └── tools: arrow (text) | ToolToolbar.svelte (otherwise)
@@ -45,7 +46,8 @@ self-contained piece into its own component/context. It:
 
 - sets up the four contexts (in order: `tool`, `breakpoints`, `tokenStore`,
   `alignment` — `alignment` takes the store);
-- owns `sourceText` / `targetText` / `provenance`, and the `asideView` / `modalOpen`
+- owns `sourceText` / `targetText` / `provenance` / `sourceLink`, and the `asideView` /
+  `modalOpen`
   state threaded into `DataModal` and `ToolToolbar`;
 - publishes `BreakpointContext.layoutMode` as `data-layout-mode`, then owns the CSS
   geometry for each published mode and the sidebar open/close animation
@@ -62,7 +64,7 @@ self-contained piece into its own component/context. It:
 - Consumes the [token store](token-store.md) and derives `sourceTokens` / `targetTokens`
   for rendering. It does **not** push tokens into `Alignment` — `Alignment` reads the
   same store itself. The _only_ thing it pushes is the raw text, via
-  `alignment.setMeta({ sourceText, targetText, provenance })` in an `$effect`.
+  `alignment.setMeta({ sourceText, targetText, provenance, sourceLink })` in an `$effect`.
 - **Text tool:** renders the source/target textareas, with real-time Han-character
   filtering on the source field via a single `filterSourceInput()` helper shared by
   `oninput` and `oncompositionend` (both paths are required — IME input only settles on
@@ -74,17 +76,18 @@ self-contained piece into its own component/context. It:
 - **Link/line/view:** renders the `role="grid"` token workspace.
 - Builds `editScope()` (the DOM refs for the [line-edit
   animation](token-store.md#the-line-edit-animation-splitmerge), including the
-  provenance ref) and forwards split/merge into the store; passes `store.animating` down
+  provenance and source-link refs) and forwards split/merge into the store; passes
+  `store.animating` down
   to the panels.
 - Creates the single `createTokenGridNav()` instance and wires it to the grid container
   with a tool-dependent config (see [Keyboard & Navigation](mediums-and-keyboard-navigation.md)).
 - Tags each panel wrapper `data-zone` + `data-flip-id` so the navigator can resolve
   panels and the store can reposition them as units.
-- The provenance textarea carries `autocomplete="off"`. Unlike the source/target fields
-  (which live inside `{#if editing}` and remount fresh each load), provenance is always
-  in the DOM, so the browser would restore its previous value on reload and briefly race
-  Svelte's binding. `autocomplete="off"` declares the field's value app-owned and
-  suppresses that form restoration.
+- The provenance and source-link textareas carry `autocomplete="off"`. Unlike the
+  source/target fields (which live inside `{#if editing}` and remount fresh each load),
+  they are always in the DOM, so the browser would restore their previous values on
+  reload and briefly race Svelte's binding. `autocomplete="off"` declares the fields'
+  values app-owned and suppresses that form restoration.
 
 ### `InteractiveSourceText.svelte` / `InteractiveTargetText.svelte`
 

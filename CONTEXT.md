@@ -33,7 +33,7 @@ The split/merge affordance shown between tokens in the line tool — the source 
 _Avoid_: split zone (only the source surface), separator, gap button
 
 **edit scope**:
-The bundle of DOM refs a single line edit animates over — each panel's wrapper, its inner scroll box, and the provenance field. Passed into `split`/`merge`: `Flip.getState` captures the edited panel's tokens for reflow, and the edited wrapper is the element whose height is tweened (when the panel can grow). The provenance ref is carried here (not found by the store walking the DOM) because the workbench owns the layout — the store reads its scope and nothing outside it.
+The bundle of DOM refs a single line edit animates over — each panel's wrapper, its inner scroll box, and the provenance and source-link fields. Passed into `split`/`merge`: `Flip.getState` captures the edited panel's tokens for reflow, and the edited wrapper is the element whose height is tweened (when the panel can grow). The provenance and source-link refs are carried here (not found by the store walking the DOM) because the workbench owns the layout — the store reads its scope and nothing outside it.
 _Avoid_: animation context, refs, targets
 
 **ViewHighlight**:

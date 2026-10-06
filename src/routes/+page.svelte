@@ -44,7 +44,7 @@
 		if (arrowExiting || inputErrors.length) return;
 		arrowExiting = true;
 		setTimeout(() => {
-			const anyFilled = sourceText || targetText || provenance;
+			const anyFilled = sourceText || targetText || provenance || sourceLink;
 			if (!anyFilled) {
 				sourceText = '知命者不怨天，知己者不怨人。';
 				targetText =

@@ -69,7 +69,8 @@ height locking, measuring, or tweening:
 
 1. Capture the edited panel's tokens (`[data-flip-id]` inside its scroll box) and the
    other wrapper's height, then `Flip.getState(...)` over the flip targets: **both panel
-   wrappers + the provenance field + the edited tokens**. Capturing the _layout boxes_
+   wrappers + the provenance and source-link fields + the edited tokens**. Capturing the
+   _layout boxes_
    (not just the tokens) is what lets the panel boundary animate from its pre-edit
    position instead of snapping there on the first frame.
 2. Set `animating = true` (gates the panel's height `$effect`), run `mutate()`
@@ -86,7 +87,8 @@ height locking, measuring, or tweening:
 
 ### The slide is flow-driven, not a second Flip
 
-`Flip.getState` _includes_ the other (non-edited) wrapper and the provenance field, but
+`Flip.getState` _includes_ the other (non-edited) wrapper and the provenance and
+source-link fields, but
 they are not meant to carry an independent transform — they should ride the flow as the
 edited wrapper's height changes. Because `absolute: false` reverts the layout to "before"
 when `Flip.from` starts, any transform Flip computed for them (from the full before→after
@@ -95,11 +97,12 @@ displacement. So immediately after `Flip.from` the store clears those transforms
 
 ```js
 if (scope.provenanceEl) gsap.set(scope.provenanceEl, { clearProps: 'transform' });
+if (scope.sourceLinkEl) gsap.set(scope.sourceLinkEl, { clearProps: 'transform' });
 if (otherWrapper && !otherHeightChanged) gsap.set(otherWrapper, { clearProps: 'transform' });
 ```
 
-Provenance is always cleared (it has no height of its own — it only moves with the stack
-re-centring). The other wrapper is cleared **only if its height didn't change**: a changed
+The provenance and source-link fields are always cleared (they have no height of their
+own — they only move with the stack re-centring). The other wrapper is cleared **only if its height didn't change**: a changed
 height signals the constrained/overflow regime, where flex redistributes both panels and
 the Flip transform _is_ load-bearing for the position animation. The other wrapper's
 height is measured before and after the mutation so the regime check uses settled values.
