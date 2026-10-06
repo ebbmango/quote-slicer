@@ -3,7 +3,7 @@ import type {
 	QuoteMapping,
 	SourceToken,
 	TargetToken
-} from './quotation.ts';
+} from './quotation';
 
 /**
  * The file Verbarium commits for a quotation, as `docs/quotation-contract.md`
@@ -35,9 +35,12 @@ export function buildQuotationFile(
 		provenance: meta.provenance.trim(),
 		...(sourceLink ? { sourceLink } : {}),
 		attestation: {
-			tokens: data.attestation.tokens.map(({ pinyin, ...token }) =>
-				pinyin === undefined ? token : { ...token, pinyin }
-			)
+			tokens: data.attestation.tokens.map(({ id, text, pinyin, type }) => ({
+				id,
+				text,
+				...(pinyin === undefined ? {} : { pinyin }),
+				type
+			}))
 		},
 		translation: { tokens: data.translation.tokens.map((token) => ({ ...token })) },
 		alignment: {
@@ -55,6 +58,23 @@ export function buildQuotationFile(
 }
 
 /**
+ * What Verbarium's build would reject that the workbench can still produce.
+ * Empty when the file is fit to commit.
+ */
+export function quotationFileProblems(file: QuotationFile): string[] {
+	const problems: string[] = [];
+	if (file.provenance === '') problems.push('The provenance is empty.');
+	for (const [side, { tokens }] of [
+		['source text', file.attestation],
+		['translation', file.translation]
+	] as const) {
+		const text = tokens.map((token) => token.text).join('');
+		if (text !== text.trim()) problems.push(`The ${side} starts or ends with whitespace.`);
+	}
+	return problems;
+}
+
+/**
  * Writes the file in the layout Verbarium commits, byte for byte: two-space
  * indentation, one token and one mapping per line, number arrays on one line,
  * `id`, `text`, `pinyin`, `type` inside a token, a final newline.
@@ -64,7 +84,9 @@ export function formatQuotationFile(file: QuotationFile): string {
 		'{',
 		`  "formatVersion": ${file.formatVersion},`,
 		`  "provenance": ${JSON.stringify(file.provenance)},`,
-		...(file.sourceLink === undefined ? [] : [`  "sourceLink": ${JSON.stringify(file.sourceLink)},`]),
+		...(file.sourceLink === undefined
+			? []
+			: [`  "sourceLink": ${JSON.stringify(file.sourceLink)},`]),
 		'  "attestation": {',
 		'    "tokens": [',
 		...oneObjectPerLine(file.attestation.tokens.map(sourceTokenEntries)),
@@ -95,7 +117,9 @@ function sourceTokenEntries(token: SourceToken): Entries {
 	return [
 		['id', String(token.id)],
 		['text', JSON.stringify(token.text)],
-		...(token.pinyin === undefined ? [] : [['pinyin', JSON.stringify(token.pinyin)] as [string, string]]),
+		...(token.pinyin === undefined
+			? []
+			: [['pinyin', JSON.stringify(token.pinyin)] as [string, string]]),
 		['type', JSON.stringify(token.type)]
 	];
 }

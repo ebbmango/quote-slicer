@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { AttestationTranslationAlignment } from './quotation.ts';
+import type { AttestationTranslationAlignment } from './quotation';
 import {
 	buildQuotationFile,
 	formatQuotationFile,
 	QUOTATION_FORMAT_VERSION,
+	quotationFileProblems,
 	type QuotationFile
-} from './quotationFile.ts';
+} from './quotationFile';
 
 const data: AttestationTranslationAlignment = {
 	attestation: {
@@ -103,9 +104,14 @@ describe('buildQuotationFile', () => {
 		expect(file.provenance).toBe('Shuowen Jiezi');
 		expect('sourceLink' in file).toBe(false);
 
-		const linked = buildQuotationFile(data, { provenance: 'x', sourceLink: ' https://ctext.org/x ' });
+		const linked = buildQuotationFile(data, {
+			provenance: 'x',
+			sourceLink: ' https://ctext.org/x '
+		});
 		expect(linked.sourceLink).toBe('https://ctext.org/x');
-		expect(buildQuotationFile(data, { provenance: 'x', sourceLink: '  ' }).sourceLink).toBeUndefined();
+		expect(
+			buildQuotationFile(data, { provenance: 'x', sourceLink: '  ' }).sourceLink
+		).toBeUndefined();
 	});
 
 	it('keeps the three pinyin states apart without any undefined', () => {
@@ -114,8 +120,8 @@ describe('buildQuotationFile', () => {
 		expect(Object.hasOwn(tokens[1], 'pinyin')).toBe(false);
 		expect(tokens[2].pinyin).toBeNull();
 		expect(Object.hasOwn(tokens[3], 'pinyin')).toBe(false);
-		const file = buildQuotationFile(data, { provenance: 'x' });
-		expect(JSON.parse(JSON.stringify(file))).toEqual(file);
+		expect(Object.keys(tokens[0])).toEqual(['id', 'text', 'pinyin', 'type']);
+		expect(Object.keys(tokens[1])).toEqual(['id', 'text', 'type']);
 	});
 
 	it('does not share arrays with the export it was built from', () => {
@@ -127,11 +133,39 @@ describe('buildQuotationFile', () => {
 	});
 });
 
+describe('quotationFileProblems', () => {
+	it('finds nothing wrong with a file Verbarium accepts', () => {
+		expect(quotationFileProblems(JSON.parse(verbariumExample))).toEqual([]);
+	});
+
+	it('names an empty provenance and outer whitespace, which the workbench lets through', () => {
+		const file = buildQuotationFile(
+			{
+				...data,
+				attestation: { tokens: [{ id: 0, text: ' ', type: 'symbol' }, ...data.attestation.tokens] },
+				translation: {
+					tokens: [...data.translation.tokens, { id: 1, text: ' ', type: 'whitespace' }]
+				}
+			},
+			{ provenance: '  ' }
+		);
+		expect(quotationFileProblems(file)).toEqual([
+			'The provenance is empty.',
+			'The source text starts or ends with whitespace.',
+			'The translation starts or ends with whitespace.'
+		]);
+	});
+});
+
 describe('formatQuotationFile', () => {
 	it('writes exactly the layout Verbarium commits', () => {
 		const file = JSON.parse(verbariumExample) as QuotationFile;
 		expect(formatQuotationFile(file)).toBe(verbariumExample);
-		expect(formatQuotationFile(buildQuotationFile(file, { provenance: file.provenance, sourceLink: file.sourceLink }))).toBe(verbariumExample);
+		expect(
+			formatQuotationFile(
+				buildQuotationFile(file, { provenance: file.provenance, sourceLink: file.sourceLink })
+			)
+		).toBe(verbariumExample);
 	});
 
 	it('round-trips through JSON.parse and ends with one newline', () => {

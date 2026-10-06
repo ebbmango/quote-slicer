@@ -63,7 +63,7 @@ test('authors and exports the real Dao quotation without reshaping its payload',
 	await expect(exportCode).toContainText('"wu1"');
 	const beforeRaw = await exportCode.innerText();
 	// The panel shows the quotation file: strict JSON, so it parses as such.
-	const before = JSON.parse(beforeRaw);
+	const before: QuotationFile = JSON.parse(beforeRaw);
 	validateQuotation(before);
 	await page.getByRole('button', { name: 'line', exact: true }).click();
 	await page.locator('[data-zone="source"] .split-zone[data-divisor-index="9"]').click();

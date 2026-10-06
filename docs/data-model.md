@@ -33,8 +33,8 @@ whitespace runs. How a string becomes these tokens is covered in
 The three states are meaningful and distinct:
 
 - **`undefined`** — a Han character that has _not yet_ been annotated (e.g. not in a
-  mapping yet). The export prints this literally as `undefined` so an un-annotated
-  character is visible rather than silently dropped (see [Export](export.md)).
+  mapping yet). The quotation file has no `pinyin` key for it, since JSON has no
+  `undefined` (see [Export](export.md)).
 - **`null`** — a token type that _can't_ have pinyin (punctuation, numbers, symbols).
 - **`string`** — the romanisation, auto-filled or user-edited.
 

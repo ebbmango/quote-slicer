@@ -68,7 +68,7 @@ Start at [`docs/index.md`](docs/index.md). Pages:
 - [`docs/view-tool.md`](docs/view-tool.md) — read-only layer + `ViewHighlight` hover/tap mapping highlight
 - [`docs/tool-transitions.md`](docs/tool-transitions.md) — arrow launch, seamless text→token handoff, persistent-DOM crossfade, sidebar slide
 - [`docs/mediums-and-keyboard-navigation.md`](docs/mediums-and-keyboard-navigation.md) — `tokenGridNav`, the `gridDom` contract, visual-neighbour math, interaction-medium sensor
-- [`docs/export.md`](docs/export.md) — export data shape, JSON pretty-printer, theme-aware Shiki recolor
+- [`docs/export.md`](docs/export.md) — the quotation file Verbarium commits, copy/download, theme-aware Shiki recolor
 - [`docs/mappings-list.md`](docs/mappings-list.md) — sidebar card GSAP Flip animations, swipe-to-delete, the `$state` re-entrancy rule
 - [`docs/themes.md`](docs/themes.md) — no-flash prepaint, cross-tab theme controller, per-scheme palette, synchronized transitions
 - [`docs/ui-architecture.md`](docs/ui-architecture.md) — component tree, context wiring, responsive layout, GSAP patterns

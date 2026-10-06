@@ -1,28 +1,36 @@
 <script lang="ts">
 	import HighlightedCode from '$lib/components/HighlightedCode.svelte';
 	import { getAlignmentContext } from '$lib/context/alignment.svelte';
-	import { buildQuotationFile, formatQuotationFile } from '$lib/quotationFile';
+	import {
+		buildQuotationFile,
+		formatQuotationFile,
+		quotationFileProblems
+	} from '$lib/quotationFile';
 	import { colors } from '$lib/constants/colors';
 	import { theme as appTheme } from '$lib/theme';
 
 	const alignment = getAlignmentContext();
 
 	// The quotation file Verbarium commits, exactly as it should be saved.
-	const quotationFile = $derived(
-		formatQuotationFile(
-			buildQuotationFile(alignment.exportData, { provenance: alignment.provenance })
-		)
+	const file = $derived(
+		buildQuotationFile(alignment.exportData, { provenance: alignment.provenance })
 	);
-	const provenanceMissing = $derived(alignment.provenance.trim() === '');
+	const quotationFile = $derived(formatQuotationFile(file));
+	// Verbarium's build rejects a file with these; the buttons wait until they are gone.
+	const problems = $derived(quotationFileProblems(file));
 
-	let copied = $state(false);
+	let copyState: 'idle' | 'copied' | 'failed' = $state('idle');
 	let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
 	async function copy() {
-		await navigator.clipboard.writeText(quotationFile);
-		copied = true;
+		try {
+			await navigator.clipboard.writeText(quotationFile);
+			copyState = 'copied';
+		} catch {
+			copyState = 'failed';
+		}
 		clearTimeout(copyTimer);
-		copyTimer = setTimeout(() => (copied = false), 1500);
+		copyTimer = setTimeout(() => (copyState = 'idle'), 1500);
 	}
 
 	// The author renames the file to its Quote asset name when committing it.
@@ -32,7 +40,8 @@
 		link.href = url;
 		link.download = 'quotation.json';
 		link.click();
-		URL.revokeObjectURL(url);
+		// Some browsers start the download after click() returns; keep the URL alive for them.
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	}
 
 	// Highlight palette tracks the theme so the JSON panel doesn't stay in
@@ -64,24 +73,16 @@
 </script>
 
 <div class="shiki-export no-scrollbar h-full w-full overflow-auto p-6 text-xs">
-	<div class="mb-4 flex items-center gap-3">
-		<button
-			type="button"
-			class="rounded border border-current/25 px-2 py-1 opacity-70 transition-opacity hover:opacity-100"
-			onclick={copy}
-		>
-			{copied ? 'Copied' : 'Copy'}
+	<div class="mb-4 flex flex-wrap items-center gap-3">
+		<button type="button" class="export-action" disabled={problems.length > 0} onclick={copy}>
+			{copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Could not copy' : 'Copy'}
 		</button>
-		<button
-			type="button"
-			class="rounded border border-current/25 px-2 py-1 opacity-70 transition-opacity hover:opacity-100"
-			onclick={download}
-		>
+		<button type="button" class="export-action" disabled={problems.length > 0} onclick={download}>
 			Download
 		</button>
-		{#if provenanceMissing}
+		{#if problems.length > 0}
 			<p role="status" class="opacity-60">
-				No provenance yet: Verbarium rejects a quotation file without one.
+				Not yet a file Verbarium accepts: {problems.join(' ')}
 			</p>
 		{/if}
 	</div>
@@ -89,6 +90,22 @@
 </div>
 
 <style lang="postcss">
+	.export-action {
+		padding: 0.25rem 0.5rem;
+		border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+		border-radius: 0.25rem;
+		opacity: 0.7;
+		transition: opacity 150ms;
+	}
+
+	.export-action:hover:enabled {
+		opacity: 1;
+	}
+
+	.export-action:disabled {
+		opacity: 0.3;
+	}
+
 	.shiki-export :global(pre) {
 		background: transparent !important;
 	}
